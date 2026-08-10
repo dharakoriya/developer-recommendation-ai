@@ -1,101 +1,301 @@
-# Project Rules & Development Guidelines
+# Project Rules
 
-This document outlines the coding standards, repository conventions, ethical AI guidelines, and architectural rules for **Project Dhara**. All contributors must strictly adhere to these practices.
+## 1. Project Identity
 
----
+Project: Explainable AI-Based Developer Recommendation and Workload Balancing System
 
-## 1. Architectural & Design Principles
+Primary purpose:
 
-1. **Strict Separation of Concerns**:
-   - `frontend/`: UI/UX components, state management, and XAI visualization.
-   - `backend/`: Business logic, database access, RESTful APIs, and authentication.
-   - `ai-engine/`: ML model training, feature extraction, SHAP/LIME inference, and workload capacity scoring.
-   - `docs/`: Authoritative technical specifications.
+Build a decision-support system that recommends suitable developers for software development tasks, explains the recommendations, analyses workload, and suggests fair workload redistribution.
 
-2. **Human-in-the-Loop (HITL) Guarantee**:
-   - The AI recommendation engine must **never** execute automatic task assignments without project manager confirmation.
-   - Every AI recommendation output **must** be accompanied by a valid SHAP/LIME explanation payload.
+The system assists project managers. It does not automatically make the final task assignment decision.
 
-3. **Stateless API & Async Processing**:
-   - FastAPI endpoints must remain stateless. Heavy ML model execution or batch dataset preprocessing must be dispatched to background tasks or dedicated async worker threads.
+## 2. Source of Truth
 
----
+The project proposal and the documents inside `/docs` define the intended system.
 
-## 2. Code Quality & Language Standards
+Before making architectural or implementation changes:
 
-### 🐍 Python Guidelines (Backend & AI Engine)
-- **Style Standard**: Strict adherence to **PEP 8**.
-- **Type Annotations**: All function parameters and return types must be fully type-hinted (`typing` / Python 3.10+ native syntax).
-- **Docstrings**: Use Google-style docstrings for modules, classes, and public methods.
-- **Error Handling**: Use custom HTTPExceptions with clear problem details. Silent exception handling (`except: pass`) is prohibited.
-- **Dependencies**: Keep dependencies organized in `requirements.txt`. Do not introduce unvetted third-party ML modules.
+1. Read `PROJECT_RULES.md`.
+2. Read the relevant documentation.
+3. Inspect the existing implementation.
+4. Do not assume missing requirements.
+5. If a proposed change conflicts with an existing documented decision, stop and report the conflict before implementing it.
 
-```python
-# Example Code Pattern
-def calculate_workload_score(
-    active_tasks_count: int,
-    complexity_weight: float,
-    estimated_hours: float
-) -> float:
-    """Calculates normalized developer workload capacity score.
+The codebase must not become the only source of project requirements.
 
-    Args:
-        active_tasks_count: Number of currently assigned in-progress tasks.
-        complexity_weight: Weighted average complexity of assigned tasks.
-        estimated_hours: Sum of remaining estimated work hours.
+## 3. Technology Decisions
 
-    Returns:
-        Float value between 0.0 and 100.0 representing capacity load percentage.
-    """
-    if active_tasks_count < 0 or estimated_hours < 0:
-        raise ValueError("Task count and estimated hours must be non-negative.")
-    
-    score = (active_tasks_count * complexity_weight * 10) + (estimated_hours * 0.5)
-    return min(score, 100.0)
-```
+Frontend:
 
-### ⚛️ TypeScript & React Guidelines (Frontend)
-- **Style Standard**: Strict ESLint + Prettier rules.
-- **Component Architecture**: Functional components using React Hooks (`useState`, `useEffect`, `useMemo`).
-- **Typing**: Explicit TypeScript interfaces for all components, props, API responses, and state objects (`no-explicit-any`).
-- **Styling**: Tailwind CSS utility classes; avoid inline styles.
+* Next.js
+* TypeScript
 
----
+Backend:
 
-## 3. Ethical AI & Data Privacy Rules
+* Python
+* FastAPI
 
-1. **Developer Anonymization**:
-   - Developer records used for training or evaluating public ML models must strip sensitive Personal Identifiable Information (PII). Developer IDs (`DEV-XXXX`) must be used in model datasets.
-2. **Fairness Constraints**:
-   - Recommendation ranking must enforce maximum workload limits ($Workload\ Score \le 85\%$). Highly skilled developers who are near capacity must be penalized in ranking scores to prevent burnout.
-3. **Transparency Requirement**:
-   - Low confidence recommendations ($\text{Confidence} < 60\%$) must display a warning pill in the UI recommending manual manager review.
+Database:
 
----
+* PostgreSQL
 
-## 4. Git Workflow & Commit Guidelines
+Machine Learning:
 
-### Branching Strategy
-- `main`: Production-ready releases only.
-- `develop`: Integration branch for ongoing sprint work.
-- `feature/<feature-name>`: Dedicated feature development (e.g., `feature/shap-explanation-panel`).
-- `fix/<bug-name>`: Bug fixes (e.g., `fix/workload-score-overflow`).
+* Python
+* scikit-learn
+* XGBoost
 
-### Commit Message Format
-Strict enforcement of **Conventional Commits**:
-- `feat`: A new user-facing feature or API endpoint.
-- `fix`: A bug fix.
-- `docs`: Documentation updates.
-- `xai`: Modifications specifically related to SHAP/LIME or model explainability.
-- `refactor`: Code improvements without functionality changes.
-- `test`: Adding or modifying unit/integration tests.
+Explainable AI:
 
-*Example:* `feat(ai-engine): add SHAP waterfall calculation for developer suitability`
+* SHAP
 
----
+Charts/visualisation:
 
-## 5. Testing & Quality Assurance
+* Chart.js or an equivalent lightweight frontend charting solution.
 
-- **Backend**: PyTest coverage must exceed **85%** for core service methods.
-- **AI Engine**: Model cross-validation scripts must log evaluation metrics (Precision, Recall, F1-Score, Workload Variance) on every training run.
-- **Frontend**: Component unit testing using React Testing Library / Vitest.
+Do not introduce additional technologies unless there is a clear technical reason.
+
+## 4. Architecture Rules
+
+The application uses a modular monolithic architecture.
+
+Frontend communicates with the backend through REST APIs.
+
+Frontend must not directly access PostgreSQL.
+
+ML functionality must be accessed through the backend/service layer.
+
+Do not create unnecessary microservices.
+
+Do not create a separate AI frontend.
+
+Do not introduce Kubernetes, message queues, Redis, or other infrastructure unless a documented requirement makes them necessary.
+
+## 5. AI Rules
+
+The ML system is a recommendation system, not an autonomous decision maker.
+
+The system must produce ranked recommendations rather than silently assigning tasks.
+
+The final assignment remains under human control.
+
+ML models must use documented input features.
+
+ML predictions must be reproducible when the same model and input data are used.
+
+The deployed recommendation model must be versioned.
+
+The model must not use protected or irrelevant personal attributes for recommendation decisions.
+
+## 6. Explainability Rules
+
+Every AI recommendation should be explainable.
+
+SHAP is the primary explainability mechanism.
+
+Explanations should be presented in understandable terms such as:
+
+* Skill match
+* Relevant experience
+* Previous similar tasks
+* Availability
+* Current workload
+* Task complexity
+
+Do not display raw technical model output to users when a human-readable explanation can be provided.
+
+## 7. Workload Rules
+
+Developer workload must be considered during recommendation.
+
+A highly skilled developer should not automatically receive every task.
+
+The system should consider:
+
+* Current assigned work
+* Estimated task effort
+* Task complexity
+* Availability
+* Deadline pressure
+* Skill suitability
+
+The workload system provides suggestions. Final redistribution remains a human decision.
+
+## 8. Coding Rules
+
+Prefer simple and maintainable code.
+
+Avoid unnecessary abstraction.
+
+Avoid duplicated business logic.
+
+Use reusable components where appropriate.
+
+Use strong typing in TypeScript.
+
+Validate API input.
+
+Do not expose secrets or credentials in source code.
+
+Use environment variables for configuration and secrets.
+
+Do not modify unrelated modules while implementing a feature.
+
+Do not remove existing functionality unless explicitly required.
+
+## 9. Database Rules
+
+Use PostgreSQL as the single application database.
+
+Use migrations for schema changes.
+
+Do not manually modify production database schemas without a corresponding migration.
+
+Use foreign keys and appropriate constraints.
+
+Do not store passwords in plain text.
+
+## 10. API Rules
+
+Use REST APIs.
+
+Use appropriate HTTP methods and status codes.
+
+Validate request data.
+
+Return predictable response structures.
+
+Do not expose internal exceptions or stack traces to users.
+
+Authentication and authorization must be enforced on protected endpoints.
+
+## 11. Frontend Rules
+
+The frontend must not contain business-critical ML logic.
+
+API communication should be centralized where practical.
+
+Loading, error, empty, and success states must be handled.
+
+User actions that affect assignments must require clear confirmation where appropriate.
+
+## 12. Security Rules
+
+Never commit:
+
+* Passwords
+* API keys
+* Database credentials
+* JWT secrets
+* Private certificates
+* Production environment files
+
+Use `.env` files locally and environment variables in deployment.
+
+Passwords must be securely hashed.
+
+Authentication tokens must be handled securely.
+
+Users must only access functionality allowed by their role.
+
+## 13. Testing Rules
+
+Each completed module should be tested before moving to the next module.
+
+At minimum:
+
+* Backend API tests
+* Validation tests
+* Authentication tests
+* Core ML tests
+* Recommendation tests
+* Frontend functional testing
+
+A feature is not considered complete simply because the UI renders.
+
+## 14. Git Rules
+
+Use Git throughout development.
+
+Create commits after meaningful completed milestones.
+
+Example:
+
+* `feat: add authentication`
+* `feat: add developer profiles`
+* `feat: add task management`
+* `feat: add recommendation engine`
+* `fix: correct workload calculation`
+
+Do not accumulate the entire project into one final commit.
+
+## 15. AI-Assisted Development Rules
+
+AI coding assistants must not be treated as the permanent memory of the project.
+
+Every implementation task should use the documentation as context.
+
+AI assistants must:
+
+1. Read relevant documentation.
+2. Inspect existing code.
+3. Explain what they intend to change when the task is significant.
+4. Implement only the requested scope.
+5. Test the changes.
+6. Report changed files and important decisions.
+
+If requirements are ambiguous or contradictory, the AI must not invent a solution silently.
+
+## 16. Scope Control
+
+The first implementation should remain intentionally simple.
+
+Do not add:
+
+* LLM chatbot
+* Autonomous AI agents
+* Neural networks
+* Real-time model retraining
+* Complex MLOps
+* Microservices
+* Kubernetes
+* Paid AI APIs
+
+unless later research or project requirements explicitly justify them.
+
+## 17. Human Oversight
+
+The system is a decision-support platform.
+
+The project manager remains responsible for the final task assignment.
+
+The AI recommendation must never be represented as an unquestionable decision.
+
+## 18. Change Management
+
+Any major change to:
+
+* Technology
+* Architecture
+* Database structure
+* AI approach
+* Authentication
+* Core business rules
+
+must be reflected in the relevant documentation and `CHANGELOG.md`.
+
+Documentation must be updated before or together with the implementation.
+
+## 19. Priority Order
+
+When making implementation decisions, prioritize:
+
+1. Correctness
+2. Proposal requirements
+3. Simplicity
+4. Maintainability
+5. Security
+6. Explainability
+7. Performance
+8. Additional features

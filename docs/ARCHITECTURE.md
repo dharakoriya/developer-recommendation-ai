@@ -1,107 +1,207 @@
-# System Architecture & Technical Design
+# System Architecture
 
-This document details the software architecture, module breakdown, data processing pipelines, and mathematical models driving **Project Dhara**.
+## 1. Architecture Goal
 
----
+The system will use a modular monolithic architecture.
 
-## 1. High-Level Architecture Overview
+The objective is to keep the project easy to develop, debug, test, and deploy while maintaining clear separation between the frontend, backend, database, and ML functionality.
 
-Dhara adopts a modular multi-tier architecture designed to cleanly separate presentation, application server, machine learning pipeline, explainability calculations, and data persistence.
+## 2. High-Level Architecture
 
-```
-+-----------------------------------------------------------------------------------+
-|                                  FRONTEND LAYER                                   |
-|   React + TypeScript + Tailwind CSS Management Web Interface                      |
-|   - Task Backlog Component      - Developer Workload & Capacity Grid              |
-|   - Recommendation Panel        - Visual XAI Explainer (SHAP Waterfall / LIME)    |
-+------------------------------------------+----------------------------------------+
-                                           | HTTP REST / JSON
-                                           v
-+-----------------------------------------------------------------------------------+
-|                                  BACKEND API LAYER                                |
-|   FastAPI Application Server (Python 3.10+)                                       |
-|   - Task Management Endpoints   - Developer Profile Management API                |
-|   - Recommendation Dispatcher   - Assignment Audit Logger                         |
-+------------------------------------------+----------------------------------------+
-                                           | Async Internal Pipeline Calls
-                                           v
-+-----------------------------------------------------------------------------------+
-|                                   AI & XAI ENGINE                                 |
-|   Python Machine Learning & Explainability Service                                |
-|   +------------------------------------+--------------------------------------+   |
-|   | ML Recommendation Engine           | Workload Balancing Module            |   |
-|   | (Scikit-Learn / XGBoost)           | (Fairness Scoring & Redistribution)  |   |
-|   +------------------------------------+--------------------------------------+   |
-|   | Explainable AI (XAI) Engine                                               |   |
-|   | (SHAP TreeExplainer & LIME Tabular Explainer)                             |   |
-|   +---------------------------------------------------------------------------+   |
-+------------------------------------------+----------------------------------------+
-                                           | Database ORM Connections
-                                           v
-+-----------------------------------------------------------------------------------+
-|                                  PERSISTENCE LAYER                                |
-|   - PostgreSQL (Relational Data: Developers, Tasks, Allocations, Skills)           |
-|   - Redis Cache (SHAP Calculation Matrix Caching & Session State)                 |
-+-----------------------------------------------------------------------------------+
+```text
+                    ┌─────────────────────┐
+                    │      Next.js        │
+                    │      Frontend       │
+                    └──────────┬──────────┘
+                               │
+                            REST API
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │       FastAPI       │
+                    │      Backend        │
+                    └──────┬────────┬─────┘
+                           │        │
+                           │        │
+                           ▼        ▼
+                  ┌────────────┐  ┌──────────────┐
+                  │ PostgreSQL │  │  ML Engine   │
+                  │  Database  │  │ Python       │
+                  └────────────┘  │ sklearn/XGB  │
+                                  │ SHAP         │
+                                  └──────────────┘
 ```
 
----
+## 3. Frontend Layer
 
-## 2. Core System Modules
+The frontend provides the user interface.
 
-### Module 1: Developer Profile Engine
-Manages dynamic developer attributes updated continuously from commit data, completed tasks, and current availability:
-- **Tech Skills Vector**: Normalized matrix of skill proficiencies (e.g., Python: 0.9, React: 0.8, PostgreSQL: 0.7).
-- **Historic Performance Index**: Average completion speed, bug re-opening rate, and task complexity score.
-- **Current Workload Vector**: Active in-progress task count, estimated remaining effort hours, and deadline proximity.
+Main areas:
 
-### Module 2: Task Engine
-Processes and structures backlog items (User Stories, Bug Reports, Refactoring Tasks):
-- Extracts task requirements: required programming languages, frameworks, domain tags.
-- Estimates task complexity rating ($1 \le Complexity \le 5$) and effort hours.
+* Login
+* Dashboard
+* Developers
+* Skills
+* Tasks
+* Recommendations
+* Workload
+* Reports
+* Profile/settings
 
-### Module 3: AI Recommendation Engine
-Evaluates developer-task compatibility by constructing a joint feature vector:
-$$\text{Feature Vector } X_i = [\text{SkillMatch}_i, \text{SimilarTaskExperience}_i, \text{HistoricVelocity}_i, \text{CurrentWorkload}_i, \text{Availability}_i]$$
-Model produces a suitability prediction score $S(d_i, t_j) \in [0, 100\%]$.
+The frontend does not directly communicate with the database.
 
-### Module 4: Explainable AI (XAI) Engine
-Calculates explicit feature attributions for every recommendation:
-- **SHAP (SHapley Additive exPlanations)**: Calculates the marginal contribution $\phi_i$ of each attribute towards the final score:
-  $$S(d_i, t_j) = \phi_0 + \sum_{k=1}^{M} \phi_k$$
-  Where $\phi_0$ is the base expected score, and $\phi_k$ is the impact of feature $k$.
-- **LIME (Local Interpretable Model-Agnostic Explanations)**: Generates human-readable local explanations detailing positive vs negative decision drivers.
+## 4. Backend Layer
 
-### Module 5: Workload Balancing & Fairness Engine
-Calculates developer Capacity Load ($W_i$) to prevent developer overload and ensure fair distribution:
-$$W_i = \left( \frac{\sum_{t \in Active} \text{Complexity}(t) \times \text{Hours}(t)}{\text{Max Weekly Hours}} \right) \times 100\%$$
-- **Fairness Redistribution Rule**: If $W_i > 80\%$, the system applies a workload penalty score to $S(d_i, t_j)$ and flags alternative available developers with similar skill profiles.
+The FastAPI backend is responsible for:
 
----
+* Authentication
+* Authorization
+* Request validation
+* Business rules
+* Database operations
+* ML orchestration
+* Workload calculation
+* Recommendation generation
+* Explanation generation
 
-## 3. End-to-End Task Recommendation Sequence
+## 5. ML Layer
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor PM as Project Manager
-    participant UI as React Frontend
-    participant API as FastAPI Backend
-    participant ML as AI Rec Engine
-    participant XAI as SHAP/LIME Engine
-    participant DB as PostgreSQL
+The ML layer is part of the project backend ecosystem rather than a separate application.
 
-    PM->>UI: Select backlog task T_j for recommendation
-    UI->>API: GET /api/v1/recommendations/tasks/T_j
-    API->>DB: Fetch Task T_j & active Developer profiles D
-    DB-->>API: Task & Developer features
-    API->>ML: Predict suitability scores for all D
-    ML-->>API: Ranked developer scores array
-    API->>XAI: Compute SHAP feature values & LIME explanations
-    XAI-->>API: SHAP attributions & human-readable text
-    API-->>UI: JSON Payload (Developers, Scores, XAI breakdown, Workload scores)
-    UI-->>PM: Render visual recommendation cards + SHAP waterfall chart
-    PM->>UI: Confirm task assignment to Developer D_k
-    UI->>API: POST /api/v1/allocations (Task T_j -> Developer D_k)
-    API->>DB: Record allocation & update Developer D_k active workload
+Workflow:
+
+```text
+Task
+  ↓
+Task features
+  +
+Developer features
+  ↓
+Feature preparation
+  ↓
+ML model
+  ↓
+Developer suitability score
+  ↓
+Ranking
+  ↓
+Top recommendations
+  ↓
+SHAP explanation
 ```
+
+## 6. Recommendation Flow
+
+```text
+Manager creates/selects task
+            ↓
+System retrieves task requirements
+            ↓
+System retrieves eligible developers
+            ↓
+Developer + task features generated
+            ↓
+ML model predicts suitability
+            ↓
+Workload/fairness adjustment
+            ↓
+Developers ranked
+            ↓
+Top candidates displayed
+            ↓
+SHAP explanation generated
+            ↓
+Manager reviews recommendation
+            ↓
+Manager makes final assignment
+```
+
+## 7. Workload Flow
+
+```text
+Assigned tasks
+      ↓
+Task effort
+      ↓
+Task complexity
+      ↓
+Deadline pressure
+      ↓
+Developer availability
+      ↓
+Workload score
+      ↓
+Overload detection
+      ↓
+Redistribution suggestions
+```
+
+## 8. Module Structure
+
+Backend modules:
+
+```text
+auth
+users
+developers
+skills
+tasks
+assignments
+recommendations
+workload
+dashboard
+```
+
+ML modules:
+
+```text
+data
+features
+training
+prediction
+evaluation
+explainability
+```
+
+## 9. Separation of Responsibilities
+
+Frontend:
+
+* Presentation
+* User interaction
+* API consumption
+
+Backend:
+
+* Authentication
+* Business logic
+* Database operations
+* ML orchestration
+
+Database:
+
+* Persistent application data
+
+ML:
+
+* Developer suitability prediction
+* Model evaluation
+
+SHAP:
+
+* Recommendation explanation
+
+## 10. Architectural Principle
+
+Keep the system simple.
+
+The project does not require:
+
+* Microservices
+* Event-driven architecture
+* Kubernetes
+* Dedicated AI application
+* Dedicated ML server
+* Real-time model retraining
+
+These may be considered later only if actual requirements justify them.

@@ -1,23 +1,120 @@
 # Changelog
 
-All notable changes to **Project Dhara** will be documented in this file.
+All meaningful project changes should be recorded here.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## Format
+
+Each entry should contain:
+
+* Version/date
+* Change
+* Reason
+* Important technical decision
 
 ---
 
-## [0.1.0-alpha] - 2026-08-04
+## 2026-08-10 — Project Foundation
 
 ### Added
-- **Repository Architecture & Setup**: Initialized core directory structure (`docs/`, `frontend/`, `backend/`, `ai-engine/`).
-- **Comprehensive Documentation Suite**:
-  - `README.md`: Landing documentation, system architecture overview, tech stack, and quickstart commands.
-  - `PROJECT_RULES.md`: Coding conventions, PEP8/TypeScript rules, Git workflow, and ethical AI/privacy standards.
-  - `ROADMAP.md`: 11-Week, 8-Phase execution schedule detailing milestones from literature review to dissertation defense.
-  - `TECH_STACK.md`: Complete technological breakdown across React, FastAPI, XGBoost, SHAP, LIME, and PostgreSQL.
-  - `ARCHITECTURE.md`: High-level system design, dynamic developer profiling, XAI engine sequence, and workload formulas.
-  - `DATABASE.md`: Relational PostgreSQL ERD, 6 entity tables, data types, indexes, and constraints.
-  - `API.md`: Complete RESTful API specification for developers, tasks, AI recommendations, SHAP/LIME explainability, and workload rebalancing.
-  - `FEATURES.md`: Functional requirement matrix covering dynamic profiling, intelligent matching, XAI visualizers, and manager override controls.
-- **Scaffolding Placeholder Structures**: Initialized component directories for `frontend/`, `backend/`, and `ai-engine/`.
+
+* Initial project documentation structure.
+* Defined project rules.
+* Defined technology stack.
+* Defined system architecture.
+* Defined initial database design.
+* Defined REST API structure.
+* Defined feature scope.
+* Defined ML architecture.
+* Defined development roadmap.
+
+### Technology Decisions
+
+Frontend:
+
+* Next.js
+* TypeScript
+
+Backend:
+
+* FastAPI
+* Python
+
+Database:
+
+* PostgreSQL
+
+ML:
+
+* scikit-learn
+* XGBoost
+
+Explainability:
+
+* SHAP
+
+### Architecture Decision
+
+The system will use a modular monolithic architecture.
+
+The ML engine will remain part of the application backend ecosystem rather than being developed as a separate application.
+
+### Scope Decision
+
+The initial implementation will prioritize:
+
+* Authentication
+* Developer management
+* Task management
+* Dashboard
+* ML recommendation
+* SHAP explanation
+* Workload balancing
+
+The following are intentionally excluded from the initial implementation:
+
+* LLM chatbot
+* Autonomous AI agents
+* Neural networks
+* Real-time model retraining
+* Complex MLOps
+* Microservices
+* Kubernetes
+* Paid AI APIs
+
+### Cost Decision
+
+The development stack will use open-source technologies wherever practical.
+
+Target software/development cost:
+
+₹0 before deployment.
+
+---
+
+## Future Entries
+
+New changes must be added above this section.
+
+Example:
+
+## YYYY-MM-DD — Feature Name
+
+### Added
+
+* ...
+
+### Changed
+
+* ...
+
+### Fixed
+
+* ...
+
+### Technical Decision
+
+* ...
+
+### Reason
+
+* ...

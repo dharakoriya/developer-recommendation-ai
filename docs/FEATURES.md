@@ -1,47 +1,241 @@
-# Core Features & Functional Requirements
+# Feature Specification
 
-This document provides a breakdown of all core features and user scenarios supported by **Project Dhara**.
+## 1. Authentication and Roles
 
----
+The system supports three roles:
 
-## 🚀 Feature Matrix
+### Admin
 
-| Feature Module | Core Functionality | Primary User | Key XAI / AI Component |
-| :--- | :--- | :--- | :--- |
-| **F1: Dynamic Developer Profiling** | Real-time updating of skill vectors, task history, and availability. | System / Admin | Skill Matrix Normalization |
-| **F2: Intelligent Task Matcher** | Ranking developers for backlog tasks based on skill & experience. | Project Manager | XGBoost / Random Forest |
-| **F3: SHAP Feature Attributions** | Visual waterfall charts showing game-theoretic feature impacts. | Project Manager | SHAP TreeExplainer |
-| **F4: LIME Contrastive Explainer**| Textual natural language explanations for allocation decisions. | Project Manager | LIME Tabular Explainer |
-| **F5: Workload Capacity Engine**| Real-time calculation of workload scores and overload alerts. | Scrum Master | Capacity Scoring Algorithm |
-| **F6: Fair Task Redistribution** | Automated recommendations for shifting tasks from overloaded devs. | Project Manager | Constraint Optimization |
-| **F7: Manager Override Controls** | One-click manual assignment overrides with logging. | Project Manager | Human-in-the-Loop Audit |
+Responsible for:
 
----
+* User management
+* Skill management
+* System administration
 
-## 🔍 Feature Specifications
+### Manager
 
-### F1: Dynamic Developer Profiling Engine
-- **Description**: Developer skill profiles are continuously updated rather than remaining static.
-- **Inputs**: Code commit language ratios, resolved Jira issues, pull request review tags, user self-assessments.
-- **Output**: Multi-dimensional skill vector ($0.0 - 1.0$) per developer.
+Responsible for:
 
-### F2: Intelligent Task & Developer Matching Engine
-- **Description**: Evaluates backlog tasks against all active team developers to output ranked suitability recommendations.
-- **Inputs**: Task required skills, complexity rating ($1-5$), estimated effort hours, developer skill vectors, historical velocity.
-- **Output**: Ranked developer recommendations with suitability confidence scores ($0 - 100\%$).
+* Managing developers
+* Creating and managing tasks
+* Generating recommendations
+* Reviewing workload
+* Making final assignments
+* Reviewing reports
 
-### F3: Explainable AI (XAI) - SHAP Waterfall Visualizer
-- **Description**: Displays explicit SHAP feature contributions for every recommendation card on the dashboard.
-- **Visual Representation**: Horizontal bar / waterfall charts where positive factors (green) pull score up, and negative factors (red, e.g., capacity load) pull score down.
+### Developer
 
-### F4: Explainable AI (XAI) - Contrastive LIME Text Explainer
-- **Description**: Answers questions like *"Why was Developer A selected over Developer B?"*.
-- **Sample Output**: *"Developer A was selected because they hold 95% proficiency in React and have 45% available workload, whereas Developer B has equal skills but is currently at 88% capacity."*
+Responsible for:
 
-### F5 & F6: Workload Balancing & Automated Redistribution
-- **Description**: Monitors team workload variance ($Var(W_i)$). When a developer exceeds the capacity threshold ($W_i > 80\%$), the system generates proactive redistribution suggestions to prevent developer overload and burnout.
-- **Redistribution Strategy**: Identifies tasks assigned to overloaded developers that can be reassigned to available developers with minimal skill match decay ($\Delta S < 5\%$).
+* Viewing assigned tasks
+* Updating task status where permitted
+* Maintaining relevant profile information
+* Viewing personal workload
 
-### F7: Manager Decision Support Interface & Override Control
-- **Description**: Interactive Web Dashboard (React + TypeScript) allowing Project Managers to preview recommendations, view XAI charts, adjust sliders, and confirm task allocation with full audit logging.
-- **HITL Governance**: Final assignment requires explicit PM action. No automated background assignment occurs without manager consent.
+## 2. Developer Profile Management
+
+The system stores:
+
+* Name
+* Skills
+* Skill proficiency
+* Experience
+* Previous project/task experience
+* Performance score
+* Availability
+* Current workload
+
+Developer profiles should be updated as relevant activity changes.
+
+## 3. Skill Management
+
+Managers/admins can maintain the skill catalogue.
+
+Each skill has:
+
+* Name
+* Category
+
+Developers can have multiple skills.
+
+Each developer skill has a proficiency level.
+
+## 4. Task Management
+
+Managers can create tasks containing:
+
+* Title
+* Description
+* Required skills
+* Category
+* Priority
+* Complexity
+* Estimated effort
+* Deadline
+* Status
+
+## 5. Developer Recommendation
+
+The system analyses:
+
+### Developer features
+
+* Technical skills
+* Skill proficiency
+* Previous similar tasks
+* Experience
+* Performance history
+* Availability
+* Current workload
+
+### Task features
+
+* Required technologies
+* Complexity
+* Priority
+* Estimated effort
+* Deadline
+
+The system produces a ranked list of suitable developers.
+
+## 6. Recommendation Review
+
+For each recommendation the manager should see:
+
+* Developer name
+* Recommendation score
+* Rank
+* Key matching factors
+* Workload
+* Availability
+* Explanation
+
+The manager can choose whether to accept the recommendation.
+
+## 7. Explainable AI
+
+The system provides explanations for recommendations.
+
+Example:
+
+```text
+Developer A
+
+Strong factors:
+- High Java proficiency
+- Previous similar tasks
+- Good availability
+
+Negative factors:
+- Moderate current workload
+```
+
+SHAP is the primary explanation mechanism.
+
+## 8. Workload Analysis
+
+The system calculates developer workload using factors including:
+
+* Number of active tasks
+* Task complexity
+* Estimated hours
+* Deadline pressure
+* Availability
+
+The proposal defines the conceptual workload calculation as:
+
+Workload Score =
+(Task Number × Complexity Weight)
+
+* Estimated Hours
+* Deadline Pressure
+
+The final implementation should normalize the score to a consistent range for display.
+
+## 9. Workload Balancing
+
+The system identifies:
+
+* Overloaded developers
+* Underutilized developers
+* Suitable alternative developers
+
+It may suggest redistribution based on:
+
+* Skill suitability
+* Current workload
+* Availability
+* Fairness
+
+The system does not automatically redistribute tasks.
+
+## 10. Dashboard
+
+The dashboard should provide:
+
+* Total developers
+* Active tasks
+* Completed tasks
+* Workload distribution
+* Overloaded developers
+* Available developers
+* Recommendation statistics
+
+## 11. Reports and Analytics
+
+The system should provide information useful for evaluation, including:
+
+* Recommendation performance
+* Workload distribution
+* Number of overloaded developers
+* Allocation time
+* Assignment statistics
+
+## 12. Research Evaluation
+
+The system should support evaluation using:
+
+### Recommendation metrics
+
+* Accuracy
+* Precision
+* Recall
+* F1-score
+
+### Workload metrics
+
+* Workload distribution variance
+* Average workload difference
+* Number of overloaded developers
+* Task completion time
+
+### User evaluation
+
+Potential users:
+
+* Software developers
+* Project managers
+* Students with software project experience
+
+Evaluation areas:
+
+* Ease of use
+* Trust
+* Explanation quality
+* Usefulness
+
+## 13. MVP Scope
+
+The first working version must contain:
+
+* Authentication
+* Roles
+* Developer management
+* Skills
+* Task management
+* Basic dashboard
+* Recommendation engine
+* SHAP explanation
+* Workload calculation
+
+Features outside this scope should not delay the first working version.

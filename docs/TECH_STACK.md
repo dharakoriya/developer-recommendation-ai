@@ -1,47 +1,173 @@
-# Technology Stack & Tooling Specifications
+# Technology Stack
 
-This document defines the complete software technology stack, library versions, architectural roles, and selection rationale for **Project Dhara**.
+## 1. Overview
 
----
+The project will use a simple full-stack architecture with a Python-based ML layer.
 
-## 💻 Tech Stack Summary Table
+The goal is to satisfy the research requirements while minimizing unnecessary infrastructure, development time, and operational cost.
 
-| Domain | Technology / Library | Version | Purpose & Rationale |
-| :--- | :--- | :--- | :--- |
-| **Frontend Framework** | React.js | `^18.3.0` | Modern, component-driven UI library for reactive web applications. |
-| **Frontend Language** | TypeScript | `^5.4.0` | Type-safety, auto-completion, and bug prevention for complex UI states. |
-| **Build System** | Vite | `^5.2.0` | Next-generation fast frontend bundling and HMR development server. |
-| **Styling & Design** | Tailwind CSS | `^3.4.0` | Utility-first CSS framework for rapid, responsive UI design. |
-| **Iconography** | Lucide React | `^0.350.0` | Sleek, modern SVG icons for developer and task status indicators. |
-| **Data Visualization** | Recharts / Chart.js | `^2.12.0` | Interactive rendering of SHAP feature attributions, LIME weights, and workload charts. |
-| **Backend Framework** | FastAPI (Python) | `^0.110.0` | Async, high-performance web framework with auto-generated OpenAPI documentation. |
-| **Async Server** | Uvicorn | `^0.28.0` | Lightning-fast ASGI server implementation for Python. |
-| **Database ORM** | SQLAlchemy | `^2.0.28` | Powerful SQL toolkit and object-relational mapping for Python. |
-| **Data Validation** | Pydantic | `^2.6.0` | Strict data validation and settings management using Python type hints. |
-| **Relational Database**| PostgreSQL | `^15.0` | Robust SQL database for storing developers, tasks, workloads, and audit logs. |
-| **Cache & Queues** | Redis | `^7.2` | In-memory key-value cache for frequent SHAP explanation outputs & session state. |
-| **Machine Learning** | Scikit-Learn | `^1.4.0` | Baseline ML models (Random Forest, Decision Trees, Logistic Regression). |
-| **Gradient Boosting** | XGBoost | `^2.0.0` | High-performance gradient boosted decision trees for developer suitability ranking. |
-| **Explainable AI (XAI)**| SHAP | `^0.45.0` | Game-theoretic feature importance calculation (TreeExplainer, KernelExplainer). |
-| **Explainable AI (XAI)**| LIME | `^0.2.0` | Local interpretable model-agnostic explanations for contrastive assignment rules. |
-| **Data Manipulation** | Pandas / NumPy | `^2.2.0` | High-performance data structures and numerical operations for feature pipelines. |
-| **Testing Suite** | PyTest / Vitest | `^8.0.0` | Automated unit and integration testing frameworks for Backend and Frontend. |
+## 2. Frontend
 
----
+Technology:
 
-## 🛠️ Technological Selection Rationale
+* Next.js
+* TypeScript
+* React
 
-### 1. Frontend: React + TypeScript + Tailwind CSS
-- **Why React + Vite?**: Fast page load speeds and hot module replacement allow rapid iteration of management dashboards.
-- **Why Recharts / Chart.js?**: Explainable AI requires displaying positive and negative feature impacts clearly (e.g., green bars for skill match, red bars for workload load). Recharts integrates seamlessly with React components.
+Responsibilities:
 
-### 2. Backend: FastAPI (Python 3.10+)
-- **Why FastAPI?**: Native asynchronous request handling handles ML model inference requests efficiently without blocking standard CRUD API calls. Native integration with Pydantic ensures standard JSON payload contracts.
+* Authentication interface
+* Dashboard
+* Developer management
+* Task management
+* Recommendation interface
+* Workload visualisation
+* Recommendation explanations
+* Reports
 
-### 3. AI & Explainability Engine: Python + Scikit-Learn + XGBoost + SHAP + LIME
-- **Why XGBoost & Random Forest?**: Developer task assignment datasets feature structured tabular data (skills count, historic task duration, workload percentage, experience level). Tree-based ensemble models perform exceptionally well on tabular datasets.
-- **Why SHAP & LIME?**: SHAP provides consistent global feature importance and mathematically grounded Local Additive Feature Attributions. LIME provides accessible human-readable explanations (e.g., *"Developer X was ranked low because work capacity is at 90%"*).
+The frontend must communicate with the backend through REST APIs.
 
-### 4. Database Layer: PostgreSQL + Redis
-- **Why PostgreSQL?**: Complex relational queries are required to track developers, task dependencies, historical assignments, and skill mappings. ACID compliance ensures integrity during task status changes.
-- **Why Redis?**: SHAP calculation can be computationally expensive. Redis caches computed SHAP attribution matrices for unchanged active task items to ensure sub-100ms UI response times.
+## 3. Backend
+
+Technology:
+
+* Python
+* FastAPI
+
+Responsibilities:
+
+* Authentication
+* Authorization
+* User management
+* Developer management
+* Task management
+* Assignment management
+* Recommendation API
+* Workload analysis
+* SHAP explanation generation
+* Database access
+* Application business logic
+
+## 4. Database
+
+Technology:
+
+* PostgreSQL
+
+Reasons:
+
+* Relational data fits the project well.
+* Strong relationships are required between developers, skills, tasks, assignments, and recommendations.
+* Mature and free/open-source.
+* Easy to run locally.
+* Suitable for inexpensive deployment.
+
+## 5. Machine Learning
+
+Primary language:
+
+* Python
+
+Libraries:
+
+* scikit-learn
+* XGBoost
+* pandas
+* NumPy
+
+Candidate models:
+
+1. Random Forest
+2. XGBoost
+3. Decision Tree
+
+The models will be evaluated and the strongest suitable model will be selected for the final recommendation system.
+
+Neural Networks are not part of the initial implementation because they add complexity without being necessary for the first working system.
+
+## 6. Explainable AI
+
+Primary library:
+
+* SHAP
+
+SHAP will explain the contribution of input features to individual recommendations.
+
+LIME may be investigated if required for research comparison, but it is not required for the initial implementation.
+
+## 7. Visualisation
+
+Preferred:
+
+* Chart.js or a lightweight equivalent for frontend charts.
+
+Possible charts:
+
+* Developer workload
+* Workload distribution
+* Task status
+* Recommendation scores
+* Skill distribution
+* Assignment statistics
+
+## 8. Authentication
+
+Use application-managed authentication.
+
+Recommended approach:
+
+* Email/password login
+* Secure password hashing
+* JWT-based authentication
+* Role-based authorization
+
+Roles:
+
+* Admin
+* Manager
+* Developer
+
+## 9. Development Tools
+
+Recommended:
+
+* Git
+* GitHub
+* VS Code or equivalent IDE
+* Python virtual environment
+* Node.js/npm
+* PostgreSQL local installation
+
+## 10. Infrastructure
+
+Development:
+
+Run frontend, backend, PostgreSQL, and ML locally.
+
+Production:
+
+Use the least expensive suitable hosting option.
+
+No paid infrastructure is required during initial development.
+
+## 11. Cost Strategy
+
+The project should use open-source technologies wherever practical.
+
+Target development software cost:
+
+₹0
+
+No paid AI API is required.
+
+No GPU is required for the initial ML models.
+
+No separate ML hosting is required initially.
+
+## 12. Technology Constraints
+
+Do not introduce a new technology merely because it is popular.
+
+Every additional dependency should have a clear purpose.
+
+The architecture should remain understandable to a developer who has not worked on the project previously.
