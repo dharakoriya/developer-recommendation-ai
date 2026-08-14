@@ -91,6 +91,25 @@ Target software/development cost:
 
 ---
 
+## 2026-08-11 — Milestone 1 — Project Initialization
+
+### Added
+
+* Initialized Next.js (App Router, React 18, TypeScript) frontend under `/frontend`.
+* Initialized FastAPI (Python 3.12, Uvicorn, Pydantic v2) backend under `/backend`.
+* Implemented `GET /api/health` REST endpoint returning backend operational status and database connection state.
+* Configured SQLAlchemy PostgreSQL database connection logic with environment variable loading via `pydantic-settings`.
+* Created environment template files (`.env.example` & `.env.local`) for frontend and backend.
+* Implemented dark theme system verification page in Next.js to verify frontend-backend REST communication.
+* Created root `.gitignore` to prevent committing secrets, virtual environments, build artifacts, and node_modules.
+
+### Technical Decisions
+
+* Frontend-Backend Communication: Configured CORS middleware on FastAPI allowing requests from Next.js (`http://localhost:3000`).
+* Environment Management: Separated secret handling into `.env` files with strict `.env.example` templates; no hardcoded credentials in source code.
+
+---
+
 ## Future Entries
 
 New changes must be added above this section.
