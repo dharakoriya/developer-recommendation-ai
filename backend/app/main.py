@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.api.health import router as health_router
 from app.api.auth import router as auth_router
+from app.api.skills import router as skills_router
+from app.api.developers import router as developers_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -24,6 +26,9 @@ app.add_middleware(
 # Register API endpoints under /api prefix
 app.include_router(health_router, prefix=settings.API_PREFIX, tags=["Health"])
 app.include_router(auth_router, prefix=f"{settings.API_PREFIX}/auth", tags=["Authentication & Authorization"])
+app.include_router(skills_router, prefix=f"{settings.API_PREFIX}/skills", tags=["Skills Catalog"])
+app.include_router(developers_router, prefix=f"{settings.API_PREFIX}/developers", tags=["Developer Profiles"])
+
 
 
 

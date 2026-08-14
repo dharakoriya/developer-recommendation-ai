@@ -121,59 +121,154 @@ Updates user information.
 
 ### GET `/api/developers`
 
-Returns developers.
+Returns all developer profiles with user info and assigned skills.
 
-### GET `/api/developers/{id}`
+Header: `Authorization: Bearer <token>`
 
-Returns a developer profile.
+Response (200 OK):
+
+```json
+[
+  {
+    "id": "223e4567-e89b-12d3-a456-426614174000",
+    "user_id": "123e4567-e89b-12d3-a456-426614174000",
+    "user_name": "Dev User",
+    "user_email": "dev@devalign.ai",
+    "experience_years": 4.5,
+    "availability_status": "AVAILABLE",
+    "performance_score": 92.0,
+    "created_at": "2026-08-14T18:00:00.000Z",
+    "updated_at": "2026-08-14T18:00:00.000Z",
+    "skills": [
+      {
+        "id": "323e4567-e89b-12d3-a456-426614174000",
+        "developer_id": "223e4567-e89b-12d3-a456-426614174000",
+        "skill_id": "423e4567-e89b-12d3-a456-426614174000",
+        "skill_name": "Python",
+        "skill_category": "Backend",
+        "proficiency_level": 85.0,
+        "created_at": "2026-08-14T18:00:00.000Z",
+        "updated_at": "2026-08-14T18:00:00.000Z"
+      }
+    ]
+  }
+]
+```
 
 ### POST `/api/developers`
 
-Creates a developer profile.
+Creates a developer profile for an existing User. Requires `ADMIN` or `MANAGER` role.
+
+Request Body:
+
+```json
+{
+  "user_id": "123e4567-e89b-12d3-a456-426614174000",
+  "experience_years": 4.5,
+  "availability_status": "AVAILABLE",
+  "performance_score": 92.0
+}
+```
+
+Response (201 Created): Returns `DeveloperResponse`.
+
+### GET `/api/developers/{id}`
+
+Returns a specific developer profile by ID.
 
 ### PUT `/api/developers/{id}`
 
-Updates a developer profile.
+Updates a developer profile. Requires `ADMIN`, `MANAGER`, or `DEVELOPER` updating their own profile.
+
+Request Body:
+
+```json
+{
+  "experience_years": 5.0,
+  "availability_status": "PARTIAL",
+  "performance_score": 95.0
+}
+```
 
 ### DELETE `/api/developers/{id}`
 
-Deletes/deactivates a developer profile where appropriate.
+Deletes a developer profile. Requires `ADMIN` or `MANAGER` role. Returns 204 No Content.
 
-## 5. Skills
+## 5. Skills Catalog
 
 ### GET `/api/skills`
 
-Returns available skills.
+Returns master catalog of technical skills.
+
+Response (200 OK):
+
+```json
+[
+  {
+    "id": "423e4567-e89b-12d3-a456-426614174000",
+    "name": "Python",
+    "category": "Backend",
+    "created_at": "2026-08-14T18:00:00.000Z"
+  }
+]
+```
 
 ### POST `/api/skills`
 
-Creates a skill.
+Creates a skill in the master catalog. Requires `ADMIN` or `MANAGER` role.
+
+Request Body:
+
+```json
+{
+  "name": "FastAPI",
+  "category": "Backend"
+}
+```
 
 ### PUT `/api/skills/{id}`
 
-Updates a skill.
+Updates skill details. Requires `ADMIN` or `MANAGER` role.
 
 ### DELETE `/api/skills/{id}`
 
-Deletes/deactivates a skill where appropriate.
+Deletes a skill from the catalog. Requires `ADMIN` or `MANAGER` role. Returns 204 No Content.
 
 ## 6. Developer Skills
 
 ### GET `/api/developers/{id}/skills`
 
-Returns the developer's skills.
+Returns all technical skills assigned to a developer profile.
 
 ### POST `/api/developers/{id}/skills`
 
-Adds a skill to a developer.
+Assigns a skill to a developer with proficiency level (0..100). Requires `ADMIN`, `MANAGER`, or self.
+
+Request Body:
+
+```json
+{
+  "skill_id": "423e4567-e89b-12d3-a456-426614174000",
+  "proficiency_level": 85.0
+}
+```
 
 ### PUT `/api/developers/{id}/skills/{skill_id}`
 
-Updates proficiency.
+Updates proficiency level (0..100) of an assigned developer skill.
+
+Request Body:
+
+```json
+{
+  "proficiency_level": 95.0
+}
+```
 
 ### DELETE `/api/developers/{id}/skills/{skill_id}`
 
-Removes a skill.
+Removes a skill association from a developer profile. Returns 204 No Content.
+
 
 ## 7. Tasks
 

@@ -64,8 +64,14 @@ export default function Home() {
                   <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                     Signed in: <strong>{user.name}</strong> ({user.role})
                   </span>
-                  <Link href="/protected" className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}>
-                    Protected Area
+                  <Link href="/developers" className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}>
+                    Developers
+                  </Link>
+                  <Link href="/skills" className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem', background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)' }}>
+                    Skills Catalog
+                  </Link>
+                  <Link href="/protected" className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem', background: 'transparent', border: '1px solid var(--border-color)' }}>
+                    Auth Area
                   </Link>
                   <button onClick={logout} className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem', background: 'rgba(244,63,94,0.15)', color: 'var(--accent-rose)', border: '1px solid rgba(244,63,94,0.3)' }}>
                     Sign Out
@@ -77,6 +83,7 @@ export default function Home() {
                 </Link>
               )}
             </nav>
+
           </div>
 
           <h1 className="title">DevAlign AI</h1>
