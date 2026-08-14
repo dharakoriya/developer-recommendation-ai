@@ -127,6 +127,25 @@ Target software/development cost:
 
 ---
 
+## 2026-08-14 — Milestone 3 — Authentication & Role-Based Authorization
+
+### Added
+
+* Implemented secure bcrypt password hashing and verification in `/backend/app/core/security.py`.
+* Implemented HS256 JWT access token generation and decoding in `/backend/app/core/security.py`.
+* Implemented authentication endpoints (`POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`).
+* Created reusable role-based authorization dependency `require_roles(*allowed_roles)` in `/backend/app/api/deps.py` supporting `ADMIN`, `MANAGER`, and `DEVELOPER` roles with HTTP 403 Forbidden enforcement.
+* Implemented automated pytest test suite in `/backend/tests/test_auth.py` covering registration, login, invalid credentials, JWT validation, 401 unauthenticated responses, 403 forbidden responses, and security assertions (no plaintext or password hashes returned).
+* Implemented Next.js frontend authentication foundation: `AuthContext` provider (`/frontend/app/context/AuthContext.tsx`), Login page (`/frontend/app/login/page.tsx`), and protected page (`/frontend/app/protected/page.tsx`).
+* Documented exact authentication API payload schemas in `docs/API.md`.
+
+### Technical Decisions
+
+* Password Security: Enforced bcrypt password hashing via standard `bcrypt` library; password hashes and raw passwords are excluded from all API responses.
+* JWT Expiration & Environment Config: `JWT_SECRET`, `JWT_ALGORITHM`, and `ACCESS_TOKEN_EXPIRE_MINUTES` loaded strictly from environment variables without hardcoded fallback secrets.
+
+---
+
 ## Future Entries
 
 New changes must be added above this section.

@@ -20,15 +20,88 @@ Role permissions must be enforced by the backend.
 
 ### POST `/api/auth/register`
 
-Creates a user.
+Creates a new user account.
+
+Request Body:
+
+```json
+{
+  "name": "Jane Manager",
+  "email": "jane@devalign.ai",
+  "password": "Password123!",
+  "role": "MANAGER"
+}
+```
+
+Response (201 Created):
+
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "Jane Manager",
+  "email": "jane@devalign.ai",
+  "role": "MANAGER",
+  "is_active": true,
+  "created_at": "2026-08-14T15:00:00.000Z",
+  "updated_at": "2026-08-14T15:00:00.000Z"
+}
+```
 
 ### POST `/api/auth/login`
 
-Authenticates a user and returns an access token.
+Authenticates a user and returns a Bearer JWT access token.
+
+Request Body:
+
+```json
+{
+  "email": "jane@devalign.ai",
+  "password": "Password123!"
+}
+```
+
+Response (200 OK):
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1Ni...",
+  "token_type": "bearer",
+  "user": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "name": "Jane Manager",
+    "email": "jane@devalign.ai",
+    "role": "MANAGER",
+    "is_active": true,
+    "created_at": "2026-08-14T15:00:00.000Z",
+    "updated_at": "2026-08-14T15:00:00.000Z"
+  }
+}
+```
 
 ### GET `/api/auth/me`
 
-Returns the authenticated user's information.
+Returns the authenticated user's profile information.
+
+Header:
+
+```text
+Authorization: Bearer <access_token>
+```
+
+Response (200 OK):
+
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "Jane Manager",
+  "email": "jane@devalign.ai",
+  "role": "MANAGER",
+  "is_active": true,
+  "created_at": "2026-08-14T15:00:00.000Z",
+  "updated_at": "2026-08-14T15:00:00.000Z"
+}
+```
+
 
 ## 3. Users
 

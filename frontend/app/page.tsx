@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useAuth } from './context/AuthContext';
 
 interface HealthResponse {
   status: string;
@@ -20,6 +22,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [latency, setLatency] = useState<number | null>(null);
 
+  const { user, logout } = useAuth();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
   const checkHealth = async () => {
@@ -53,7 +56,29 @@ export default function Home() {
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <main className="container">
         <header className="header">
-          <span className="badge">Milestone 1 — System Foundation</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <span className="badge" style={{ margin: 0 }}>System Foundation</span>
+            <nav style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              {user ? (
+                <>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    Signed in: <strong>{user.name}</strong> ({user.role})
+                  </span>
+                  <Link href="/protected" className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}>
+                    Protected Area
+                  </Link>
+                  <button onClick={logout} className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem', background: 'rgba(244,63,94,0.15)', color: 'var(--accent-rose)', border: '1px solid rgba(244,63,94,0.3)' }}>
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <Link href="/login" className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}>
+                  Sign In / Register
+                </Link>
+              )}
+            </nav>
+          </div>
+
           <h1 className="title">DevAlign AI</h1>
           <p className="subtitle">
             Explainable AI-Based Developer Recommendation and Workload Balancing System
@@ -62,7 +87,7 @@ export default function Home() {
 
         <section className="card">
           <div className="card-title">
-            <span>🔌 System Integration Verification</span>
+            <span>🔌 System Integration & Health Status</span>
           </div>
 
           <div className="status-grid">

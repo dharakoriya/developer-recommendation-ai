@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     PORT: int = 8000
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/devalign_db"
     CORS_ORIGINS: Union[List[str], str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    JWT_SECRET: str = "devalign-secret-key-change-in-production-2026"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
+
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
