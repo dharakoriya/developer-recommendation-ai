@@ -99,36 +99,33 @@ dhara/
 
 ## ⚡ Quick Start Guide
 
-### Prerequisites
-- Node.js `v18+` & `npm v9+`
-- Python `v3.10+` & `pip`
-- PostgreSQL `v15+`
+For complete, step-by-step setup instructions on a fresh machine, refer to:
+👉 **[Complete Local Development Setup Guide](docs/LOCAL_DEVELOPMENT.md)**
 
-### 1. AI Engine & Backend Setup
-```bash
-# Navigate to backend/
+### Summary Quick Start (Windows)
+
+```powershell
+# 1. Clone repository
+git clone https://github.com/your-username/devalign-ai.git
+cd devalign-ai
+
+# 2. Setup Backend Virtual Environment & Configuration
 cd backend
-
-# Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
+.\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+cp .env.example .env
 
-# Run FastAPI development server
-uvicorn main:app --reload --port 8000
-```
+# 3. Migrate PostgreSQL Database (Ensure local PostgreSQL server is running on port 5432 & devalign_db exists)
+.\venv\Scripts\alembic upgrade head
 
-### 2. Frontend Setup
-```bash
-# Navigate to frontend/
-cd frontend
+# 4. Start FastAPI Backend (Terminal 1)
+python -m uvicorn app.main:app --reload --port 8000
 
-# Install packages
+# 5. Setup & Start Next.js Frontend (Terminal 2)
+cd ../frontend
 npm install
-
-# Start Vite development server
+cp .env.example .env.local
 npm run dev
 ```
 
@@ -136,12 +133,15 @@ npm run dev
 
 ## 📜 Research & Documentation
 
-For detailed technical specifications, refer to the documentation in `/docs`:
+For detailed technical specifications and setup guides, refer to `/docs`:
+- 🚀 [Local Development Guide](docs/LOCAL_DEVELOPMENT.md)
 - 🛠️ [Architecture & Module Design](docs/ARCHITECTURE.md)
 - 📊 [Database Schema Specifications](docs/DATABASE.md)
 - 🔌 [REST API Definitions](docs/API.md)
 - 📌 [System Features Breakdown](docs/FEATURES.md)
 - 🗺️ [11-Week Project Roadmap](docs/ROADMAP.md)
+- 📝 [Project Changelog](docs/CHANGELOG.md)
+
 
 ---
 
