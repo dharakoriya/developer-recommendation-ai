@@ -6,6 +6,7 @@ from sqlalchemy import select
 
 from app.database import get_db
 from app.models.skill import Skill
+from app.models.user import User
 from app.models.enums import UserRole
 from app.schemas.skill import SkillCreate, SkillUpdate, SkillResponse
 from app.api.deps import get_current_user, require_roles
@@ -16,7 +17,7 @@ router = APIRouter()
 @router.get("", response_model=List[SkillResponse], summary="List master skills catalog")
 def list_skills(
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Returns all technical skills in the master catalog.
@@ -30,7 +31,7 @@ def list_skills(
 def create_skill(
     skill_in: SkillCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
 ):
     """
     Creates a new skill in the master catalog.
@@ -60,7 +61,7 @@ def create_skill(
 def get_skill(
     skill_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Retrieves a single skill by ID.
@@ -80,7 +81,7 @@ def update_skill(
     skill_id: uuid.UUID,
     skill_in: SkillUpdate,
     db: Session = Depends(get_db),
-    current_user=Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
 ):
     """
     Updates skill details.
@@ -116,7 +117,7 @@ def update_skill(
 def delete_skill(
     skill_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user=Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
 ):
     """
     Deletes a skill from the master catalog.

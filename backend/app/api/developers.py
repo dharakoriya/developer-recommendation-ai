@@ -50,7 +50,7 @@ def _format_developer_response(dev: DeveloperProfile) -> DeveloperResponse:
 @router.get("", response_model=List[DeveloperResponse], summary="List developer profiles")
 def list_developers(
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Returns all developer profiles with user info and skills.
@@ -77,7 +77,7 @@ def list_developers(
 def create_developer(
     dev_in: DeveloperCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
 ):
     """
     Creates a developer profile for an existing User.
@@ -119,7 +119,6 @@ def create_developer(
         .where(DeveloperProfile.id == new_dev.id)
     ).unique().scalar_one()
 
-
     return _format_developer_response(created_dev)
 
 
@@ -127,7 +126,7 @@ def create_developer(
 def get_developer(
     developer_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Retrieves developer profile by ID.
@@ -156,7 +155,7 @@ def update_developer(
     developer_id: uuid.UUID,
     dev_in: DeveloperUpdate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Updates developer profile details.
@@ -201,7 +200,7 @@ def update_developer(
 def delete_developer(
     developer_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user=Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
 ):
     """
     Deletes a developer profile.
@@ -228,7 +227,7 @@ def delete_developer(
 def get_developer_skills(
     developer_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Retrieves all skills assigned to a specific developer.
@@ -269,7 +268,7 @@ def assign_developer_skill(
     developer_id: uuid.UUID,
     skill_assign: DeveloperSkillAssign,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Assigns a skill to a developer with proficiency level (0..100).
@@ -343,7 +342,7 @@ def update_developer_skill(
     skill_id: uuid.UUID,
     skill_update: DeveloperSkillUpdate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Updates proficiency level (0..100) of an assigned developer skill.
@@ -400,7 +399,7 @@ def remove_developer_skill(
     developer_id: uuid.UUID,
     skill_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Removes a skill association from a developer profile.
