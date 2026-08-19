@@ -11,6 +11,24 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-08-19 — Milestone 5 — Projects & Teams Management
+
+### Added
+
+* Created Pydantic schemas in `/backend/app/schemas/project.py` (`ProjectCreate`, `ProjectUpdate`, `ProjectResponse`, `TeamCreate`, `TeamUpdate`, `TeamResponse`, `TeamMemberAdd`, `TeamMemberResponse`).
+* Implemented Projects REST API router in `/backend/app/api/projects.py` (`GET /api/projects`, `POST /api/projects`, `GET /api/projects/{id}`, `PUT /api/projects/{id}`, `DELETE /api/projects/{id}`).
+* Implemented Teams & Team Members REST API router in `/backend/app/api/teams.py` (`GET /api/projects/{project_id}/teams`, `POST /api/projects/{project_id}/teams`, `GET /api/teams/{id}`, `PUT /api/teams/{id}`, `DELETE /api/teams/{id}`, `GET /api/teams/{id}/members`, `POST /api/teams/{id}/members`, `DELETE /api/teams/{id}/members/{developer_id}`).
+* Registered `projects_router` and `teams_router` in `/backend/app/main.py`.
+* Implemented automated pytest suite in `/backend/tests/test_projects_teams_api.py` covering project/team CRUD, role authorization (`ADMIN`, `MANAGER`, `DEVELOPER`), duplicate member prevention, soft removal via `left_at`, and invalid UUID handling (31 total backend tests passing 100%).
+* Implemented Next.js Frontend UI pages: Projects Management directory (`/frontend/app/projects/page.tsx`) and Project Detail & Teams Management page (`/frontend/app/projects/[id]/page.tsx`).
+* Documented exact REST API payloads for Projects, Teams, and Team Members in `docs/API.md`.
+
+### Technical Decisions
+
+* Schema & Database Integrity: Reused existing PostgreSQL tables (`projects`, `teams`, `team_members`) and ORM models (`Project`, `Team`, `TeamMember`) created during Milestone 2; no extra migrations needed.
+* Role-Based Access Control: `ADMIN` & `MANAGER` roles have full rights to manage projects, teams, and team membership; `DEVELOPER` accounts are restricted to viewing projects and teams (HTTP 403 Forbidden on write operations).
+* Historical Team Membership: Developer team removals update `left_at = func.now()` to retain historical team membership data in accordance with `docs/DATABASE.md`.
+
 ---
 
 ## 2026-08-10 — Project Foundation

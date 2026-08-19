@@ -5,6 +5,8 @@ from app.api.health import router as health_router
 from app.api.auth import router as auth_router
 from app.api.skills import router as skills_router
 from app.api.developers import router as developers_router
+from app.api.projects import router as projects_router
+from app.api.teams import router as teams_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -28,6 +30,8 @@ app.include_router(health_router, prefix=settings.API_PREFIX, tags=["Health"])
 app.include_router(auth_router, prefix=f"{settings.API_PREFIX}/auth", tags=["Authentication & Authorization"])
 app.include_router(skills_router, prefix=f"{settings.API_PREFIX}/skills", tags=["Skills Catalog"])
 app.include_router(developers_router, prefix=f"{settings.API_PREFIX}/developers", tags=["Developer Profiles"])
+app.include_router(projects_router, prefix=f"{settings.API_PREFIX}/projects", tags=["Projects Management"])
+app.include_router(teams_router, prefix=settings.API_PREFIX, tags=["Teams Management"])
 
 
 

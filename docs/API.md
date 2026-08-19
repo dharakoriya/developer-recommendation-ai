@@ -270,7 +270,132 @@ Request Body:
 Removes a skill association from a developer profile. Returns 204 No Content.
 
 
-## 7. Tasks
+## 7. Projects Management
+
+### GET `/api/projects`
+
+Returns all projects with creator info and team counts. Supports optional `?status=ACTIVE|COMPLETED|ARCHIVED` filter.
+
+Header: `Authorization: Bearer <token>`
+
+Response (200 OK):
+
+```json
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Mobile App Redesign",
+    "description": "Cross-platform mobile application overhaul",
+    "status": "ACTIVE",
+    "created_by": "123e4567-e89b-12d3-a456-426614174000",
+    "creator_name": "Jane Manager",
+    "creator_email": "jane@devalign.ai",
+    "created_at": "2026-08-19T10:00:00.000Z",
+    "updated_at": "2026-08-19T10:00:00.000Z",
+    "teams_count": 2,
+    "teams": []
+  }
+]
+```
+
+### POST `/api/projects`
+
+Creates a new project. Requires `ADMIN` or `MANAGER` role.
+
+Request Body:
+
+```json
+{
+  "name": "Mobile App Redesign",
+  "description": "Cross-platform mobile application overhaul",
+  "status": "ACTIVE"
+}
+```
+
+Response (201 Created): Returns `ProjectResponse`.
+
+### GET `/api/projects/{id}`
+
+Retrieves project details by ID including associated teams and team members.
+
+### PUT `/api/projects/{id}`
+
+Updates project details or status (`ACTIVE`, `COMPLETED`, `ARCHIVED`). Requires `ADMIN` or `MANAGER` role.
+
+Request Body:
+
+```json
+{
+  "name": "Updated Project Name",
+  "status": "COMPLETED"
+}
+```
+
+### DELETE `/api/projects/{id}`
+
+Deletes a project and its associated teams. Requires `ADMIN` or `MANAGER` role. Returns 204 No Content.
+
+
+## 8. Teams Management
+
+### GET `/api/projects/{project_id}/teams`
+
+Lists all teams belonging to a specific project.
+
+### POST `/api/projects/{project_id}/teams`
+
+Creates a new team under a project. Requires `ADMIN` or `MANAGER` role.
+
+Request Body:
+
+```json
+{
+  "name": "Frontend Mobile Team",
+  "description": "Responsible for React Native UI components"
+}
+```
+
+Response (201 Created): Returns `TeamResponse`.
+
+### GET `/api/teams/{id}`
+
+Retrieves team details by ID with active members.
+
+### PUT `/api/teams/{id}`
+
+Updates team information. Requires `ADMIN` or `MANAGER` role.
+
+### DELETE `/api/teams/{id}`
+
+Deletes a team. Requires `ADMIN` or `MANAGER` role. Returns 204 No Content.
+
+
+## 9. Team Members
+
+### GET `/api/teams/{id}/members`
+
+Returns active members of a team.
+
+### POST `/api/teams/{id}/members`
+
+Adds a developer profile to a team. Requires `ADMIN` or `MANAGER` role. Prevents duplicate active membership.
+
+Request Body:
+
+```json
+{
+  "developer_id": "223e4567-e89b-12d3-a456-426614174000"
+}
+```
+
+Response (201 Created): Returns `TeamMemberResponse`.
+
+### DELETE `/api/teams/{id}/members/{developer_id}`
+
+Removes a developer from a team by recording `left_at` timestamp. Requires `ADMIN` or `MANAGER` role. Returns 204 No Content.
+
+
+## 10. Tasks
 
 ### GET `/api/tasks`
 

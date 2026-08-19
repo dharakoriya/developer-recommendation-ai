@@ -64,6 +64,9 @@ export default function Home() {
                   <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                     Signed in: <strong>{user.name}</strong> ({user.role})
                   </span>
+                  <Link href="/projects" className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem', background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)' }}>
+                    Projects & Teams
+                  </Link>
                   <Link href="/developers" className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}>
                     Developers
                   </Link>
