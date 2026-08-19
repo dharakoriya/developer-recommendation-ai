@@ -648,6 +648,47 @@ Response (201 Created): Returns `WorkloadRecordResponse`.
 
 Returns historical workload snapshot records for a developer profile. Accessible to `ADMIN`, `MANAGER`, or self.
 
+
+## 15. Feature Engineering & Dataset Preparation
+
+### GET `/api/features/metadata`
+
+Returns the central feature definition catalog detailing feature names, data types, categories, sources, and descriptions.
+
+Header: `Authorization: Bearer <token>`
+
+Response (200 OK):
+
+```json
+[
+  {
+    "feature_name": "skill_coverage_ratio",
+    "data_type": "float",
+    "category": "Skill Matching",
+    "source": "Derived Ratio",
+    "description": "Proportion of required skills matched"
+  }
+]
+```
+
+### GET `/api/features/tasks/{task_id}/candidates`
+
+Generates deterministic candidate feature vectors for all developer profiles for a specific task.
+
+Response (200 OK): Returns `TaskCandidatesResponse`.
+
+### GET `/api/features/pair/{developer_id}/{task_id}`
+
+Extracts structured feature vector for a specific (Developer, Task) candidate pair.
+
+### GET `/api/features/dataset/export`
+
+Exports generated candidate feature vectors as a structured CSV dataset. Requires `ADMIN` or `MANAGER` role.
+
+### GET `/api/features/dataset/download.csv`
+
+Downloads dataset as a raw CSV file. Requires `ADMIN` or `MANAGER` role.
+
 ## 12. Dashboard
 
 ### GET `/api/dashboard/summary`

@@ -10,6 +10,7 @@ from app.api.teams import router as teams_router
 from app.api.tasks import router as tasks_router
 from app.api.assignments import router as assignments_router
 from app.api.workload import router as workload_router
+from app.api.features import router as features_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -38,6 +39,7 @@ app.include_router(teams_router, prefix=settings.API_PREFIX, tags=["Teams Manage
 app.include_router(tasks_router, prefix=settings.API_PREFIX, tags=["Tasks Management"])
 app.include_router(assignments_router, prefix=settings.API_PREFIX, tags=["Task Assignments"])
 app.include_router(workload_router, prefix=f"{settings.API_PREFIX}/workload", tags=["Workload Engine"])
+app.include_router(features_router, prefix=f"{settings.API_PREFIX}/features", tags=["Feature Engineering & Dataset"])
 
 
 

@@ -70,6 +70,9 @@ export default function Home() {
                   <Link href="/workload" className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem', background: 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)' }}>
                     Workload Engine
                   </Link>
+                  <Link href="/features" className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem', background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)' }}>
+                    Feature Engine
+                  </Link>
                   <Link href="/developers" className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}>
                     Developers
                   </Link>

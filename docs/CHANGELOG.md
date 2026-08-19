@@ -11,6 +11,26 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-08-19 — Milestone 8 — Feature Engineering & Recommendation Dataset Preparation
+
+### Added
+
+* Created Pydantic schemas in `/backend/app/schemas/feature.py` (`FeatureMetadataItem`, `CandidateFeatureVector`, `TaskCandidatesResponse`, `DatasetExportResponse`).
+* Created Feature Engineering Service in `/backend/app/services/feature_engineering_service.py` extracting 21+ engineered numerical and categorical features for `(Developer, Task)` candidate pair vectors, skill matching metrics (coverage ratio, proficiency gap, min gap, weighted match score), Workload Engine integration, and CSV dataset export.
+* Implemented Feature Engineering REST API router in `/backend/app/api/features.py` (`GET /api/features/metadata`, `GET /api/features/tasks/{task_id}/candidates`, `GET /api/features/pair/{developer_id}/{task_id}`, `GET /api/features/dataset/export`, `GET /api/features/dataset/download.csv`).
+* Registered `features_router` in `/backend/app/main.py`.
+* Implemented automated pytest suite in `/backend/tests/test_feature_engineering.py` covering feature metadata dictionary retrieval, candidate pair vector extraction, skill match calculation, workload integration, candidate generation across developers, determinism, CSV export formatting, and role authorization (49 total backend tests passing 100%).
+* Implemented Next.js Frontend Feature Engine Page `/frontend/app/features/page.tsx` featuring feature metadata catalog table, task candidate generator, candidate feature vectors data table, CSV download button, and research disclaimer notices.
+* Documented exact REST API payloads for Feature Engineering & Dataset Preparation in `docs/API.md`.
+
+### Technical Decisions
+
+* No Machine Learning Models: Excluded ML models (Random Forest/XGBoost), prediction scoring, and SHAP until Milestone 9+. Focus is strictly on deterministic feature preparation.
+* Label Handling Integrity: `label_target` is explicitly set to `null` (None) for unlabelled candidates. Historical assignments are recorded as `is_historically_assigned` (0/1) without assuming assignment history is ground-truth suitability.
+* Workload Integration: Workload features consume Milestone 7's `WorkloadService` results directly, preventing calculation conflicts between feature vectors and dashboard views.
+
+---
+
 ## 2026-08-19 — Milestone 7 — Workload Calculation & Balancing
 
 ### Added
