@@ -689,6 +689,56 @@ Exports generated candidate feature vectors as a structured CSV dataset. Require
 
 Downloads dataset as a raw CSV file. Requires `ADMIN` or `MANAGER` role.
 
+
+## 16. Developer Recommendations & Explanations
+
+### GET `/api/recommendations/metadata/model`
+
+Returns current active recommendation model metadata.
+
+Header: `Authorization: Bearer <token>`
+
+Response (200 OK):
+
+```json
+{
+  "model_type": "deterministic_baseline",
+  "model_version": "baseline-v1",
+  "training_required": false,
+  "training_dataset": null,
+  "validation_accuracy": null,
+  "description": "Transparent deterministic weighted scoring model combining skill match, coverage, workload, performance, experience, and availability."
+}
+```
+
+### GET `/api/recommendations/tasks/{task_id}`
+
+Generates and retrieves ranked developer recommendations for a task with reproducible feature contribution explanations. Supports `?regenerate=true` parameter.
+
+Response (200 OK): Returns `RecommendationListResponse`.
+
+### GET `/api/recommendations/{id}`
+
+Retrieves details for a single recommendation record.
+
+### GET `/api/recommendations/{id}/explanations`
+
+Retrieves feature contribution breakdown explanations for a specific recommendation.
+
+Response (200 OK):
+
+```json
+[
+  {
+    "id": "880e8400-e29b-41d4-a716-446655440000",
+    "feature_name": "weighted_skill_match_score",
+    "feature_value": "85.0%",
+    "contribution_score": 29.75,
+    "direction": "POSITIVE"
+  }
+]
+```
+
 ## 12. Dashboard
 
 ### GET `/api/dashboard/summary`

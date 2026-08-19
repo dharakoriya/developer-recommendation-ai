@@ -73,6 +73,9 @@ export default function Home() {
                   <Link href="/features" className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem', background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)' }}>
                     Feature Engine
                   </Link>
+                  <Link href="/recommendations" className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem', background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)' }}>
+                    Recommendations
+                  </Link>
                   <Link href="/developers" className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}>
                     Developers
                   </Link>

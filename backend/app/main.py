@@ -11,6 +11,7 @@ from app.api.tasks import router as tasks_router
 from app.api.assignments import router as assignments_router
 from app.api.workload import router as workload_router
 from app.api.features import router as features_router
+from app.api.recommendations import router as recommendations_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -40,6 +41,7 @@ app.include_router(tasks_router, prefix=settings.API_PREFIX, tags=["Tasks Manage
 app.include_router(assignments_router, prefix=settings.API_PREFIX, tags=["Task Assignments"])
 app.include_router(workload_router, prefix=f"{settings.API_PREFIX}/workload", tags=["Workload Engine"])
 app.include_router(features_router, prefix=f"{settings.API_PREFIX}/features", tags=["Feature Engineering & Dataset"])
+app.include_router(recommendations_router, prefix=f"{settings.API_PREFIX}/recommendations", tags=["Recommendation Engine"])
 
 
 

@@ -11,6 +11,26 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-08-19 — Milestone 9 — Recommendation Ranking Engine & Model-Ready Architecture
+
+### Added
+
+* Created Pydantic schemas in `/backend/app/schemas/recommendation.py` (`ModelMetadataResponse`, `RecommendationExplanationResponse`, `RecommendationResponse`, `RecommendationListResponse`).
+* Created Recommendation Service in `/backend/app/services/recommendation_service.py` establishing pluggable `RecommendationModel` abstract base class, `BaselineRecommendationModel` (active pre-ML benchmark), `MLRecommendationModelAdapter` stub, candidate ranking algorithm, feature contribution explanation derivation, and PostgreSQL persistence.
+* Implemented Recommendation REST API router in `/backend/app/api/recommendations.py` (`GET /api/recommendations/metadata/model`, `GET /api/recommendations/tasks/{task_id}`, `GET /api/recommendations/{id}`, `GET /api/recommendations/{id}/explanations`).
+* Registered `recommendations_router` in `/backend/app/main.py`.
+* Implemented automated pytest suite in `/backend/tests/test_recommendation_service.py` covering model metadata, candidate ranking ordering (score descending), skill match influence, workload capacity influence, feature contribution sum reproducibility (`sum(contributions) == score`), determinism, persistence in `recommendations` & `recommendation_explanations` tables, and role authorization (53 total backend tests passing 100%).
+* Implemented Next.js Frontend Developer Recommendations Page `/frontend/app/recommendations/page.tsx` displaying task candidates ranking cards (#1, #2, #3...), recommendation score badges, model version metadata, and feature contribution breakdown modal.
+* Documented exact REST API payloads for Developer Recommendations & Explanations in `docs/API.md`.
+
+### Technical Decisions
+
+* Research Rules Integrity: Maintained `label_target = NULL` as ground-truth labels remain unavailable. Did not fabricate labels, claim supervised accuracy, or invoke external LLM/AI APIs.
+* Pluggable Model Architecture: Decoupled recommendation generation behind a clean `RecommendationModel` interface so future supervised models (Milestone 10) can swap in seamlessly without altering API contracts or frontend interfaces.
+* 100% Reproducible Explanations: Every candidate recommendation score is mathematically equal to the exact sum of its feature contributions ($C_{\text{skill}} + C_{\text{coverage}} + C_{\text{workload}} + C_{\text{perf}} + C_{\text{exp}} + C_{\text{avail}} = \text{Total Score}$), saved directly in `recommendation_explanations`.
+
+---
+
 ## 2026-08-19 — Milestone 8 — Feature Engineering & Recommendation Dataset Preparation
 
 ### Added
