@@ -50,7 +50,7 @@ def upgrade() -> None:
         sa.Column('name', sa.String(length=150), nullable=False),
         sa.Column('email', sa.String(length=255), nullable=False),
         sa.Column('password_hash', sa.Text(), nullable=False),
-        sa.Column('role', sa.Enum('ADMIN', 'MANAGER', 'DEVELOPER', name='user_role_enum'), nullable=False),
+        sa.Column('role', postgresql.ENUM('ADMIN', 'MANAGER', 'DEVELOPER', name='user_role_enum', create_type=False), nullable=False),
         sa.Column('is_active', sa.Boolean(), server_default='true', nullable=False),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
         sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
@@ -64,7 +64,7 @@ def upgrade() -> None:
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('user_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False),
         sa.Column('experience_years', sa.Numeric(precision=4, scale=1), nullable=False),
-        sa.Column('availability_status', sa.Enum('AVAILABLE', 'PARTIAL', 'UNAVAILABLE', name='availability_status_enum'), nullable=False),
+        sa.Column('availability_status', postgresql.ENUM('AVAILABLE', 'PARTIAL', 'UNAVAILABLE', name='availability_status_enum', create_type=False), nullable=False),
         sa.Column('performance_score', sa.Numeric(precision=5, scale=2), nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
         sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
@@ -103,7 +103,7 @@ def upgrade() -> None:
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column('name', sa.String(length=200), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
-        sa.Column('status', sa.Enum('ACTIVE', 'COMPLETED', 'ARCHIVED', name='project_status_enum'), nullable=False),
+        sa.Column('status', postgresql.ENUM('ACTIVE', 'COMPLETED', 'ARCHIVED', name='project_status_enum', create_type=False), nullable=False),
         sa.Column('created_by', postgresql.UUID(as_uuid=True), sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
         sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False)
@@ -143,11 +143,11 @@ def upgrade() -> None:
         sa.Column('title', sa.String(length=255), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
         sa.Column('category', sa.String(length=100), nullable=True),
-        sa.Column('priority', sa.Enum('LOW', 'MEDIUM', 'HIGH', 'CRITICAL', name='task_priority_enum'), nullable=False),
-        sa.Column('complexity', sa.Enum('LOW', 'MEDIUM', 'HIGH', name='task_complexity_enum'), nullable=False),
+        sa.Column('priority', postgresql.ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL', name='task_priority_enum', create_type=False), nullable=False),
+        sa.Column('complexity', postgresql.ENUM('LOW', 'MEDIUM', 'HIGH', name='task_complexity_enum', create_type=False), nullable=False),
         sa.Column('estimated_hours', sa.Numeric(precision=6, scale=2), nullable=False),
         sa.Column('deadline', sa.DateTime(timezone=True), nullable=True),
-        sa.Column('status', sa.Enum('TODO', 'IN_PROGRESS', 'COMPLETED', 'BLOCKED', 'CANCELLED', name='task_status_enum'), nullable=False),
+        sa.Column('status', postgresql.ENUM('TODO', 'IN_PROGRESS', 'COMPLETED', 'BLOCKED', 'CANCELLED', name='task_status_enum', create_type=False), nullable=False),
         sa.Column('created_by', postgresql.UUID(as_uuid=True), sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
         sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
@@ -179,7 +179,7 @@ def upgrade() -> None:
         sa.Column('task_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('tasks.id', ondelete='CASCADE'), nullable=False),
         sa.Column('developer_id', postgresql.UUID(as_uuid=True), sa.ForeignKey('developer_profiles.id', ondelete='CASCADE'), nullable=False),
         sa.Column('assigned_by', postgresql.UUID(as_uuid=True), sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False),
-        sa.Column('status', sa.Enum('ACTIVE', 'COMPLETED', 'REASSIGNED', 'CANCELLED', name='assignment_status_enum'), nullable=False),
+        sa.Column('status', postgresql.ENUM('ACTIVE', 'COMPLETED', 'REASSIGNED', 'CANCELLED', name='assignment_status_enum', create_type=False), nullable=False),
         sa.Column('assigned_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
         sa.Column('completed_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('reassigned_at', sa.DateTime(timezone=True), nullable=True),
@@ -211,7 +211,7 @@ def upgrade() -> None:
         sa.Column('feature_name', sa.String(length=100), nullable=False),
         sa.Column('feature_value', sa.Text(), nullable=True),
         sa.Column('shap_value', sa.Numeric(precision=12, scale=8), nullable=False),
-        sa.Column('direction', sa.Enum('POSITIVE', 'NEGATIVE', name='shap_direction_enum'), nullable=False),
+        sa.Column('direction', postgresql.ENUM('POSITIVE', 'NEGATIVE', name='shap_direction_enum', create_type=False), nullable=False),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False)
     )
     op.create_index('ix_recommendation_explanations_recommendation_id', 'recommendation_explanations', ['recommendation_id'])
@@ -247,12 +247,11 @@ def downgrade() -> None:
     op.drop_table('users')
 
     # Drop enums
-    bind = op.get_bind()
-    postgresql.ENUM(name='shap_direction_enum').drop(bind, checkfirst=True)
-    postgresql.ENUM(name='assignment_status_enum').drop(bind, checkfirst=True)
-    postgresql.ENUM(name='task_status_enum').drop(bind, checkfirst=True)
-    postgresql.ENUM(name='task_complexity_enum').drop(bind, checkfirst=True)
-    postgresql.ENUM(name='task_priority_enum').drop(bind, checkfirst=True)
-    postgresql.ENUM(name='project_status_enum').drop(bind, checkfirst=True)
-    postgresql.ENUM(name='availability_status_enum').drop(bind, checkfirst=True)
-    postgresql.ENUM(name='user_role_enum').drop(bind, checkfirst=True)
+    op.execute('DROP TYPE IF EXISTS user_role_enum CASCADE;')
+    op.execute('DROP TYPE IF EXISTS availability_status_enum CASCADE;')
+    op.execute('DROP TYPE IF EXISTS project_status_enum CASCADE;')
+    op.execute('DROP TYPE IF EXISTS task_priority_enum CASCADE;')
+    op.execute('DROP TYPE IF EXISTS task_complexity_enum CASCADE;')
+    op.execute('DROP TYPE IF EXISTS task_status_enum CASCADE;')
+    op.execute('DROP TYPE IF EXISTS assignment_status_enum CASCADE;')
+    op.execute('DROP TYPE IF EXISTS shap_direction_enum CASCADE;')
