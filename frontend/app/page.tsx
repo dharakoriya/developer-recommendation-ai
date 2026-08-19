@@ -67,6 +67,9 @@ export default function Home() {
                   <Link href="/projects" className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem', background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)' }}>
                     Projects & Teams
                   </Link>
+                  <Link href="/workload" className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem', background: 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)' }}>
+                    Workload Engine
+                  </Link>
                   <Link href="/developers" className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem' }}>
                     Developers
                   </Link>

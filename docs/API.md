@@ -587,23 +587,66 @@ Returns assignments.
 
 Updates an assignment.
 
-## 11. Workload
+## 14. Workload Engine
 
 ### GET `/api/workload`
 
-Returns current workload information.
+Returns deterministic workload overview items for all developers.
 
-### GET `/api/workload/developers/{id}`
+Header: `Authorization: Bearer <token>`
 
-Returns a developer's workload.
+Response (200 OK):
+
+```json
+[
+  {
+    "developer_id": "223e4567-e89b-12d3-a456-426614174000",
+    "user_id": "123e4567-e89b-12d3-a456-426614174000",
+    "user_name": "Dev User",
+    "user_email": "dev@devalign.ai",
+    "experience_years": 4.5,
+    "availability_status": "AVAILABLE",
+    "active_task_count": 2,
+    "total_estimated_hours": 30.0,
+    "weighted_hours": 36.0,
+    "capacity_hours": 40.0,
+    "workload_score": 90.0,
+    "workload_status": "HIGH"
+  }
+]
+```
 
 ### GET `/api/workload/summary`
 
-Returns workload distribution information.
+Returns system aggregate workload distribution metrics across all developers.
 
-### GET `/api/workload/suggestions`
+Response (200 OK):
 
-Returns workload redistribution suggestions.
+```json
+{
+  "total_developers": 5,
+  "available_developers_count": 2,
+  "balanced_developers_count": 2,
+  "high_workload_count": 1,
+  "overloaded_developers_count": 0,
+  "average_workload_score": 58.5,
+  "developers": []
+}
+```
+
+### GET `/api/workload/developers/{id}`
+
+Retrieves detailed workload calculation breakdown and active tasks list for a developer profile. Accessible to `ADMIN`, `MANAGER`, or self.
+
+### POST `/api/workload/developers/{id}/snapshot`
+
+Creates and saves an immutable historical snapshot record in `workload_records` table. Requires `ADMIN` or `MANAGER` role.
+
+Response (201 Created): Returns `WorkloadRecordResponse`.
+
+### GET `/api/workload/developers/{id}/history`
+
+Returns historical workload snapshot records for a developer profile. Accessible to `ADMIN`, `MANAGER`, or self.
 
 ## 12. Dashboard
 

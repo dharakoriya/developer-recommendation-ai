@@ -11,6 +11,26 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-08-19 — Milestone 7 — Workload Calculation & Balancing
+
+### Added
+
+* Created Pydantic schemas in `/backend/app/schemas/workload.py` (`WorkloadSummaryItem`, `WorkloadSummaryResponse`, `DeveloperWorkloadDetailResponse`, `WorkloadRecordResponse`).
+* Created Workload Calculation Service in `/backend/app/services/workload_service.py` implementing deterministic workload calculation, complexity weighting, availability factor adjustments, workload status classification (`AVAILABLE`, `BALANCED`, `HIGH`, `OVERLOADED`), and historical snapshot generation.
+* Implemented Workload REST API router in `/backend/app/api/workload.py` (`GET /api/workload`, `GET /api/workload/summary`, `GET /api/workload/developers/{id}`, `POST /api/workload/developers/{id}/snapshot`, `GET /api/workload/developers/{id}/history`).
+* Registered `workload_router` in `/backend/app/main.py`.
+* Implemented automated pytest suite in `/backend/tests/test_workload_api.py` covering zero workload, active task load, complexity multipliers (`LOW: 1.0`, `MEDIUM: 1.15`, `HIGH: 1.3`), capacity adjustments (`AVAILABLE: 40h`, `PARTIAL: 20h`, `UNAVAILABLE: 2h`), historical assignment filtering (excluding `REASSIGNED`, `COMPLETED`, `CANCELLED`), snapshot creation, history retrieval, and role authorization (43 total backend tests passing 100%).
+* Implemented Next.js Frontend Workload Engine Page `/frontend/app/workload/page.tsx` displaying system distribution KPIs, developer workload directory with score progress bars and status badges, developer workload breakdown modal, and snapshot action buttons.
+* Documented exact REST API payloads for Workload Engine in `docs/API.md`.
+
+### Technical Decisions
+
+* Deterministic Baseline: Workload is calculated purely from active assigned tasks (`status == AssignmentStatus.ACTIVE`) using task estimated hours, complexity weighting, and developer availability status. Excluded all AI/ML models, recommendations, and predictions.
+* Assignment Filtering: Historical assignment records (`REASSIGNED`, `COMPLETED`, `CANCELLED`) preserved from Milestone 6 are strictly filtered out from active workload calculations.
+* Workload Snapshot Integrity: Reused existing `workload_records` database table created in Milestone 2 to store immutable snapshots without overwriting historical records.
+
+---
+
 ## 2026-08-19 — Milestone 6 — Task & Assignment Management
 
 ### Added
