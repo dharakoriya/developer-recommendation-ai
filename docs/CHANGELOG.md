@@ -11,6 +11,26 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-08-19 — Milestone 6 — Task & Assignment Management
+
+### Added
+
+* Created Pydantic schemas in `/backend/app/schemas/task.py` (`TaskCreate`, `TaskUpdate`, `TaskResponse`, `TaskSkillCreate`, `TaskSkillUpdate`, `TaskSkillResponse`, `AssignmentCreate`, `AssignmentUpdateStatus`, `AssignmentResponse`).
+* Implemented Tasks & Task Skills REST API router in `/backend/app/api/tasks.py` (`GET /api/projects/{project_id}/tasks`, `POST /api/projects/{project_id}/tasks`, `GET /api/tasks/{id}`, `PUT /api/tasks/{id}`, `DELETE /api/tasks/{id}`, `GET /api/tasks/{id}/skills`, `POST /api/tasks/{id}/skills`, `PUT /api/tasks/{id}/skills/{skill_id}`, `DELETE /api/tasks/{id}/skills/{skill_id}`).
+* Implemented Task Assignments REST API router in `/backend/app/api/assignments.py` (`POST /api/tasks/{id}/assign`, `GET /api/tasks/{id}/assignments`, `GET /api/developers/{developer_id}/assignments`, `PUT /api/assignments/{assignment_id}/status`, `POST /api/assignments/{assignment_id}/complete`, `POST /api/assignments/{assignment_id}/cancel`).
+* Registered `tasks_router` and `assignments_router` in `/backend/app/main.py`.
+* Implemented automated pytest suite in `/backend/tests/test_tasks_assignments_api.py` covering task CRUD, required skill management, level validation (0..100), duplicate skill rejection, manual developer assignment, non-destructive reassignment history tracking, assignment completion, and role authorization (37 total backend tests passing 100%).
+* Enhanced Next.js Frontend UI page `/frontend/app/projects/[id]/page.tsx` with dedicated Tasks tab, task cards, required skills badges, developer assignment dropdown, and expandable Assignment History timeline drawer.
+* Documented exact REST API payloads for Tasks, Task Skills, and Assignments in `docs/API.md`.
+
+### Technical Decisions
+
+* Schema & Database Integrity: Reused existing PostgreSQL tables (`tasks`, `task_skills`, `assignments`) and ORM models (`Task`, `TaskSkill`, `Assignment`) created during Milestone 2; no database migration was needed.
+* Auditable Non-Destructive History: Reassigning a task automatically marks the previous active `Assignment` record as `REASSIGNED` (`reassigned_at = func.now()`) and inserts a new `ACTIVE` record. Assignment records are strictly preserved for future AI workload and recommendation modeling.
+* Role-Based Access Control: `ADMIN` & `MANAGER` roles have full rights to manage tasks, task skills, and assign/reassign developers; `DEVELOPER` users can view tasks/assignments and update their progress.
+
+---
+
 ## 2026-08-19 — Milestone 5 — Projects & Teams Management
 
 ### Added

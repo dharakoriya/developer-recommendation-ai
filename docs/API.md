@@ -395,47 +395,145 @@ Response (201 Created): Returns `TeamMemberResponse`.
 Removes a developer from a team by recording `left_at` timestamp. Requires `ADMIN` or `MANAGER` role. Returns 204 No Content.
 
 
-## 10. Tasks
+## 10. Tasks Management
 
-### GET `/api/tasks`
+### GET `/api/projects/{project_id}/tasks`
 
-Returns tasks.
+Returns all tasks belonging to a specific project. Supports optional `?status=TODO|IN_PROGRESS|COMPLETED|BLOCKED|CANCELLED` filter.
+
+Header: `Authorization: Bearer <token>`
+
+Response (200 OK):
+
+```json
+[
+  {
+    "id": "770e8400-e29b-41d4-a716-446655440000",
+    "project_id": "550e8400-e29b-41d4-a716-446655440000",
+    "project_name": "Mobile App Redesign",
+    "team_id": null,
+    "team_name": null,
+    "title": "Implement Payment Gateway",
+    "description": "Integrate Stripe SDK for checkout",
+    "category": "Backend",
+    "priority": "HIGH",
+    "complexity": "MEDIUM",
+    "estimated_hours": 16.0,
+    "deadline": "2026-09-01T00:00:00.000Z",
+    "status": "IN_PROGRESS",
+    "created_by": "123e4567-e89b-12d3-a456-426614174000",
+    "creator_name": "Jane Manager",
+    "created_at": "2026-08-19T10:00:00.000Z",
+    "updated_at": "2026-08-19T10:00:00.000Z",
+    "required_skills": [],
+    "current_assignment": null,
+    "assignment_history": []
+  }
+]
+```
+
+### POST `/api/projects/{project_id}/tasks`
+
+Creates a new task in a project. Requires `ADMIN` or `MANAGER` role.
+
+Request Body:
+
+```json
+{
+  "title": "Implement Payment Gateway",
+  "description": "Integrate Stripe SDK for checkout",
+  "category": "Backend",
+  "priority": "HIGH",
+  "complexity": "MEDIUM",
+  "estimated_hours": 16.0,
+  "status": "TODO"
+}
+```
+
+Response (201 Created): Returns `TaskResponse`.
 
 ### GET `/api/tasks/{id}`
 
-Returns a task.
-
-### POST `/api/tasks`
-
-Creates a task.
+Retrieves task details by ID including required skills and assignment history.
 
 ### PUT `/api/tasks/{id}`
 
-Updates a task.
+Updates task details or status. Requires `ADMIN` or `MANAGER` role.
 
 ### DELETE `/api/tasks/{id}`
 
-Deletes/cancels a task according to business rules.
+Deletes a task and its required skill associations. Requires `ADMIN` or `MANAGER` role. Returns 204 No Content.
 
-## 8. Task Skills
+
+## 11. Task Skills
 
 ### GET `/api/tasks/{id}/skills`
 
-Returns required skills.
+Returns required technical skills for a task with target proficiency levels.
 
 ### POST `/api/tasks/{id}/skills`
 
-Adds a required skill.
+Adds a required skill to a task with required level (0..100). Requires `ADMIN` or `MANAGER` role. Prevents duplicate skill association.
+
+Request Body:
+
+```json
+{
+  "skill_id": "423e4567-e89b-12d3-a456-426614174000",
+  "required_level": 80.0
+}
+```
+
+Response (201 Created): Returns `TaskSkillResponse`.
 
 ### PUT `/api/tasks/{id}/skills/{skill_id}`
 
-Updates required proficiency.
+Updates required proficiency level of a task skill. Requires `ADMIN` or `MANAGER` role.
 
 ### DELETE `/api/tasks/{id}/skills/{skill_id}`
 
-Removes a required skill.
+Removes a required skill from a task. Requires `ADMIN` or `MANAGER` role. Returns 204 No Content.
 
-## 9. Recommendations
+
+## 12. Task Assignments
+
+### POST `/api/tasks/{id}/assign`
+
+Assigns a developer profile to a task. Requires `ADMIN` or `MANAGER` role. If an active assignment exists, it is marked `REASSIGNED` (`reassigned_at = func.now()`), preserving historical records.
+
+Request Body:
+
+```json
+{
+  "developer_id": "223e4567-e89b-12d3-a456-426614174000",
+  "notes": "Assigned for backend API phase"
+}
+```
+
+Response (201 Created): Returns `AssignmentResponse`.
+
+### GET `/api/tasks/{id}/assignments`
+
+Returns full auditable assignment history for a task.
+
+### GET `/api/developers/{developer_id}/assignments`
+
+Lists all assignments assigned to a developer profile.
+
+### PUT `/api/assignments/{assignment_id}/status`
+
+Updates assignment status (`ACTIVE`, `COMPLETED`, `REASSIGNED`, `CANCELLED`). Accessible to `ADMIN`, `MANAGER`, or assigned `DEVELOPER`.
+
+### POST `/api/assignments/{assignment_id}/complete`
+
+Shortcut to mark assignment `COMPLETED` and update task status to `COMPLETED`.
+
+### POST `/api/assignments/{assignment_id}/cancel`
+
+Shortcut to cancel an assignment. Requires `ADMIN` or `MANAGER` role.
+
+
+## 13. Recommendations
 
 ### POST `/api/recommendations/tasks/{task_id}`
 

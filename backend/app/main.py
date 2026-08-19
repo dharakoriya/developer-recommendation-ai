@@ -7,6 +7,8 @@ from app.api.skills import router as skills_router
 from app.api.developers import router as developers_router
 from app.api.projects import router as projects_router
 from app.api.teams import router as teams_router
+from app.api.tasks import router as tasks_router
+from app.api.assignments import router as assignments_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -32,6 +34,8 @@ app.include_router(skills_router, prefix=f"{settings.API_PREFIX}/skills", tags=[
 app.include_router(developers_router, prefix=f"{settings.API_PREFIX}/developers", tags=["Developer Profiles"])
 app.include_router(projects_router, prefix=f"{settings.API_PREFIX}/projects", tags=["Projects Management"])
 app.include_router(teams_router, prefix=settings.API_PREFIX, tags=["Teams Management"])
+app.include_router(tasks_router, prefix=settings.API_PREFIX, tags=["Tasks Management"])
+app.include_router(assignments_router, prefix=settings.API_PREFIX, tags=["Task Assignments"])
 
 
 
