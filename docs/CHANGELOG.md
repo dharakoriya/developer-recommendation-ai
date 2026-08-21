@@ -11,6 +11,27 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-08-21 — Milestone 10 — Research Dataset Generation & Ground-Truth Labeling
+
+### Added
+
+* Established reproducible research dataset pipeline architecture under `/research/` (`generators/`, `labeling/`, `validation/`, `split/`, `dataset/processed/`).
+* Created reproducible synthetic candidate pair dataset generator in `/research/generators/synthetic_generator.py` generating realistic, bounded developer profiles and task attributes matching Milestone 8's exact 21+ feature vector specification.
+* Implemented multi-dimensional research ground-truth suitability labeling engine in `/research/labeling/ground_truth_labeler.py` (`label_strategy=suitability-v1`, `label_target` $\in \{0, 1\}$) enforcing Skill Coverage $\ge 60\%$, Min Proficiency Gap $\ge -20$, Workload Score $\le 100\%$, and Availability $\neq$ UNAVAILABLE.
+* Created dataset schema quality validator in `/research/validation/dataset_validator.py` verifying missing values, range bounds, enum domains, duplicate pair prevention, and positive/negative label counts.
+* Implemented stratified dataset splitter in `/research/split/dataset_splitter.py` exporting `full_dataset.csv`, `train.csv` (70%), `val.csv` (15%), `test.csv` (15%), and `dataset_metadata.json` (`dataset_version=synthetic-v1`).
+* Created reproducible pipeline execution script in `/research/pipeline.py` (`num_developers=50`, `num_tasks=30`, `seed=42`, total 1,500 candidate feature vectors).
+* Implemented research dataset test suite in `/backend/tests/test_research_dataset.py` covering seed reproducibility, ground-truth criteria enforcement, data leakage prevention, data quality validation, zero overlap between stratified splits, and metadata provenance (58 total backend tests passing 100%).
+* Created research documentation in `/research/README.md` detailing dataset versioning, labeling strategy, data leakage prevention, and ML training readiness.
+
+### Technical Decisions
+
+* Data Leakage Prevention: Ground-truth target generation depends strictly on raw domain attributes and does NOT consume or copy the Milestone 9 baseline recommendation score or model outputs.
+* Production Safety: Production PostgreSQL database and baseline recommendation system (`BaselineRecommendationModel` / `baseline-v1`) remain 100% untouched and fully operational.
+* Seed Reproducibility: Dataset generation uses explicit random seeds (`seed=42`). Identical seeds produce identical candidate rows, labels, and train/val/test CSV splits.
+
+---
+
 ## 2026-08-19 — Milestone 9 — Recommendation Ranking Engine & Model-Ready Architecture
 
 ### Added

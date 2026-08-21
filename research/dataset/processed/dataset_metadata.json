@@ -1,0 +1,31 @@
+{
+  "dataset_version": "synthetic-v1",
+  "label_strategy": "suitability-v1",
+  "generation_timestamp": "2026-08-21T09:13:05.723949Z",
+  "random_seed": 42,
+  "feature_count": 30,
+  "total_rows": 1500,
+  "split_ratios": {
+    "train": 0.7,
+    "validation": 0.15,
+    "test": 0.15
+  },
+  "split_sizes": {
+    "full": 1500,
+    "train": 1049,
+    "validation": 224,
+    "test": 227
+  },
+  "positive_label_percentage": {
+    "full": 2.6,
+    "train": 2.57,
+    "validation": 2.23,
+    "test": 3.08
+  },
+  "files": {
+    "full_dataset": "full_dataset.csv",
+    "train": "train.csv",
+    "validation": "val.csv",
+    "test": "test.csv"
+  }
+}
