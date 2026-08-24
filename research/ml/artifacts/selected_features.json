@@ -1,0 +1,22 @@
+[
+  "dev_experience_years",
+  "dev_availability_encoded",
+  "dev_performance_score",
+  "dev_total_skills_count",
+  "dev_workload_score",
+  "dev_capacity_hours",
+  "dev_active_task_count",
+  "dev_workload_status_encoded",
+  "task_estimated_hours",
+  "task_complexity_encoded",
+  "task_priority_encoded",
+  "task_required_skill_count",
+  "matching_skill_count",
+  "skill_coverage_ratio",
+  "avg_required_level",
+  "avg_developer_level",
+  "avg_proficiency_gap",
+  "min_proficiency_gap",
+  "weighted_skill_match_score",
+  "is_historically_assigned"
+]

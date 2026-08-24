@@ -38,6 +38,28 @@ def get_model_metadata(
     return model.get_model_metadata()
 
 
+@router.get("/research/ml/metrics", summary="Get research ML model evaluation metrics")
+def get_research_ml_metrics(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieves cross-validation, validation selection, test evaluation, and feature importances for research ML models.
+    """
+    import os
+    import json
+    metrics_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "..", "research", "ml", "artifacts", "evaluation_metrics.json")
+    )
+    if not os.path.exists(metrics_path):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="ML evaluation metrics report not found. Execute python research/ml/pipeline_ml.py first.",
+        )
+    with open(metrics_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return data
+
+
 @router.get("/tasks/{task_id}", response_model=RecommendationListResponse, summary="Get ranked developer recommendations for a task")
 def get_task_recommendations(
     task_id: uuid.UUID,

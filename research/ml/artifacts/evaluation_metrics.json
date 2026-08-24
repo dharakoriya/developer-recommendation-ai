@@ -1,0 +1,389 @@
+{
+  "cross_validation": {
+    "random_forest": {
+      "precision_mean": 1.0,
+      "precision_std": 0.0,
+      "recall_mean": 0.9666666666666668,
+      "recall_std": 0.06666666666666665,
+      "f1_mean": 0.9818181818181818,
+      "f1_std": 0.036363636363636376,
+      "roc_auc_mean": 0.9996732026143791,
+      "roc_auc_std": 0.0006535947712418276,
+      "pr_auc_mean": 0.9916666666666668,
+      "pr_auc_std": 0.016666666666666653
+    },
+    "xgboost": {
+      "scale_pos_weight": 37.851851851851855,
+      "precision_mean": 1.0,
+      "precision_std": 0.0,
+      "recall_mean": 0.96,
+      "recall_std": 0.07999999999999999,
+      "f1_mean": 0.9777777777777779,
+      "f1_std": 0.04444444444444447,
+      "roc_auc_mean": 0.9972549019607844,
+      "roc_auc_std": 0.005490196078431342,
+      "pr_auc_mean": 0.9705263157894738,
+      "pr_auc_std": 0.05894736842105264
+    }
+  },
+  "validation_selection": {
+    "random_forest": {
+      "model_name": "Random Forest",
+      "roc_auc": 1.0,
+      "pr_auc": 1.0,
+      "best_threshold": 0.3,
+      "best_val_f1": 1.0,
+      "threshold_curves": {
+        "0.3": {
+          "threshold": 0.3,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "confusion_matrix": [
+            [
+              219,
+              0
+            ],
+            [
+              0,
+              5
+            ]
+          ]
+        },
+        "0.4": {
+          "threshold": 0.4,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "confusion_matrix": [
+            [
+              219,
+              0
+            ],
+            [
+              0,
+              5
+            ]
+          ]
+        },
+        "0.5": {
+          "threshold": 0.5,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "confusion_matrix": [
+            [
+              219,
+              0
+            ],
+            [
+              0,
+              5
+            ]
+          ]
+        },
+        "0.6": {
+          "threshold": 0.6,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "confusion_matrix": [
+            [
+              219,
+              0
+            ],
+            [
+              0,
+              5
+            ]
+          ]
+        },
+        "0.7": {
+          "threshold": 0.7,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "confusion_matrix": [
+            [
+              219,
+              0
+            ],
+            [
+              0,
+              5
+            ]
+          ]
+        }
+      }
+    },
+    "xgboost": {
+      "model_name": "XGBoost",
+      "roc_auc": 1.0,
+      "pr_auc": 1.0,
+      "best_threshold": 0.3,
+      "best_val_f1": 1.0,
+      "threshold_curves": {
+        "0.3": {
+          "threshold": 0.3,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "confusion_matrix": [
+            [
+              219,
+              0
+            ],
+            [
+              0,
+              5
+            ]
+          ]
+        },
+        "0.4": {
+          "threshold": 0.4,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "confusion_matrix": [
+            [
+              219,
+              0
+            ],
+            [
+              0,
+              5
+            ]
+          ]
+        },
+        "0.5": {
+          "threshold": 0.5,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "confusion_matrix": [
+            [
+              219,
+              0
+            ],
+            [
+              0,
+              5
+            ]
+          ]
+        },
+        "0.6": {
+          "threshold": 0.6,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "confusion_matrix": [
+            [
+              219,
+              0
+            ],
+            [
+              0,
+              5
+            ]
+          ]
+        },
+        "0.7": {
+          "threshold": 0.7,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "confusion_matrix": [
+            [
+              219,
+              0
+            ],
+            [
+              0,
+              5
+            ]
+          ]
+        }
+      }
+    },
+    "selected_model": "XGBoost",
+    "selected_threshold": 0.3
+  },
+  "test_evaluation": {
+    "random_forest": {
+      "threshold": 0.5,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "roc_auc": 1.0,
+      "pr_auc": 1.0,
+      "confusion_matrix": [
+        [
+          220,
+          0
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "total_test_samples": 227,
+      "positive_test_samples": 7,
+      "negative_test_samples": 220
+    },
+    "xgboost": {
+      "threshold": 0.5,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "roc_auc": 1.0,
+      "pr_auc": 1.0,
+      "confusion_matrix": [
+        [
+          220,
+          0
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "total_test_samples": 227,
+      "positive_test_samples": 7,
+      "negative_test_samples": 220
+    },
+    "selected_model": {
+      "threshold": 0.3,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "roc_auc": 1.0,
+      "pr_auc": 1.0,
+      "confusion_matrix": [
+        [
+          220,
+          0
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "total_test_samples": 227,
+      "positive_test_samples": 7,
+      "negative_test_samples": 220
+    },
+    "baseline_comparison": {
+      "ml_pr_auc": 1.0,
+      "baseline_pr_auc": 0.3619847543760587,
+      "ml_roc_auc": 1.0,
+      "baseline_roc_auc": 0.9694805194805194,
+      "comparison_note": "ML model predicts candidate suitability probability (binary label_target). Baseline-v1 provides multi-criteria weighted scoring."
+    }
+  },
+  "feature_importances": {
+    "random_forest": [
+      {
+        "feature_name": "min_proficiency_gap",
+        "importance_score": 0.2615370470654679,
+        "percentage": 26.15
+      },
+      {
+        "feature_name": "weighted_skill_match_score",
+        "importance_score": 0.17292334538132914,
+        "percentage": 17.29
+      },
+      {
+        "feature_name": "avg_proficiency_gap",
+        "importance_score": 0.14351275304501557,
+        "percentage": 14.35
+      },
+      {
+        "feature_name": "avg_developer_level",
+        "importance_score": 0.11323652957708202,
+        "percentage": 11.32
+      },
+      {
+        "feature_name": "skill_coverage_ratio",
+        "importance_score": 0.07765386520562219,
+        "percentage": 7.77
+      },
+      {
+        "feature_name": "dev_capacity_hours",
+        "importance_score": 0.059879007049852995,
+        "percentage": 5.99
+      },
+      {
+        "feature_name": "dev_workload_score",
+        "importance_score": 0.04767441456198388,
+        "percentage": 4.77
+      },
+      {
+        "feature_name": "dev_workload_status_encoded",
+        "importance_score": 0.045451675620586204,
+        "percentage": 4.55
+      },
+      {
+        "feature_name": "dev_availability_encoded",
+        "importance_score": 0.038360665242572416,
+        "percentage": 3.84
+      },
+      {
+        "feature_name": "avg_required_level",
+        "importance_score": 0.008340766952454589,
+        "percentage": 0.83
+      }
+    ],
+    "xgboost": [
+      {
+        "feature_name": "min_proficiency_gap",
+        "importance_score": 0.8862372040748596,
+        "percentage": 88.62000274658203
+      },
+      {
+        "feature_name": "dev_workload_score",
+        "importance_score": 0.07850433886051178,
+        "percentage": 7.849999904632568
+      },
+      {
+        "feature_name": "dev_availability_encoded",
+        "importance_score": 0.031574711203575134,
+        "percentage": 3.1600000858306885
+      },
+      {
+        "feature_name": "dev_experience_years",
+        "importance_score": 0.0009502153843641281,
+        "percentage": 0.10000000149011612
+      },
+      {
+        "feature_name": "avg_proficiency_gap",
+        "importance_score": 0.0008949005859903991,
+        "percentage": 0.09000000357627869
+      },
+      {
+        "feature_name": "task_required_skill_count",
+        "importance_score": 0.00054926797747612,
+        "percentage": 0.05000000074505806
+      },
+      {
+        "feature_name": "avg_developer_level",
+        "importance_score": 0.00038290765951387584,
+        "percentage": 0.03999999910593033
+      },
+      {
+        "feature_name": "task_complexity_encoded",
+        "importance_score": 0.00035820153425447643,
+        "percentage": 0.03999999910593033
+      },
+      {
+        "feature_name": "task_priority_encoded",
+        "importance_score": 0.00023864766990300268,
+        "percentage": 0.019999999552965164
+      },
+      {
+        "feature_name": "dev_performance_score",
+        "importance_score": 0.00015842384891584516,
+        "percentage": 0.019999999552965164
+      }
+    ]
+  }
+}

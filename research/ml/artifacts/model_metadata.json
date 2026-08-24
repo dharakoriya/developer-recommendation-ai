@@ -1,0 +1,11 @@
+{
+  "model_version": "ml-v1-rf-xgb",
+  "training_timestamp": "2026-08-24T08:24:42.342615Z",
+  "random_state": 42,
+  "selected_model": "XGBoost",
+  "optimal_threshold": 0.3,
+  "dataset_version": "synthetic-v1",
+  "label_strategy": "suitability-v1",
+  "feature_count": 20,
+  "production_status": "RESEARCH ONLY \u2014 baseline-v1 remains active production recommendation engine"
+}

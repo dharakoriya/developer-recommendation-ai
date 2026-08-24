@@ -739,6 +739,25 @@ Response (200 OK):
 ]
 ```
 
+### GET `/api/recommendations/research/ml/metrics`
+
+Retrieves cross-validation summary, validation selection threshold curves, isolated test set evaluation metrics, and feature importances for research ML models.
+
+Header: `Authorization: Bearer <token>`
+
+Response (200 OK):
+
+```json
+{
+  "cross_validation": {
+    "random_forest": { "precision_mean": 1.0, "recall_mean": 0.967, "f1_mean": 0.982, "roc_auc_mean": 0.999, "pr_auc_mean": 0.991 },
+    "xgboost": { "precision_mean": 1.0, "recall_mean": 0.960, "f1_mean": 0.978, "roc_auc_mean": 0.997, "pr_auc_mean": 0.971 }
+  },
+  "validation_selection": { "selected_model": "XGBoost", "selected_threshold": 0.3 },
+  "test_evaluation": { "selected_model": { "precision": 1.0, "recall": 1.0, "f1": 1.0, "roc_auc": 1.0, "pr_auc": 1.0 } }
+}
+```
+
 ## 12. Dashboard
 
 ### GET `/api/dashboard/summary`

@@ -11,6 +11,31 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-08-24 — Milestone 11 — ML Model Training, Cross-Validation & Model Evaluation
+
+### Added
+
+* Created ML research subsystem in `/research/ml/` (`preprocessing.py`, `train_random_forest.py`, `train_xgboost.py`, `model_selection.py`, `evaluate.py`, `explainability.py`, `pipeline_ml.py`, `artifacts/`).
+* Implemented reproducible StandardScaler preprocessing and feature selection in `/research/ml/preprocessing.py` excluding IDs and metadata while selecting 20 numerical/encoded feature attributes. Fitted strictly on `train.csv`.
+* Trained Random Forest (`class_weight="balanced"`, `n_estimators=100`) and XGBoost (`scale_pos_weight=37.85`, `n_estimators=100`) classifiers to address severe 2.60% positive label imbalance.
+* Implemented 5-Fold Stratified Cross-Validation on `train.csv` reporting Mean $\pm$ Std for Precision, Recall, F1 Score, ROC-AUC, and PR-AUC.
+* Implemented probability threshold tuning (0.30 - 0.70) and model selection on `val.csv` selecting optimal threshold `0.30`.
+* Implemented isolated test set evaluation on `test.csv` (227 samples, 7 positive, 220 negative) achieving F1 = 1.000, ROC-AUC = 1.000, PR-AUC = 1.000, and 0 False Positives / 0 False Negatives.
+* Saved model artifacts in `research/ml/artifacts/` (`random_forest.joblib`, `xgboost.joblib`, `preprocessor.joblib`, `selected_features.json`, `model_metadata.json`, `evaluation_metrics.json`).
+* Updated `MLRecommendationModelAdapter` in `/backend/app/services/recommendation_service.py` to support loading trained research model artifacts in research mode while leaving production `BaselineRecommendationModel` (`baseline-v1`) active as default.
+* Created REST API endpoint `GET /api/recommendations/research/ml/metrics` in `/backend/app/api/recommendations.py`.
+* Implemented automated pytest test suite in `/backend/tests/test_ml_recommendation.py` covering preprocessing, Random Forest & XGBoost CV, validation selection, test evaluation, and adapter loading (64 total backend tests passing 100%).
+* Implemented Next.js Frontend Research ML Evaluation Page at `/frontend/app/research/ml/page.tsx` featuring CV summary table, test set confusion matrix, feature importance ranking, and baseline comparison table (labeled `RESEARCH / EXPERIMENTAL`).
+* Documented research ML methodology, artifact structure, and production isolation in `/research/ml/README.md`.
+
+### Technical Decisions
+
+* Production Isolation Safety: Kept `deterministic_baseline` (`baseline-v1`) active for production recommendations. ML models are research candidate models evaluated against synthetic ground truth.
+* Strict Test Isolation: Kept `test.csv` isolated until final model evaluation. All hyperparameter tuning, scaler fitting, and threshold selection used `train.csv` and `val.csv` only.
+* Class Imbalance Handling: Solved severe 2.60% positive label imbalance using cost-sensitive class weighting rather than premature SMOTE oversampling.
+
+---
+
 ## 2026-08-21 — Milestone 10 — Research Dataset Generation & Ground-Truth Labeling
 
 ### Added
