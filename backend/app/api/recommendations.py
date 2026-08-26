@@ -60,6 +60,34 @@ def get_research_ml_metrics(
     return data
 
 
+@router.get("/research/ml/explainability/global", summary="Get global SHAP feature importances")
+def get_global_shap_metrics(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieves global SHAP feature importance analysis for the research XGBoost model.
+    """
+    from app.services.ml_explainability_service import get_global_shap_explanations
+    return get_global_shap_explanations()
+
+
+@router.get("/research/ml/explainability/local/{developer_id}/{task_id}", summary="Get candidate local SHAP feature attributions")
+def get_local_shap_metrics(
+    developer_id: uuid.UUID,
+    task_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieves candidate-level local SHAP feature attributions explaining suitability prediction for a (Developer, Task) pair.
+    """
+    from app.services.ml_explainability_service import get_local_shap_explanation_for_candidate
+    try:
+        return get_local_shap_explanation_for_candidate(db, developer_id, task_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
 @router.get("/tasks/{task_id}", response_model=RecommendationListResponse, summary="Get ranked developer recommendations for a task")
 def get_task_recommendations(
     task_id: uuid.UUID,

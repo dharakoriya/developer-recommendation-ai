@@ -1,0 +1,128 @@
+{
+  "environment": "research",
+  "dataset_version": "synthetic-v1",
+  "model_version": "ml-v1-rf-xgb",
+  "total_samples_analyzed": 1500,
+  "global_feature_importance": [
+    {
+      "feature_name": "min_proficiency_gap",
+      "mean_abs_shap": 4.8064799308776855,
+      "percentage": 51.529998779296875,
+      "rank": 1
+    },
+    {
+      "feature_name": "dev_workload_score",
+      "mean_abs_shap": 1.580096960067749,
+      "percentage": 16.940000534057617,
+      "rank": 2
+    },
+    {
+      "feature_name": "dev_availability_encoded",
+      "mean_abs_shap": 1.2489769458770752,
+      "percentage": 13.390000343322754,
+      "rank": 3
+    },
+    {
+      "feature_name": "avg_proficiency_gap",
+      "mean_abs_shap": 0.6131049990653992,
+      "percentage": 6.570000171661377,
+      "rank": 4
+    },
+    {
+      "feature_name": "dev_experience_years",
+      "mean_abs_shap": 0.4573729932308197,
+      "percentage": 4.900000095367432,
+      "rank": 5
+    },
+    {
+      "feature_name": "task_complexity_encoded",
+      "mean_abs_shap": 0.4277240037918091,
+      "percentage": 4.590000152587891,
+      "rank": 6
+    },
+    {
+      "feature_name": "avg_required_level",
+      "mean_abs_shap": 0.08855900168418884,
+      "percentage": 0.949999988079071,
+      "rank": 7
+    },
+    {
+      "feature_name": "dev_active_task_count",
+      "mean_abs_shap": 0.048886001110076904,
+      "percentage": 0.5199999809265137,
+      "rank": 8
+    },
+    {
+      "feature_name": "dev_performance_score",
+      "mean_abs_shap": 0.027939999476075172,
+      "percentage": 0.30000001192092896,
+      "rank": 9
+    },
+    {
+      "feature_name": "avg_developer_level",
+      "mean_abs_shap": 0.02244500070810318,
+      "percentage": 0.23999999463558197,
+      "rank": 10
+    },
+    {
+      "feature_name": "task_required_skill_count",
+      "mean_abs_shap": 0.003871999913826585,
+      "percentage": 0.03999999910593033,
+      "rank": 11
+    },
+    {
+      "feature_name": "task_priority_encoded",
+      "mean_abs_shap": 0.0019600000232458115,
+      "percentage": 0.019999999552965164,
+      "rank": 12
+    },
+    {
+      "feature_name": "dev_total_skills_count",
+      "mean_abs_shap": 0.0,
+      "percentage": 0.0,
+      "rank": 13
+    },
+    {
+      "feature_name": "dev_capacity_hours",
+      "mean_abs_shap": 0.0,
+      "percentage": 0.0,
+      "rank": 14
+    },
+    {
+      "feature_name": "dev_workload_status_encoded",
+      "mean_abs_shap": 0.0,
+      "percentage": 0.0,
+      "rank": 15
+    },
+    {
+      "feature_name": "task_estimated_hours",
+      "mean_abs_shap": 0.0,
+      "percentage": 0.0,
+      "rank": 16
+    },
+    {
+      "feature_name": "matching_skill_count",
+      "mean_abs_shap": 0.0,
+      "percentage": 0.0,
+      "rank": 17
+    },
+    {
+      "feature_name": "skill_coverage_ratio",
+      "mean_abs_shap": 0.0,
+      "percentage": 0.0,
+      "rank": 18
+    },
+    {
+      "feature_name": "weighted_skill_match_score",
+      "mean_abs_shap": 0.0,
+      "percentage": 0.0,
+      "rank": 19
+    },
+    {
+      "feature_name": "is_historically_assigned",
+      "mean_abs_shap": 0.0,
+      "percentage": 0.0,
+      "rank": 20
+    }
+  ]
+}

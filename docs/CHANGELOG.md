@@ -11,6 +11,27 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-08-24 — Milestone 12 — Explainable ML Recommendation Engine — SHAP Analysis & Model Attribution
+
+### Added
+
+* Created research explainability subsystem under `/research/ml/explainability/` (`shap_explainer.py`, `global_explanation.py`, `local_explanation.py`, `feature_importance.py`).
+* Implemented SHAP TreeExplainer manager in `/research/ml/explainability/shap_explainer.py` loading pre-trained XGBoost (`xgboost.joblib`) and StandardScaler (`preprocessor.joblib`) without model retraining.
+* Implemented global SHAP feature attribution analyzer in `/research/ml/explainability/global_explanation.py` evaluating mean absolute SHAP values $E[|\phi_i|]$ across all 1,500 research dataset samples and exporting machine-readable artifact `research/ml/artifacts/shap_global_importance.json`.
+* Implemented candidate-level local SHAP feature attribution in `/research/ml/explainability/local_explanation.py` calculating suitability prediction probability, feature SHAP contributions, positive/negative factor attribution lists, and rank.
+* Created read-only backend service in `/backend/app/services/ml_explainability_service.py`.
+* Added REST API endpoints `GET /api/recommendations/research/ml/explainability/global` and `GET /api/recommendations/research/ml/explainability/local/{developer_id}/{task_id}` in `/backend/app/api/recommendations.py`.
+* Implemented automated pytest test suite in `/backend/tests/test_ml_explainability.py` (68 total backend tests passing 100%).
+* Enhanced Next.js Frontend Research ML page at `/frontend/app/research/ml/page.tsx` featuring global SHAP feature importance bar chart, interactive candidate inspector (Project -> Task -> Developer), suitability probability %, positive/negative factors, and SHAP contribution table.
+* Documented SHAP game theory, TreeSHAP mechanism, and research limitations in `/research/ml/README.md`.
+
+### Technical Decisions
+
+* Production Isolation Safety: Kept `deterministic_baseline` (`baseline-v1`) active as production recommendation engine. SHAP explainability operates in research mode without modifying baseline-v1 scoring or database state.
+* Explanation vs Weighting: Enforced strict separation between SHAP explainability and recommendation scoring; SHAP values are strictly used to explain and visualize model decisions, never as recommendation weights.
+
+---
+
 ## 2026-08-24 — Milestone 11 — ML Model Training, Cross-Validation & Model Evaluation
 
 ### Added

@@ -54,3 +54,27 @@ To execute ML model training, cross-validation, threshold tuning, and artifact g
 ```bash
 python research/ml/pipeline_ml.py
 ```
+
+---
+
+## 7. SHAP Explainability & Model Attribution (Milestone 12)
+
+### A. What is SHAP?
+SHAP (SHapley Additive exPlanations) is a game-theoretic framework that assigns each feature an additive attribution value $\phi_i$ representing its marginal contribution to the prediction output:
+
+$$f(x) = \mathbb{E}[f(X)] + \sum_{i=1}^{M} \phi_i$$
+
+### B. Why Explainability is Required
+* **Auditability & Trust**: Provides transparent mathematical explanations for complex non-linear tree ensembles like XGBoost.
+* **Safety Verification**: Ensures the ML model relies on valid technical criteria (e.g. `min_proficiency_gap`, `skill_coverage_ratio`) rather than spurious correlations.
+
+### C. Global vs. Local Explanations
+* **Global Explanation**: Calculates average absolute SHAP values $\mathbb{E}[|\phi_i|]$ across all 1,500 research dataset samples to rank overall feature importance.
+* **Local Explanation**: Decomposes the suitability prediction probability for a single developer-task pair into positive ($\phi_i > 0$) and negative ($\phi_i < 0$) feature attributions.
+
+### D. Difference Between SHAP and Gini Feature Importance
+Gini impurity feature importance measures how often a feature split reduces node impurity across trees (always positive, no direction). In contrast, SHAP values provide signed directionality ($\pm$) and preserve additive scale relative to the model base value $\mathbb{E}[f(X)]$.
+
+### E. Research Limitations & Production Safety Notice
+> **RESEARCH DISCLAIMER**: These explanations describe the behavior of the research XGBoost model (`ml-v1-rf-xgb`) trained on `synthetic-v1` data under `suitability-v1` ground truth rules. They do not establish real-world recommendation accuracy. Production recommendations remain powered by `deterministic_baseline` (`baseline-v1`).
+

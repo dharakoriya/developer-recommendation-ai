@@ -758,6 +758,49 @@ Response (200 OK):
 }
 ```
 
+### GET `/api/recommendations/research/ml/explainability/global`
+
+Retrieves global SHAP feature importance analysis (TreeSHAP) across all 1,500 research dataset candidate pairs.
+
+Response (200 OK):
+
+```json
+{
+  "environment": "research",
+  "dataset_version": "synthetic-v1",
+  "model_version": "ml-v1-rf-xgb",
+  "total_samples_analyzed": 1500,
+  "global_feature_importance": [
+    { "feature_name": "min_proficiency_gap", "mean_abs_shap": 4.8065, "percentage": 51.53, "rank": 1 },
+    { "feature_name": "dev_workload_score", "mean_abs_shap": 1.5801, "percentage": 16.94, "rank": 2 }
+  ]
+}
+```
+
+### GET `/api/recommendations/research/ml/explainability/local/{developer_id}/{task_id}`
+
+Retrieves candidate-level local SHAP feature attributions explaining suitability prediction for a single developer-task pair.
+
+Response (200 OK):
+
+```json
+{
+  "environment": "research",
+  "model_version": "ml-v1-rf-xgb",
+  "developer_name": "Alice Dev",
+  "task_title": "Build Auth API",
+  "suitability_probability": 0.914,
+  "suitability_percentage": 91.4,
+  "base_value": -3.214,
+  "positive_factors": ["+ min_proficiency_gap: 12.0 (SHAP +2.150)"],
+  "negative_factors": [],
+  "feature_attributions": [
+    { "feature_name": "min_proficiency_gap", "raw_value": 12.0, "shap_contribution": 2.150, "direction": "POSITIVE", "rank": 1 }
+  ],
+  "research_disclaimer": "These explanations describe the behavior of the research XGBoost model trained on synthetic-v1 data. They do not establish real-world recommendation accuracy."
+}
+```
+
 ## 12. Dashboard
 
 ### GET `/api/dashboard/summary`
