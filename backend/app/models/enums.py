@@ -50,3 +50,24 @@ class AssignmentStatus(str, enum.Enum):
 class ShapDirection(str, enum.Enum):
     POSITIVE = "POSITIVE"
     NEGATIVE = "NEGATIVE"
+
+
+class FeedbackDecision(str, enum.Enum):
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+    IGNORED = "IGNORED"
+    DEFERRED = "DEFERRED"
+
+
+class OutcomeStatus(str, enum.Enum):
+    RECOMMENDED = "RECOMMENDED"
+    ACCEPTED = "ACCEPTED"
+    ASSIGNED = "ASSIGNED"
+    COMPLETED = "COMPLETED"
+
+
+class LabelStatus(str, enum.Enum):
+    UNLABELED = "UNLABELED"
+    WEAK_LABEL = "WEAK_LABEL"
+    VALIDATED_LABEL = "VALIDATED_LABEL"
+

@@ -88,6 +88,10 @@ def assign_task(
 
     db.commit()
 
+    # Link assignment outcome tracking
+    from app.services.outcome_dataset_service import update_assignment_outcome
+    update_assignment_outcome(db, new_assignment)
+
     stmt = (
         select(Assignment)
         .options(

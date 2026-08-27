@@ -131,6 +131,24 @@ npm run dev
 
 ---
 
+## 🗺️ Milestone Execution Status
+
+- Milestone 1 — Project Initialization ✅
+- Milestone 2 — Database Schema & Migrations ✅
+- Milestone 3 — Authentication & Role-Based Authorization ✅
+- Milestone 4 — Developer & Skill Management ✅
+- Milestone 5 — Projects & Teams Management ✅
+- Milestone 6 — Tasks & Assignments Management ✅
+- Milestone 7 — Workload Calculation & Balancing ✅
+- Milestone 8 — Feature Engineering & Recommendation Dataset Preparation ✅
+- Milestone 9 — Recommendation Ranking Engine & Model-Ready Architecture ✅
+- Milestone 10 — Research Dataset Generation & Ground-Truth Labeling ✅
+- Milestone 11 — ML Model Training, Cross-Validation & Model Evaluation ✅
+- Milestone 12 — Explainable ML Recommendation Engine — SHAP Analysis & Model Attribution ✅
+- Milestone 13 — Recommendation Audit Logging, Feedback Loop & Model Governance ✅
+
+---
+
 ## 📜 Research & Documentation
 
 For detailed technical specifications and setup guides, refer to `/docs`:

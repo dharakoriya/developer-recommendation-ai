@@ -72,3 +72,15 @@ python research/pipeline.py
 ```
 
 This populates `research/dataset/processed/` with `train.csv`, `val.csv`, `test.csv`, `full_dataset.csv`, and `dataset_metadata.json`.
+
+---
+
+## 6. Recommendation Audit, Human Feedback & Model Governance (Milestone 13)
+
+Milestone 13 creates the production-safe infrastructure needed to transition future ML research from synthetic datasets (`synthetic-v1`) to real-world observational datasets:
+
+1. **Immutable Recommendation Audits**: Every recommendation generation logs a `RecommendationAudit` record in PostgreSQL preserving a complete JSON `feature_snapshot` of the feature vector at recommendation generation time.
+2. **Reviewer Feedback Loop**: Captures human reviewer decisions (`ACCEPTED`, `REJECTED`, `IGNORED`, `DEFERRED`) with comments via `POST /api/recommendations/{id}/feedback`.
+3. **Assignment Outcome Tracking**: Tracks distinct task assignment lifecycle progression (`RECOMMENDED` ➔ `ACCEPTED` ➔ `ASSIGNED` ➔ `COMPLETED`) via `RecommendationOutcome`.
+4. **Model Governance Registry**: Tracks provenance, environment (`production` vs `research`), version, and active status for active production baseline (`baseline-v1`) and experimental research models (`ml-v1-rf-xgb`).
+5. **Real-World Training Threshold**: Enforces statutory requirement of at least 200 validated real-world outcomes before attempting real-world ML model training.

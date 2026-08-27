@@ -1,5 +1,5 @@
 import uuid
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select
@@ -15,6 +15,14 @@ from app.schemas.recommendation import (
     RecommendationExplanationResponse,
     RecommendationResponse,
     RecommendationListResponse,
+)
+from app.schemas.recommendation_audit import (
+    FeedbackCreateRequest,
+    RecommendationFeedbackResponse,
+    RecommendationAuditResponse,
+    RecommendationOutcomeResponse,
+    ModelRegistryResponse,
+    DatasetPreviewMetricsResponse,
 )
 from app.services.recommendation_service import (
     get_active_recommendation_model,
@@ -86,6 +94,194 @@ def get_local_shap_metrics(
         return get_local_shap_explanation_for_candidate(db, developer_id, task_id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.post("/{id}/feedback", response_model=RecommendationFeedbackResponse, status_code=status.HTTP_201_CREATED, summary="Submit human reviewer feedback for a recommendation")
+def submit_feedback(
+    id: uuid.UUID,
+    fb_in: FeedbackCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Submits human reviewer feedback (ACCEPTED, REJECTED, IGNORED, DEFERRED) for a recommendation.
+    """
+    from app.services.outcome_dataset_service import submit_recommendation_feedback
+    try:
+        fb_orm = submit_recommendation_feedback(db, id, current_user.id, fb_in.decision, fb_in.comment)
+        return RecommendationFeedbackResponse(
+            id=fb_orm.id,
+            recommendation_id=fb_orm.recommendation_id,
+            reviewer_id=fb_orm.reviewer_id,
+            reviewer_name=current_user.name if current_user else None,
+            decision=fb_orm.decision,
+            comment=fb_orm.comment,
+            created_at=fb_orm.created_at,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.get("/{id}/audit", response_model=RecommendationAuditResponse, summary="Get audit record for a single recommendation")
+def get_single_recommendation_audit(
+    id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieves the immutable audit log record and feature snapshot for a single recommendation.
+    """
+    from app.models.recommendation_audit import RecommendationAudit
+    audit = db.scalar(select(RecommendationAudit).where(RecommendationAudit.recommendation_id == id))
+    if not audit:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Audit record for recommendation {id} not found.")
+
+    return RecommendationAuditResponse(
+        id=audit.id,
+        recommendation_id=audit.recommendation_id,
+        developer_id=audit.developer_id,
+        developer_name=audit.developer_profile.user.name if audit.developer_profile and audit.developer_profile.user else "Developer",
+        task_id=audit.task_id,
+        task_title=audit.task.title if audit.task else "Task",
+        project_id=audit.project_id,
+        project_name=audit.project.name if audit.project else "Project",
+        rank=audit.rank,
+        recommendation_score=float(audit.recommendation_score),
+        model_name=audit.model_name,
+        model_version=audit.model_version,
+        environment=audit.environment,
+        feature_snapshot=audit.feature_snapshot,
+        generated_at=audit.generated_at,
+    )
+
+
+@router.get("/audit", response_model=List[RecommendationAuditResponse], summary="List recommendation audit records")
+def list_recommendation_audits(
+    environment: Optional[str] = None,
+    model_version: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Lists recommendation audit log records with optional environment or model_version filtering.
+    """
+    from app.models.recommendation_audit import RecommendationAudit
+    stmt = select(RecommendationAudit).options(
+        joinedload(RecommendationAudit.developer_profile).joinedload(DeveloperProfile.user),
+        joinedload(RecommendationAudit.task),
+        joinedload(RecommendationAudit.project),
+    ).order_by(desc(RecommendationAudit.generated_at))
+
+    if environment:
+        stmt = stmt.where(RecommendationAudit.environment == environment)
+    if model_version:
+        stmt = stmt.where(RecommendationAudit.model_version == model_version)
+
+    audits = db.execute(stmt).scalars().all()
+    results = []
+    for a in audits:
+        results.append(
+            RecommendationAuditResponse(
+                id=a.id,
+                recommendation_id=a.recommendation_id,
+                developer_id=a.developer_id,
+                developer_name=a.developer_profile.user.name if a.developer_profile and a.developer_profile.user else "Developer",
+                task_id=a.task_id,
+                task_title=a.task.title if a.task else "Task",
+                project_id=a.project_id,
+                project_name=a.project.name if a.project else "Project",
+                rank=a.rank,
+                recommendation_score=float(a.recommendation_score),
+                model_name=a.model_name,
+                model_version=a.model_version,
+                environment=a.environment,
+                feature_snapshot=a.feature_snapshot,
+                generated_at=a.generated_at,
+            )
+        )
+    return results
+
+
+@router.get("/feedback", response_model=List[RecommendationFeedbackResponse], summary="List recommendation feedbacks")
+def list_recommendation_feedbacks(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Lists all submitted human reviewer feedback records.
+    """
+    from app.models.recommendation_audit import RecommendationFeedback
+    stmt = select(RecommendationFeedback).options(joinedload(RecommendationFeedback.reviewer)).order_by(desc(RecommendationFeedback.created_at))
+    fbs = db.execute(stmt).scalars().all()
+    return [
+        RecommendationFeedbackResponse(
+            id=fb.id,
+            recommendation_id=fb.recommendation_id,
+            reviewer_id=fb.reviewer_id,
+            reviewer_name=fb.reviewer.name if fb.reviewer else "Reviewer",
+            decision=fb.decision,
+            comment=fb.comment,
+            created_at=fb.created_at,
+        )
+        for fb in fbs
+    ]
+
+
+@router.get("/research/outcomes", response_model=List[RecommendationOutcomeResponse], summary="List recommendation outcome lifecycle records")
+def list_recommendation_outcomes(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Lists recommendation lifecycle event outcomes (RECOMMENDED -> ACCEPTED -> ASSIGNED -> COMPLETED).
+    """
+    from app.models.recommendation_audit import RecommendationOutcome
+    stmt = select(RecommendationOutcome).options(
+        joinedload(RecommendationOutcome.developer_profile).joinedload(DeveloperProfile.user),
+        joinedload(RecommendationOutcome.task),
+    ).order_by(desc(RecommendationOutcome.created_at))
+
+    outcomes = db.execute(stmt).scalars().all()
+    return [
+        RecommendationOutcomeResponse(
+            id=o.id,
+            recommendation_id=o.recommendation_id,
+            developer_id=o.developer_id,
+            developer_name=o.developer_profile.user.name if o.developer_profile and o.developer_profile.user else "Developer",
+            task_id=o.task_id,
+            task_title=o.task.title if o.task else "Task",
+            was_assigned=o.was_assigned,
+            assignment_id=o.assignment_id,
+            assignment_created_at=o.assignment_created_at,
+            assignment_outcome_status=o.assignment_outcome_status,
+            completed_at=o.completed_at,
+            created_at=o.created_at,
+        )
+        for o in outcomes
+    ]
+
+
+@router.get("/research/dataset-preview", response_model=DatasetPreviewMetricsResponse, summary="Get observational dataset preview and ML training readiness metrics")
+def get_dataset_preview(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieves observational dataset preview metrics and real-world ML dataset training readiness assessment.
+    """
+    from app.services.outcome_dataset_service import get_observational_dataset_preview
+    return get_observational_dataset_preview(db)
+
+
+@router.get("/research/model-registry", response_model=List[ModelRegistryResponse], summary="Get model governance registry records")
+def get_model_registry(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieves model registry governance records for production and research environments.
+    """
+    from app.services.model_governance_service import get_model_registry_governance
+    return get_model_registry_governance()
 
 
 @router.get("/tasks/{task_id}", response_model=RecommendationListResponse, summary="Get ranked developer recommendations for a task")

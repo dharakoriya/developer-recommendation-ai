@@ -11,6 +11,27 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-08-26 — Milestone 13 — Recommendation Audit Logging, Feedback Loop & ML Model Governance
+
+### Added
+
+* Extended SQLAlchemy database models in `backend/app/models/recommendation_audit.py` creating `RecommendationAudit`, `RecommendationFeedback`, and `RecommendationOutcome`.
+* Extended enums in `backend/app/models/enums.py` (`FeedbackDecision`: `ACCEPTED`, `REJECTED`, `IGNORED`, `DEFERRED`; `OutcomeStatus`: `RECOMMENDED`, `ACCEPTED`, `ASSIGNED`, `COMPLETED`; `LabelStatus`: `UNLABELED`, `WEAK_LABEL`, `VALIDATED_LABEL`).
+* Implemented `backend/app/services/outcome_dataset_service.py` to handle immutable audit snapshot preservation (`record_recommendation_audit`), human reviewer feedback collection (`submit_recommendation_feedback`), task assignment outcome tracking (`update_assignment_outcome`), and observational dataset preview metrics (`get_observational_dataset_preview`).
+* Implemented `backend/app/services/model_governance_service.py` providing `get_model_registry_governance()` tracking provenance for `baseline-v1` (Active Production) and `ml-v1-rf-xgb` (Experimental Research).
+* Integrated recommendation audit logging into `generate_and_persist_task_recommendations()` in `backend/app/services/recommendation_service.py`.
+* Integrated task assignment outcome tracking into `assign_task()` endpoint in `backend/app/api/assignments.py`.
+* Added REST API endpoints in `backend/app/api/recommendations.py`: `POST /api/recommendations/{id}/feedback`, `GET /api/recommendations/{id}/audit`, `GET /api/recommendations/audit`, `GET /api/recommendations/feedback`, `GET /api/recommendations/research/outcomes`, `GET /api/recommendations/research/dataset-preview`, `GET /api/recommendations/research/model-registry`.
+* Implemented automated pytest suite `backend/tests/test_recommendation_governance.py` (all 73 backend tests passing 100%).
+* Implemented Next.js Frontend page `frontend/app/recommendations/audit/page.tsx` with Model Governance Registry, Recommendation Audits table with JSON feature snapshot viewer modal, Human Feedback Loop form & history, Assignment Outcomes timeline, and Observational Dataset ML Readiness assessment (`npx tsc --noEmit` clean with 0 errors).
+
+### Technical Decisions
+
+* Production Baseline Active: Maintained `deterministic_baseline` (`baseline-v1`) as active production recommendation engine.
+* Temporal Leakage Prevention: Preserved feature vectors in `RecommendationAudit.feature_snapshot` at recommendation generation time so post-recommendation outcomes do not pollute input feature snapshots.
+* Event Lifecycle Separation: Maintained separate lifecycle records (`RECOMMENDED` ➔ `ACCEPTED` ➔ `ASSIGNED` ➔ `COMPLETED`).
+* Real-World Training Threshold: Enforced statutory requirement of at least 200 validated real-world outcomes before real-world ML model training is attempted.
+
 ## 2026-08-24 — Milestone 12 — Explainable ML Recommendation Engine — SHAP Analysis & Model Attribution
 
 ### Added

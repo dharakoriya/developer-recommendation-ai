@@ -315,6 +315,16 @@ def generate_and_persist_task_recommendations(
         db.commit()
         db.refresh(rec_orm)
 
+        # Audit logging (preserves feature snapshot & environment metadata)
+        from app.services.outcome_dataset_service import record_recommendation_audit
+        record_recommendation_audit(
+            db=db,
+            recommendation=rec_orm,
+            feature_snapshot=vec.model_dump(),
+            environment="production",
+            model_name="deterministic_baseline",
+        )
+
         rec_responses.append(
             RecommendationResponse(
                 id=rec_orm.id,

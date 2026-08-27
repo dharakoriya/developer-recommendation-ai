@@ -801,6 +801,59 @@ Response (200 OK):
 }
 ```
 
+## 11.5 Audit Logging, Feedback Loop & Model Governance (Milestone 13)
+
+### POST `/api/recommendations/{id}/feedback`
+
+Submits human reviewer feedback decision (`ACCEPTED`, `REJECTED`, `IGNORED`, `DEFERRED`) with optional comment for a recommendation.
+
+Request Body:
+
+```json
+{
+  "decision": "ACCEPTED",
+  "comment": "Developer possesses strong skill match and current available capacity."
+}
+```
+
+Response (201 Created):
+
+```json
+{
+  "id": "770e8400-e29b-41d4-a716-446655440000",
+  "recommendation_id": "880e8400-e29b-41d4-a716-446655440000",
+  "reviewer_id": "123e4567-e89b-12d3-a456-426614174000",
+  "reviewer_name": "Jane Manager",
+  "decision": "ACCEPTED",
+  "comment": "Developer possesses strong skill match and current available capacity.",
+  "created_at": "2026-08-26T18:00:00Z"
+}
+```
+
+### GET `/api/recommendations/{id}/audit`
+
+Retrieves single recommendation audit log and preserved feature snapshot.
+
+### GET `/api/recommendations/audit`
+
+Lists recommendation audit logs with optional `?environment=production|research` or `?model_version=...` filtering.
+
+### GET `/api/recommendations/feedback`
+
+Lists all submitted human reviewer feedback records.
+
+### GET `/api/recommendations/research/outcomes`
+
+Lists recommendation assignment lifecycle event outcomes (`RECOMMENDED` ➔ `ACCEPTED` ➔ `ASSIGNED` ➔ `COMPLETED`).
+
+### GET `/api/recommendations/research/dataset-preview`
+
+Retrieves observational real-world training dataset preview metrics and real-world ML dataset training readiness assessment (minimum 200 validated outcomes required).
+
+### GET `/api/recommendations/research/model-registry`
+
+Retrieves model registry provenance records for active production baseline (`baseline-v1`) and experimental research models (`ml-v1-rf-xgb`).
+
 ## 12. Dashboard
 
 ### GET `/api/dashboard/summary`
