@@ -24,6 +24,25 @@ from app.schemas.recommendation_audit import (
     ModelRegistryResponse,
     DatasetPreviewMetricsResponse,
 )
+from app.schemas.realworld_dataset import (
+    RealworldObservationResponse,
+    LabelValidationRequest,
+    LabelValidationResponse,
+    DataQualityReportResponse,
+    ClassDistributionResponse,
+    DatasetComparisonResponse,
+    RealworldTrainingReadinessResponse,
+    DatasetExportMetadataResponse,
+)
+from app.schemas.realworld_monitoring import (
+    DataCollectionMonitoringResponse,
+    DatasetGrowthResponse,
+    LabelQualityMonitoringResponse,
+    OutcomeFunnelResponse,
+    DatasetDiversityResponse,
+    DatasetSnapshotCreateRequest,
+    DatasetSnapshotResponse,
+)
 from app.services.recommendation_service import (
     get_active_recommendation_model,
     generate_and_persist_task_recommendations,
@@ -282,6 +301,207 @@ def get_model_registry(
     """
     from app.services.model_governance_service import get_model_registry_governance
     return get_model_registry_governance()
+
+
+# Milestone 14 — Real-World Research Dataset & Label Validation Endpoints
+@router.get("/research/dataset/observations", response_model=List[RealworldObservationResponse], summary="Get all real-world recommendation observations")
+def get_dataset_observations(
+    label_status: Optional[str] = None,
+    validation_status: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieves real-world recommendation observations with immutable prediction-time feature snapshots
+    and separated post-prediction outcome data. Supports optional label_status or validation_status filtering.
+    """
+    from app.services.realworld_dataset_service import get_realworld_observations
+    return get_realworld_observations(db, label_status=label_status, validation_status=validation_status)
+
+
+@router.get("/research/dataset/statistics", response_model=ClassDistributionResponse, summary="Get real-world dataset class distribution statistics")
+def get_dataset_statistics(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieves positive/negative validated label counts, weak labels, unlabeled, ambiguous, and class imbalance ratio.
+    """
+    from app.services.realworld_dataset_service import get_class_distribution
+    return get_class_distribution(db)
+
+
+@router.get("/research/dataset/quality", response_model=DataQualityReportResponse, summary="Get real-world dataset quality report")
+def get_dataset_quality(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieves data quality audit metrics including missing feature values, duplicate candidate pairs,
+    invalid feature ranges, temporal leakage flags, and lifecycle state machine consistency.
+    """
+    from app.services.realworld_dataset_service import analyze_data_quality
+    return analyze_data_quality(db)
+
+
+@router.get("/research/dataset/labels", response_model=List[RealworldObservationResponse], summary="Get observations awaiting label validation")
+def get_dataset_labels(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieves observations categorized by weak or validated research labels.
+    """
+    from app.services.realworld_dataset_service import get_realworld_observations
+    return get_realworld_observations(db)
+
+
+@router.post("/research/dataset/labels/{id}/validate", response_model=LabelValidationResponse, summary="Validate or reject a research label observation")
+def validate_dataset_label(
+    id: uuid.UUID,
+    req: LabelValidationRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+):
+    """
+    Validates a research label observation. Converts WEAK_LABEL to VALIDATED_LABEL with explicit human sign-off
+    (VALIDATED_POSITIVE, VALIDATED_NEGATIVE, REJECTED_LABEL, AMBIGUOUS).
+    Requires ADMIN or MANAGER role.
+    """
+    from app.services.realworld_dataset_service import validate_observation_label
+    try:
+        return validate_observation_label(db, id, current_user.id, req.validation_status, req.validation_reason)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.get("/research/dataset/readiness", response_model=RealworldTrainingReadinessResponse, summary="Get real-world ML model training readiness assessment")
+def get_dataset_readiness(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Evaluates multi-criteria training readiness requirements (validated label count >= 200, minority class >= 20, 0 leakage, feature completeness).
+    Returns NOT_READY, REVIEW_REQUIRED, or READY_FOR_EXPERIMENT.
+    """
+    from app.services.realworld_dataset_service import evaluate_model_training_readiness
+    return evaluate_model_training_readiness(db)
+
+
+@router.get("/research/dataset/export", response_model=DatasetExportMetadataResponse, summary="Export versioned realworld-v1 research dataset files")
+def export_dataset_files(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+):
+    """
+    Generates and exports realworld-v1 dataset files to research/dataset/realworld/
+    (observations.csv, labeled.csv, validated.csv, dataset_metadata.json).
+    Requires ADMIN or MANAGER role.
+    """
+    from app.services.realworld_dataset_service import export_realworld_dataset
+    return export_realworld_dataset(db)
+
+
+@router.get("/research/dataset/comparison", response_model=DatasetComparisonResponse, summary="Compare synthetic-v1 vs realworld-v1 dataset feature distributions")
+def get_dataset_comparison(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Computes statistical feature distribution comparisons between synthetic-v1 dataset and real-world audit observations.
+    """
+    from app.services.realworld_dataset_service import compare_synthetic_vs_realworld
+    return compare_synthetic_vs_realworld(db)
+
+
+# Milestone 15 — Real-World Dataset Collection, Label Accumulation & Research Monitoring Endpoints
+@router.get("/research/dataset/monitoring", response_model=DataCollectionMonitoringResponse, summary="Get comprehensive real-world dataset collection monitoring metrics")
+def get_dataset_monitoring(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieves real-world observation collection statistics by model, environment, time, feedback decision, outcomes, and label counts.
+    """
+    from app.services.realworld_monitoring_service import get_data_collection_monitoring
+    return get_data_collection_monitoring(db)
+
+
+@router.get("/research/dataset/growth", response_model=DatasetGrowthResponse, summary="Get dataset accumulation growth time-series data")
+def get_dataset_growth_api(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieves time-series data points tracking dataset accumulation over time.
+    """
+    from app.services.realworld_monitoring_service import get_dataset_growth
+    return get_dataset_growth(db)
+
+
+@router.get("/research/dataset/label-quality", response_model=LabelQualityMonitoringResponse, summary="Get label quality and anomaly detection monitoring metrics")
+def get_label_quality_api(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieves label coverage rates, validation turnaround time, positive/negative ratios, and suspicious distribution warnings.
+    """
+    from app.services.realworld_monitoring_service import get_label_quality_monitoring
+    return get_label_quality_monitoring(db)
+
+
+@router.get("/research/dataset/outcomes", response_model=OutcomeFunnelResponse, summary="Get outcome lifecycle conversion funnel statistics")
+def get_outcome_funnel_api(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieves recommendation outcome conversion funnel (RECOMMENDED -> ACCEPTED -> ASSIGNED -> COMPLETED) alongside alternate paths.
+    """
+    from app.services.realworld_monitoring_service import get_outcome_quality_funnel
+    return get_outcome_quality_funnel(db)
+
+
+@router.get("/research/dataset/diversity", response_model=DatasetDiversityResponse, summary="Get dataset diversity and concentration metrics")
+def get_dataset_diversity_api(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Evaluates dataset diversity across developers, tasks, projects, complexity, priority, and workload, flagging concentration skews.
+    """
+    from app.services.realworld_monitoring_service import get_dataset_diversity
+    return get_dataset_diversity(db)
+
+
+@router.get("/research/dataset/snapshots", response_model=List[DatasetSnapshotResponse], summary="List all versioned dataset snapshots")
+def list_dataset_snapshots_api(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Lists all versioned real-world dataset snapshot records.
+    """
+    from app.services.realworld_monitoring_service import list_dataset_snapshots
+    return list_dataset_snapshots(db)
+
+
+@router.post("/research/dataset/snapshots", response_model=DatasetSnapshotResponse, summary="Create an immutable versioned dataset snapshot")
+def create_dataset_snapshot_api(
+    req: DatasetSnapshotCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+):
+    """
+    Creates an immutable versioned dataset snapshot record in PostgreSQL and writes JSON metadata to research/dataset/snapshots/{version}.json.
+    Requires ADMIN or MANAGER role.
+    """
+    from app.services.realworld_monitoring_service import create_dataset_snapshot
+    try:
+        return create_dataset_snapshot(db, req.dataset_version, current_user.id, req.source_observation_range or "all_available")
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/tasks/{task_id}", response_model=RecommendationListResponse, summary="Get ranked developer recommendations for a task")

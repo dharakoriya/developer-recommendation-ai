@@ -854,6 +854,70 @@ Retrieves observational real-world training dataset preview metrics and real-wor
 
 Retrieves model registry provenance records for active production baseline (`baseline-v1`) and experimental research models (`ml-v1-rf-xgb`).
 
+## 11.6 Real-World Research Dataset & Label Validation (Milestone 14)
+
+### GET `/api/recommendations/research/dataset/observations`
+
+Retrieves real-world recommendation observations with immutable prediction-time feature snapshots and separated post-prediction outcome data. Supports optional `?label_status=...` or `?validation_status=...` filters.
+
+### GET `/api/recommendations/research/dataset/statistics`
+
+Retrieves positive/negative validated research label counts, weak labels, unlabeled, ambiguous, and class imbalance ratio strictly calculated on the human-validated labeled dataset.
+
+### GET `/api/recommendations/research/dataset/quality`
+
+Retrieves data quality audit metrics including missing feature values, duplicate candidate pairs, invalid feature ranges, temporal leakage flags, and lifecycle state machine consistency.
+
+### GET `/api/recommendations/research/dataset/labels`
+
+Retrieves observations categorized by weak or validated research labels.
+
+### POST `/api/recommendations/research/dataset/labels/{id}/validate`
+
+Validates a research label observation. Converts `WEAK_LABEL` to `VALIDATED_LABEL` with explicit human sign-off (`VALIDATED_POSITIVE`, `VALIDATED_NEGATIVE`, `REJECTED_LABEL`, `AMBIGUOUS`). Requires ADMIN or MANAGER role.
+
+### GET `/api/recommendations/research/dataset/readiness`
+
+Evaluates multi-criteria training readiness requirements (validated label count $\ge 200$, positive validated $\ge 20$, negative validated $\ge 20$, 0 temporal leakage flags, feature completeness $\ge 98\%$, 100% lifecycle consistency). Returns `NOT_READY`, `REVIEW_REQUIRED`, or `READY_FOR_EXPERIMENT`.
+
+### GET `/api/recommendations/research/dataset/export`
+
+Generates and exports versioned `realworld-v1` dataset files to `research/dataset/realworld/` (`observations.csv`, `labeled.csv`, `validated.csv`, `dataset_metadata.json`). Requires ADMIN or MANAGER role.
+
+### GET `/api/recommendations/research/dataset/comparison`
+
+Computes statistical feature distribution comparisons between synthetic-v1 dataset (1,500 samples) and real-world audit observations.
+
+## 11.7 Real-World Dataset Collection, Label Accumulation & Research Monitoring (Milestone 15)
+
+### GET `/api/recommendations/research/dataset/monitoring`
+
+Retrieves real-world observation collection statistics by model version, environment, time period (this week, this month), feedback decision, outcome lifecycle states, weak labels, and human validated labels.
+
+### GET `/api/recommendations/research/dataset/growth`
+
+Retrieves time-series data points tracking dataset accumulation over time.
+
+### GET `/api/recommendations/research/dataset/label-quality`
+
+Retrieves label coverage rates, validation turnaround time, positive/negative ratios, and suspicious distribution anomaly warnings.
+
+### GET `/api/recommendations/research/dataset/outcomes`
+
+Retrieves recommendation outcome conversion funnel (`RECOMMENDED` ➔ `ACCEPTED` ➔ `ASSIGNED` ➔ `COMPLETED`) alongside alternate paths (`REJECTED`, `IGNORED`, `DEFERRED`, `REASSIGNED`, `CANCELLED`).
+
+### GET `/api/recommendations/research/dataset/diversity`
+
+Evaluates dataset diversity across developers, tasks, projects, complexity, priority, and workload, flagging concentration skews.
+
+### GET `/api/recommendations/research/dataset/snapshots`
+
+Lists all versioned real-world dataset snapshot records.
+
+### POST `/api/recommendations/research/dataset/snapshots`
+
+Creates an immutable versioned dataset snapshot record in PostgreSQL and writes JSON metadata to `research/dataset/snapshots/{version}.json`. Requires ADMIN or MANAGER role. Existing snapshots cannot be overwritten.
+
 ## 12. Dashboard
 
 ### GET `/api/dashboard/summary`

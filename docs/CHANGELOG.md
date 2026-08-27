@@ -11,6 +11,42 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-08-27 — Milestone 15 — Real-World Dataset Collection, Label Accumulation & Research Monitoring
+
+### Added
+
+* Created SQLAlchemy model `RecommendationDatasetSnapshot` in `backend/app/models/recommendation_snapshot.py` for managing immutable versioned dataset snapshots (`recommendation_dataset_snapshots` table).
+* Created Pydantic schemas in `backend/app/schemas/realworld_monitoring.py` for collection monitoring responses, growth points, label quality stats, outcome funnels, dataset diversity metrics, and snapshot requests/responses.
+* Created `backend/app/services/realworld_monitoring_service.py` handling data collection monitoring aggregation, dataset growth tracking (`get_dataset_growth`), label quality & anomaly detection (`get_label_quality_monitoring`), outcome lifecycle conversion funnels (`get_outcome_quality_funnel`), representation diversity metrics (`get_dataset_diversity`), and immutable snapshot creation/listing (`create_dataset_snapshot`).
+* Added REST API endpoints in `backend/app/api/recommendations.py`: `GET /api/recommendations/research/dataset/monitoring`, `GET /api/recommendations/research/dataset/growth`, `GET /api/recommendations/research/dataset/label-quality`, `GET /api/recommendations/research/dataset/outcomes`, `GET /api/recommendations/research/dataset/diversity`, `GET /api/recommendations/research/dataset/snapshots`, `POST /api/recommendations/research/dataset/snapshots`.
+* Implemented automated pytest suite `backend/tests/test_realworld_monitoring.py` covering all 16 requirements (all 91 backend pytest tests passing 100%).
+* Implemented Next.js Frontend page `frontend/app/research/dataset/monitoring/page.tsx` with Research Monitoring Header, Data Collection Summary Cards, Outcome Lifecycle Conversion Funnel, Dataset Accumulation Growth visualizer, Label Quality Anomaly Detection panel, Feature Diversity & Concentration warnings, and Immutable Snapshot Manager modal (`npx tsc --noEmit` clean with 0 errors).
+
+### Technical Decisions
+
+* **Immutable Snapshot Enforcement**: Created snapshots cannot be overwritten. Duplicate version requests raise a 400 error.
+* **Concentration Anomaly Warnings**: Automatic research warnings trigger if single developer/project accounts for >50% of dataset observations.
+* **Production Isolation**: Production recommendation engine remains unchanged as `deterministic_baseline` (`baseline-v1`). No ML models were retrained in Milestone 15.
+
+## 2026-08-27 — Milestone 14 — Real-World Research Dataset Construction, Label Validation & Dataset Quality Analysis
+
+### Added
+
+* Created SQLAlchemy model `RecommendationLabelValidation` in `backend/app/models/recommendation_validation.py` for tracking weak research labels and human ground-truth sign-offs (`VALIDATED_POSITIVE`, `VALIDATED_NEGATIVE`, `REJECTED_LABEL`, `AMBIGUOUS`).
+* Extended enums in `backend/app/models/enums.py` (`ValidationStatus`: `UNVALIDATED`, `VALIDATED_POSITIVE`, `VALIDATED_NEGATIVE`, `REJECTED_LABEL`, `AMBIGUOUS`; `ReadinessStatus`: `NOT_READY`, `REVIEW_REQUIRED`, `READY_FOR_EXPERIMENT`; `LabelStatus`: `AMBIGUOUS`).
+* Created Pydantic schemas in `backend/app/schemas/realworld_dataset.py` for observation responses, label validation requests, data quality reports, class distributions, synthetic vs. real-world comparison stats, and multi-criteria training readiness assessments.
+* Created `backend/app/services/realworld_dataset_service.py` handling unified observation assembly, deterministic weak labeling (`propose_research_label`), human label validation (`validate_observation_label`), automated data quality auditing (`analyze_data_quality`), class distribution calculation, synthetic vs realworld statistical comparison, multi-criteria readiness evaluation, and file exporting.
+* Created research exporter script `research/exporters/realworld_exporter.py` generating `realworld-v1` files in `research/dataset/realworld/` (`observations.csv`, `labeled.csv`, `validated.csv`, `dataset_metadata.json`).
+* Added REST API endpoints in `backend/app/api/recommendations.py`: `GET /api/recommendations/research/dataset/observations`, `GET /api/recommendations/research/dataset/statistics`, `GET /api/recommendations/research/dataset/quality`, `GET /api/recommendations/research/dataset/labels`, `POST /api/recommendations/research/dataset/labels/{id}/validate`, `GET /api/recommendations/research/dataset/readiness`, `GET /api/recommendations/research/dataset/export`, `GET /api/recommendations/research/dataset/comparison`.
+* Implemented automated pytest suite `backend/tests/test_realworld_dataset.py` covering all 17 requirements (all 83 backend pytest tests passing 100%).
+* Implemented Next.js Frontend page `frontend/app/research/dataset/page.tsx` with Research Badge Header, Dataset Overview & Multi-Criteria Training Readiness tab, Data Quality & Leakage Audit tab, Synthetic vs Real-World Feature Distribution Comparison tab, and Observational Dataset Inspector with Human Label Validation modal (`npx tsc --noEmit` clean with 0 errors).
+
+### Technical Decisions
+
+* **Strict Temporal Leakage Protection**: Isolated prediction-time feature snapshots captured at recommendation generation time from post-prediction outcome data (`was_assigned`, `completed_at`, `feedback_decision`).
+* **Weak Label vs Ground-Truth Distinction**: Rule-derived labels (`WEAK_LABEL`) are explicitly kept separate from human-validated labels (`VALIDATED_LABEL`). Only human-validated labels are included in `validated.csv`.
+* **Production Isolation**: Production recommendation engine remains unchanged as `deterministic_baseline` (`baseline-v1`). No ML models were retrained in Milestone 14.
+
 ## 2026-08-26 — Milestone 13 — Recommendation Audit Logging, Feedback Loop & ML Model Governance
 
 ### Added

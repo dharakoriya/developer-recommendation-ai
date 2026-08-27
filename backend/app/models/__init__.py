@@ -11,6 +11,8 @@ from app.models.enums import (
     FeedbackDecision,
     OutcomeStatus,
     LabelStatus,
+    ValidationStatus,
+    ReadinessStatus,
 )
 from app.models.user import User
 from app.models.skill import Skill
@@ -23,6 +25,8 @@ from app.models.recommendation_audit import (
     RecommendationFeedback,
     RecommendationOutcome,
 )
+from app.models.recommendation_validation import RecommendationLabelValidation
+from app.models.recommendation_snapshot import RecommendationDatasetSnapshot
 
 __all__ = [
     "Base",
@@ -37,6 +41,8 @@ __all__ = [
     "FeedbackDecision",
     "OutcomeStatus",
     "LabelStatus",
+    "ValidationStatus",
+    "ReadinessStatus",
     "User",
     "Skill",
     "DeveloperProfile",
@@ -53,4 +59,6 @@ __all__ = [
     "RecommendationAudit",
     "RecommendationFeedback",
     "RecommendationOutcome",
+    "RecommendationLabelValidation",
+    "RecommendationDatasetSnapshot",
 ]

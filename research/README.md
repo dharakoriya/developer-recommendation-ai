@@ -84,3 +84,30 @@ Milestone 13 creates the production-safe infrastructure needed to transition fut
 3. **Assignment Outcome Tracking**: Tracks distinct task assignment lifecycle progression (`RECOMMENDED` ➔ `ACCEPTED` ➔ `ASSIGNED` ➔ `COMPLETED`) via `RecommendationOutcome`.
 4. **Model Governance Registry**: Tracks provenance, environment (`production` vs `research`), version, and active status for active production baseline (`baseline-v1`) and experimental research models (`ml-v1-rf-xgb`).
 5. **Real-World Training Threshold**: Enforces statutory requirement of at least 200 validated real-world outcomes before attempting real-world ML model training.
+
+---
+
+## 7. Real-World Research Dataset & Label Validation Pipeline (Milestone 14)
+
+Milestone 14 builds the first proper pipeline converting real application observations into a versioned research dataset (`realworld-v1` under `research/dataset/realworld/`):
+
+1. **Prediction-Time Feature Isolation**: Prediction-time `feature_snapshot` captured at recommendation generation time is strictly isolated from post-prediction outcome events (`was_assigned`, `completed_at`, `feedback_decision`) to eliminate temporal leakage.
+2. **Weak Research Labeling**: Implements `propose_research_label` applying deterministic rules (`ACCEPTED` + task completed/assigned = `WEAK_LABEL` label 1; `REJECTED` or reassigned = `WEAK_LABEL` label 0; ignored/cancelled = `AMBIGUOUS`).
+3. **Human Ground-Truth Validation**: Requires explicit human reviewer sign-off (`POST /api/recommendations/research/dataset/labels/{id}/validate`) to convert `WEAK_LABEL` into `VALIDATED_LABEL`. Only human-validated labels are exported into `validated.csv`.
+4. **Data Quality & Leakage Auditing**: Performs automated checks for missing values, duplicate candidate pairs, feature range violations, timestamp ordering, temporal leakage flags (0 flags), and lifecycle state machine consistency (100% valid).
+5. **Synthetic vs. Real-World Distribution Comparison**: Compares statistical feature distributions between `synthetic-v1` (1,500 candidate pairs) and `realworld-v1` real-world observations.
+6. **Multi-Criteria Training Readiness Assessment**: Evaluates multi-criteria readiness (`NOT_READY`, `REVIEW_REQUIRED`, `READY_FOR_EXPERIMENT`) requiring $\ge 200$ validated labels, positive/negative class representation ($\ge 20$ each), 0 temporal leakage flags, and $\ge 98\%$ feature completeness.
+7. **Versioned Dataset Exporter**: `python research/exporters/realworld_exporter.py` generates `observations.csv`, `labeled.csv`, `validated.csv`, and `dataset_metadata.json` under `research/dataset/realworld/`.
+
+---
+
+## 8. Real-World Dataset Collection, Label Accumulation & Research Monitoring (Milestone 15)
+
+Milestone 15 builds real-world research data collection, outcome conversion funnel monitoring, dataset diversity tracking, and versioned snapshot management:
+
+1. **Data Collection Monitoring**: Aggregates observation collection rates by model version, environment, time period (this week/month), feedback decisions, assignment outcomes, weak labels, and human validated labels (`GET /api/recommendations/research/dataset/monitoring`).
+2. **Outcome Conversion Funnel**: Tracks recommendation lifecycle progression (`RECOMMENDED` ➔ `ACCEPTED` ➔ `ASSIGNED` ➔ `COMPLETED`) alongside alternate paths (`REJECTED`, `IGNORED`, `DEFERRED`, `REASSIGNED`, `CANCELLED`) with conversion percentage calculations (`GET /api/recommendations/research/dataset/outcomes`).
+3. **Label Quality Anomaly Warnings**: Evaluates label coverage rates, validation turnaround time, positive/negative validation ratios, and flags suspicious distribution anomalies (`GET /api/recommendations/research/dataset/label-quality`).
+4. **Representation Diversity & Concentration Skew**: Monitors sample representation across unique developers, tasks, projects, complexity, priority, and workload, generating concentration warnings if top developers/projects dominate observations (`GET /api/recommendations/research/dataset/diversity`).
+5. **Immutable Versioned Dataset Snapshots**: Persists immutable dataset snapshot records (`RecommendationDatasetSnapshot`) in PostgreSQL and exports JSON metadata to `research/dataset/snapshots/{version}.json`. Existing snapshots are immutable and cannot be overwritten.
+6. **Research Dashboard UI**: Next.js Dashboard at `/research/dataset/monitoring` providing real-time data collection metrics, outcome funnels, dataset growth visualizer, diversity panels, and versioned snapshot manager.
