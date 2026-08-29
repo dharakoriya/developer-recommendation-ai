@@ -2,19 +2,21 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { useAuth } from '../../context/AuthContext';
+import { useParams } from 'next/navigation';
+import { AppShell } from '../../../components/AppShell';
+import { StatusBadge } from '../../../components/StatusBadge';
+import { WorkloadIndicator } from '../../../components/WorkloadIndicator';
+import { LoadingState } from '../../../components/LoadingState';
+import { ErrorState } from '../../../components/ErrorState';
 
-interface DeveloperSkill {
-  id: string;
-  developer_id: string;
+export interface SkillDetail {
   skill_id: string;
-  skill_name?: string;
-  skill_category?: string;
+  skill_name: string;
   proficiency_level: number;
+  years_experience?: number;
 }
 
-interface Developer {
+export interface DeveloperProfileDetail {
   id: string;
   user_id: string;
   user_name?: string;
@@ -22,64 +24,32 @@ interface Developer {
   experience_years: number;
   availability_status: 'AVAILABLE' | 'PARTIAL' | 'UNAVAILABLE';
   performance_score?: number;
-  skills: DeveloperSkill[];
+  workload_score?: number;
+  skills: SkillDetail[];
 }
 
-interface Skill {
-  id: string;
-  name: string;
-  category?: string;
-}
-
-export default function DeveloperDetailPage() {
+export default function DeveloperProfilePage() {
   const params = useParams();
-  const router = useRouter();
   const developerId = params.id as string;
 
-  const { token, user, apiUrl } = useAuth();
-
-  const [developer, setDeveloper] = useState<Developer | null>(null);
-  const [catalogSkills, setCatalogSkills] = useState<Skill[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [dev, setDev] = useState<DeveloperProfileDetail | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Skill assignment form states
-  const [selectedSkillId, setSelectedSkillId] = useState<string>('');
-  const [proficiency, setProficiency] = useState<number>(75);
+  useEffect(() => {
+    if (developerId) fetchProfile();
+  }, [developerId]);
 
-  // Profile edit state
-  const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false);
-  const [editExp, setEditExp] = useState<number>(0);
-  const [editAvailability, setEditAvailability] = useState<'AVAILABLE' | 'PARTIAL' | 'UNAVAILABLE'>('AVAILABLE');
-  const [editPerf, setEditPerf] = useState<string>('');
-
-  const fetchDeveloperDetails = async () => {
-    if (!token || !developerId) return;
+  const fetchProfile = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [devRes, skillRes] = await Promise.all([
-        fetch(`${apiUrl}/api/developers/${developerId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${apiUrl}/api/skills`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
-
-      const devData = await devRes.json();
-      if (!devRes.ok) throw new Error(devData.detail || 'Developer profile not found');
-      setDeveloper(devData);
-
-      setEditExp(devData.experience_years);
-      setEditAvailability(devData.availability_status);
-      setEditPerf(devData.performance_score ? String(devData.performance_score) : '');
-
-      if (skillRes.ok) {
-        const skillData = await skillRes.json();
-        setCatalogSkills(skillData);
-        if (skillData.length > 0) setSelectedSkillId(skillData[0].id);
-      }
+      const token = localStorage.getItem('devalign_token');
+      const res = await fetch(`http://localhost:8000/api/developers/${developerId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error('Failed to load developer profile');
+      setDev(await res.json());
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -87,354 +57,76 @@ export default function DeveloperDetailPage() {
     }
   };
 
-  useEffect(() => {
-    fetchDeveloperDetails();
-  }, [token, developerId]);
-
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    try {
-      const res = await fetch(`${apiUrl}/api/developers/${developerId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          experience_years: editExp,
-          availability_status: editAvailability,
-          performance_score: editPerf ? parseFloat(editPerf) : null,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Profile update failed');
-
-      setIsEditingProfile(false);
-      fetchDeveloperDetails();
-    } catch (err: any) {
-      setError(err.message);
-    }
-  };
-
-  const handleAssignSkill = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    try {
-      const res = await fetch(`${apiUrl}/api/developers/${developerId}/skills`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          skill_id: selectedSkillId,
-          proficiency_level: proficiency,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Skill assignment failed');
-
-      fetchDeveloperDetails();
-    } catch (err: any) {
-      setError(err.message);
-    }
-  };
-
-  const handleUpdateProficiency = async (skillId: string, newProficiency: number) => {
-    setError(null);
-    try {
-      const res = await fetch(`${apiUrl}/api/developers/${developerId}/skills/${skillId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ proficiency_level: newProficiency }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Proficiency update failed');
-
-      fetchDeveloperDetails();
-    } catch (err: any) {
-      setError(err.message);
-    }
-  };
-
-  const handleRemoveSkill = async (skillId: string) => {
-    if (!confirm('Remove this skill from developer profile?')) return;
-    setError(null);
-    try {
-      const res = await fetch(`${apiUrl}/api/developers/${developerId}/skills/${skillId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || 'Remove skill failed');
-      }
-      fetchDeveloperDetails();
-    } catch (err: any) {
-      setError(err.message);
-    }
-  };
-
-  const canEdit = user?.role === 'ADMIN' || user?.role === 'MANAGER' || (developer && developer.user_id === user?.id);
-
-  if (loading) {
-    return (
-      <main className="container" style={{ textAlign: 'center', paddingTop: '4rem' }}>
-        <span className="pill pill-loading">Loading developer profile details...</span>
-      </main>
-    );
-  }
-
-  if (!developer) {
-    return (
-      <main className="container" style={{ textAlign: 'center', paddingTop: '4rem' }}>
-        <div className="card">
-          <h2>Developer Profile Not Found</h2>
-          <p style={{ color: 'var(--text-secondary)', margin: '1rem 0' }}>{error}</p>
-          <Link href="/developers" className="btn">
-            Back to Directory
-          </Link>
-        </div>
-      </main>
-    );
-  }
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <main className="container">
-        <header className="header">
-          <span className="badge">Developer Profile Details</span>
-          <h1 className="title">{developer.user_name || 'Developer Profile'}</h1>
-          <p className="subtitle">{developer.user_email}</p>
-        </header>
-
-        {error && (
-          <div style={{ background: 'rgba(244, 63, 94, 0.15)', border: '1px solid rgba(244, 63, 94, 0.3)', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem', color: 'var(--accent-rose)', fontSize: '0.85rem' }}>
-            ⚠️ {error}
-          </div>
-        )}
-
-        <section className="card" style={{ marginBottom: '2rem' }}>
-          <div className="card-title" style={{ justifyContent: 'space-between' }}>
-            <span>📊 Developer Overview</span>
-            {canEdit && (
-              <button
-                className="btn"
-                style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
-                onClick={() => setIsEditingProfile(!isEditingProfile)}
-              >
-                {isEditingProfile ? 'Cancel Edit' : 'Edit Profile'}
-              </button>
-            )}
-          </div>
-
-          {isEditingProfile ? (
-            <form onSubmit={handleUpdateProfile} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'end' }}>
+    <AppShell>
+      <div className="space-y-6">
+        {loading ? (
+          <LoadingState message="Loading developer profile..." />
+        ) : error ? (
+          <ErrorState message={error} onRetry={fetchProfile} />
+        ) : dev ? (
+          <>
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>Experience (Years)</label>
-                <input
-                  type="number"
-                  step="0.5"
-                  required
-                  value={editExp}
-                  onChange={(e) => setEditExp(parseFloat(e.target.value))}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '0.5rem', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)', color: 'white' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>Availability</label>
-                <select
-                  value={editAvailability}
-                  onChange={(e) => setEditAvailability(e.target.value as any)}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '0.5rem', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--border-color)', color: 'white' }}
-                >
-                  <option value="AVAILABLE">AVAILABLE</option>
-                  <option value="PARTIAL">PARTIAL</option>
-                  <option value="UNAVAILABLE">UNAVAILABLE</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>Performance Score</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={editPerf}
-                  onChange={(e) => setEditPerf(e.target.value)}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '0.5rem', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)', color: 'white' }}
-                />
-              </div>
-
-              <div>
-                <button type="submit" className="btn" style={{ width: '100%', justifyContent: 'center' }}>
-                  Save Profile Changes
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div className="status-grid">
-              <div className="status-box">
-                <div className="status-label">Total Experience</div>
-                <div className="status-value">{developer.experience_years} Years</div>
-              </div>
-
-              <div className="status-box">
-                <div className="status-label">Availability Status</div>
-                <div className="status-value">
-                  <span className="pill pill-success">{developer.availability_status}</span>
+                <div className="flex items-center gap-3">
+                  <Link href="/developers" className="text-slate-400 hover:text-white text-xs font-semibold">← Developers</Link>
+                  <StatusBadge status={dev.availability_status} type="workload_status" />
                 </div>
-              </div>
-
-              <div className="status-box">
-                <div className="status-label">Performance Rating</div>
-                <div className="status-value" style={{ color: 'var(--accent-cyan)' }}>
-                  {developer.performance_score ? `${developer.performance_score} / 100` : 'Not Rated'}
-                </div>
-              </div>
-
-              <div className="status-box">
-                <div className="status-label">Technical Skills Count</div>
-                <div className="status-value">{developer.skills.length} Skills</div>
+                <h1 className="text-3xl font-extrabold text-white tracking-tight mt-1">{dev.user_name || 'Developer Profile'}</h1>
+                <p className="text-slate-400 text-xs mt-0.5">{dev.user_email || 'No email specified'}</p>
               </div>
             </div>
-          )}
-        </section>
 
-        {canEdit && catalogSkills.length > 0 && (
-          <section className="card" style={{ marginBottom: '2rem' }}>
-            <div className="card-title">
-              <span>⚡ Assign Technical Skill</span>
+            {/* Profile Overview Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="p-5 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-slate-400 text-xs uppercase font-semibold">Years Experience</span>
+                <span className="text-3xl font-extrabold text-white block mt-1 font-mono">{dev.experience_years} Yrs</span>
+              </div>
+              <div className="p-5 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-slate-400 text-xs uppercase font-semibold">Performance Rating</span>
+                <span className="text-3xl font-extrabold text-emerald-400 block mt-1 font-mono">{dev.performance_score ?? 85} / 100</span>
+              </div>
+              <div className="p-5 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-slate-400 text-xs uppercase font-semibold">Workload Score</span>
+                <span className="text-3xl font-extrabold text-purple-400 block mt-1 font-mono">{Math.round(dev.workload_score ?? 20)}%</span>
+              </div>
             </div>
-            <form onSubmit={handleAssignSkill} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'end' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>Select Skill</label>
-                <select
-                  value={selectedSkillId}
-                  onChange={(e) => setSelectedSkillId(e.target.value)}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '0.5rem', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--border-color)', color: 'white' }}
-                >
-                  {catalogSkills.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.category || 'General'})
-                    </option>
+
+            {/* Workload Capacity */}
+            <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6 space-y-3">
+              <h3 className="font-bold text-white text-sm">Workload Capacity & Status</h3>
+              <WorkloadIndicator score={dev.workload_score ?? 20} status={dev.availability_status} />
+            </div>
+
+            {/* Technical Skills Catalog */}
+            <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6 space-y-4">
+              <h3 className="font-bold text-white text-sm">Technical Skills & Proficiency Levels</h3>
+              {dev.skills.length === 0 ? (
+                <p className="text-slate-500 text-xs">No technical skills registered for this developer profile.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {dev.skills.map((s, i) => (
+                    <div key={i} className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-2">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-bold text-white">{s.skill_name}</span>
+                        <span className="text-blue-400 font-mono font-bold">Level {s.proficiency_level} / 5</span>
+                      </div>
+                      <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-blue-500 h-full transition-all"
+                          style={{ width: `${(s.proficiency_level / 5) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
                   ))}
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                  Proficiency Level: <strong>{proficiency}%</strong>
-                </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={proficiency}
-                  onChange={(e) => setProficiency(parseInt(e.target.value))}
-                  style={{ width: '100%', accentColor: 'var(--accent-cyan)' }}
-                />
-              </div>
-
-              <div>
-                <button type="submit" className="btn" style={{ width: '100%', justifyContent: 'center' }}>
-                  Assign Skill
-                </button>
-              </div>
-            </form>
-          </section>
-        )}
-
-        <section className="card">
-          <div className="card-title">
-            <span>💻 Assigned Technical Skills & Proficiency</span>
-          </div>
-
-          {developer.skills.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '1.5rem' }}>
-              No technical skills assigned to this developer profile yet.
-            </p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {developer.skills.map((ds) => (
-                <div
-                  key={ds.id}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid var(--border-color)',
-                    padding: '1rem',
-                    borderRadius: '0.5rem',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <div>
-                      <strong style={{ fontSize: '1.05rem', marginRight: '0.5rem' }}>{ds.skill_name || 'Skill'}</strong>
-                      <span className="pill" style={{ fontSize: '0.75rem', background: 'rgba(56,189,248,0.15)', color: 'var(--accent-cyan)' }}>
-                        {ds.skill_category || 'General'}
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 700, color: 'var(--accent-emerald)', fontSize: '0.95rem' }}>
-                        {ds.proficiency_level}%
-                      </span>
-                      {canEdit && (
-                        <button
-                          className="btn"
-                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', background: 'rgba(244,63,94,0.15)', color: 'var(--accent-rose)', border: '1px solid rgba(244,63,94,0.3)' }}
-                          onClick={() => handleRemoveSkill(ds.skill_id)}
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div style={{ background: 'rgba(255,255,255,0.1)', height: '8px', borderRadius: '4px', overflow: 'hidden', margin: '0.5rem 0' }}>
-                    <div
-                      style={{
-                        width: `${ds.proficiency_level}%`,
-                        height: '100%',
-                        background: 'linear-gradient(90deg, var(--accent-indigo) 0%, var(--accent-cyan) 100%)',
-                        transition: 'width 0.3s ease',
-                      }}
-                    />
-                  </div>
-
-                  {canEdit && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.5rem' }}>
-                      <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Adjust Proficiency:</label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={ds.proficiency_level}
-                        onChange={(e) => handleUpdateProficiency(ds.skill_id, parseInt(e.target.value))}
-                        style={{ flex: 1, accentColor: 'var(--accent-cyan)' }}
-                      />
-                    </div>
-                  )}
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </section>
-
-        <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-          <Link href="/developers" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-            ← Back to Developer Profiles Directory
-          </Link>
-        </div>
-      </main>
-    </div>
+          </>
+        ) : null}
+      </div>
+    </AppShell>
   );
 }

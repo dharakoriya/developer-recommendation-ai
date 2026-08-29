@@ -148,6 +148,7 @@ npm run dev
 - Milestone 13 — Recommendation Audit Logging, Feedback Loop & Model Governance ✅
 - Milestone 14 — Real-World Research Dataset Construction, Label Validation & Dataset Quality Analysis ✅
 - Milestone 15 — Real-World Dataset Collection, Label Accumulation & Research Monitoring ✅
+- Milestone 16 — Production Frontend Foundation & Core User Workflow ✅
 
 ---
 

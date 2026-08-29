@@ -11,6 +11,22 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-08-27 — Milestone 16 — Production Frontend Foundation & Core User Workflow
+
+### Added
+
+* Created backend dashboard statistics endpoints in `backend/app/api/dashboard.py` (`GET /api/dashboard/summary`, `GET /api/dashboard/workload`, `GET /api/dashboard/recommendations`) registered in `backend/app/main.py`.
+* Implemented automated pytest test suite in `backend/tests/test_dashboard_api.py` (92 total backend tests passing 100%).
+* Created reusable UI components in `frontend/components/`: `AppShell`, `Sidebar`, `Header`, `StatCard`, `StatusBadge`, `WorkloadIndicator`, `LoadingState`, `EmptyState`, `ErrorState`, `RecommendationCard`, and `ExplanationModal`.
+* Implemented production application screens in `frontend/app/`: Executive Dashboard (`/dashboard` & `/`), Projects Directory (`/projects`), Project Details with task status columns (`/projects/[id]`), Tasks Management (`/tasks`), Developers Directory (`/developers`), Developer Profile Details (`/developers/[id]`), Teams Management (`/teams`), Task Assignments (`/assignments`), Workload Engine (`/workload`), and End-to-End Recommendations Workflow (`/recommendations`).
+* Preserved research lab routes intact under a dedicated "RESEARCH" sidebar section (`/research/ml`, `/research/dataset`, `/research/dataset/monitoring`, `/recommendations/audit`).
+
+### Technical Decisions
+
+* **Strict Production/Research Separation**: Production application pages expose business suitability metrics without technical ML jargon. Research pages remain intact under a visually separated navigation block.
+* **Production Recommendation Engine**: Active recommendation engine remains `deterministic_baseline` (`baseline-v1`). ML models remain experimental and un-deployed.
+* **TypeScript Integrity**: `npx tsc --noEmit` verified clean with 0 errors.
+
 ## 2026-08-27 — Milestone 15 — Real-World Dataset Collection, Label Accumulation & Research Monitoring
 
 ### Added

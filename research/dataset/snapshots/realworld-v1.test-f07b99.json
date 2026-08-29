@@ -1,0 +1,22 @@
+{
+  "id": "4c70d6fb-3479-4e4f-a699-64506dc46b46",
+  "dataset_version": "realworld-v1.test-f07b99",
+  "created_by_name": "Monitoring Dev",
+  "creation_timestamp": "2026-08-27T17:54:03.532323+05:30",
+  "source_observation_range": "all_available",
+  "total_observations": 50,
+  "labeled_observations": 18,
+  "validated_labels": 7,
+  "positive_labels": 7,
+  "negative_labels": 0,
+  "ambiguous_observations": 7,
+  "feature_version": "v1.0",
+  "label_methodology_version": "suitability-v1",
+  "data_quality_status": "PASS",
+  "snapshot_metadata": {
+    "quality_score_percentage": 100.0,
+    "temporal_leakage_flag_count": 0,
+    "lifecycle_consistency_passed": true,
+    "source_range": "all_available"
+  }
+}

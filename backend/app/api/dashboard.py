@@ -1,0 +1,190 @@
+import uuid
+from typing import List, Dict, Any, Optional
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from sqlalchemy import select, func, desc
+
+from app.database import get_db
+from app.models.user import User
+from app.models.project import Project
+from app.models.developer import DeveloperProfile, WorkloadRecord
+from app.models.task import Task, Assignment
+from app.models.recommendation import Recommendation
+from app.models.recommendation_audit import RecommendationAudit, RecommendationFeedback
+from app.models.enums import TaskStatus, AssignmentStatus, FeedbackDecision
+from app.api.deps import get_current_user
+
+router = APIRouter()
+
+
+@router.get("/summary", summary="Get operational dashboard statistics")
+def get_dashboard_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieves operational dashboard metrics: total projects, active projects, total developers,
+    active tasks, unassigned tasks, high workload developers, recent recommendations, and recent assignments.
+    """
+    total_projects = db.scalar(select(func.count(Project.id))) or 0
+    active_projects = db.scalar(select(func.count(Project.id)).where(Project.status == "ACTIVE")) or 0
+
+    total_developers = db.scalar(select(func.count(DeveloperProfile.id))) or 0
+    available_developers = db.scalar(select(func.count(DeveloperProfile.id)).where(DeveloperProfile.availability_status == "AVAILABLE")) or 0
+
+    active_tasks = db.scalar(select(func.count(Task.id)).where(Task.status.in_([TaskStatus.TODO, TaskStatus.IN_PROGRESS]))) or 0
+    completed_tasks = db.scalar(select(func.count(Task.id)).where(Task.status == TaskStatus.COMPLETED)) or 0
+
+    # Unassigned tasks: tasks with TODO/IN_PROGRESS status that have no ACTIVE assignment
+    active_assignment_task_ids = select(Assignment.task_id).where(Assignment.status == AssignmentStatus.ACTIVE)
+    unassigned_tasks = db.scalar(
+        select(func.count(Task.id)).where(
+            Task.status.in_([TaskStatus.TODO, TaskStatus.IN_PROGRESS]),
+            Task.id.not_in(active_assignment_task_ids)
+        )
+    ) or 0
+
+    # High workload developers (workload_score > 75)
+    dev_profiles = db.execute(select(DeveloperProfile)).scalars().all()
+    high_workload_count = 0
+    for dev in dev_profiles:
+        latest_wl = db.scalar(
+            select(WorkloadRecord)
+            .where(WorkloadRecord.developer_id == dev.id)
+            .order_by(desc(WorkloadRecord.calculated_at))
+        )
+        wl_score = float(latest_wl.workload_score) if latest_wl else 0.0
+        if wl_score >= 75.0:
+            high_workload_count += 1
+
+    # Recent recommendations (top 5)
+    recent_recs_db = db.execute(
+        select(Recommendation)
+        .order_by(desc(Recommendation.created_at))
+        .limit(5)
+    ).scalars().all()
+
+    recent_recommendations = []
+    for r in recent_recs_db:
+        t = db.scalar(select(Task).where(Task.id == r.task_id))
+        d_prof = db.scalar(select(DeveloperProfile).where(DeveloperProfile.id == r.developer_id))
+        d_user = db.scalar(select(User).where(User.id == d_prof.user_id)) if d_prof else None
+        recent_recommendations.append({
+            "id": str(r.id),
+            "task_id": str(r.task_id),
+            "task_title": t.title if t else "Task",
+            "developer_id": str(r.developer_id),
+            "developer_name": d_user.name if d_user else "Developer",
+            "rank": r.rank,
+            "recommendation_score": float(r.score),
+            "model_version": r.model_version,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+        })
+
+    # Recent assignments (top 5)
+    recent_assign_db = db.execute(
+        select(Assignment)
+        .order_by(desc(Assignment.assigned_at))
+        .limit(5)
+    ).scalars().all()
+
+    recent_assignments = []
+    for a in recent_assign_db:
+        t = db.scalar(select(Task).where(Task.id == a.task_id))
+        d_prof = db.scalar(select(DeveloperProfile).where(DeveloperProfile.id == a.developer_id))
+        d_user = db.scalar(select(User).where(User.id == d_prof.user_id)) if d_prof else None
+        recent_assignments.append({
+            "id": str(a.id),
+            "task_id": str(a.task_id),
+            "task_title": t.title if t else "Task",
+            "developer_id": str(a.developer_id),
+            "developer_name": d_user.name if d_user else "Developer",
+            "status": a.status.value,
+            "assigned_at": a.assigned_at.isoformat() if a.assigned_at else None,
+        })
+
+    return {
+        "total_projects": total_projects,
+        "active_projects": active_projects,
+        "total_developers": total_developers,
+        "available_developers": available_developers,
+        "active_tasks": active_tasks,
+        "completed_tasks": completed_tasks,
+        "unassigned_tasks": unassigned_tasks,
+        "high_workload_developers": high_workload_count,
+        "recent_recommendations": recent_recommendations,
+        "recent_assignments": recent_assignments,
+    }
+
+
+@router.get("/workload", summary="Get workload chart data")
+def get_dashboard_workload(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Returns workload distribution metrics across developers.
+    """
+    dev_profiles = db.execute(select(DeveloperProfile)).scalars().all()
+    
+    healthy = 0    # < 50
+    moderate = 0   # 50 - 75
+    high = 0       # 75 - 100
+    overloaded = 0 # > 100
+
+    developer_workloads = []
+    for dev in dev_profiles:
+        user_obj = db.scalar(select(User).where(User.id == dev.user_id))
+        latest_wl = db.scalar(
+            select(WorkloadRecord)
+            .where(WorkloadRecord.developer_id == dev.id)
+            .order_by(desc(WorkloadRecord.calculated_at))
+        )
+        score = float(latest_wl.workload_score) if latest_wl else 0.0
+        status_str = latest_wl.status_classification.value if latest_wl else "HEALTHY"
+
+        if score < 50.0:
+            healthy += 1
+        elif score < 75.0:
+            moderate += 1
+        elif score <= 100.0:
+            high += 1
+        else:
+            overloaded += 1
+
+        developer_workloads.append({
+            "developer_id": str(dev.id),
+            "name": user_obj.name if user_obj else "Developer",
+            "workload_score": score,
+            "status": status_str,
+        })
+
+    return {
+        "healthy_count": healthy,
+        "moderate_count": moderate,
+        "high_count": high,
+        "overloaded_count": overloaded,
+        "developer_workloads": developer_workloads,
+    }
+
+
+@router.get("/recommendations", summary="Get recommendation statistics")
+def get_dashboard_recommendations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Returns high-level recommendation activity metrics.
+    """
+    total_generated = db.scalar(select(func.count(RecommendationAudit.id))) or 0
+    accepted = db.scalar(select(func.count(RecommendationFeedback.id)).where(RecommendationFeedback.decision == FeedbackDecision.ACCEPTED)) or 0
+    rejected = db.scalar(select(func.count(RecommendationFeedback.id)).where(RecommendationFeedback.decision == FeedbackDecision.REJECTED)) or 0
+
+    return {
+        "active_model_version": "baseline-v1",
+        "active_model_name": "deterministic_baseline",
+        "total_recommendations_generated": total_generated,
+        "accepted_count": accepted,
+        "rejected_count": rejected,
+        "acceptance_rate": round((accepted / max(1, accepted + rejected)) * 100.0, 2) if (accepted + rejected) > 0 else 0.0,
+    }

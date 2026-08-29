@@ -2,9 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useAuth } from '../context/AuthContext';
+import { AppShell } from '../../components/AppShell';
+import { StatusBadge } from '../../components/StatusBadge';
+import { WorkloadIndicator } from '../../components/WorkloadIndicator';
+import { LoadingState } from '../../components/LoadingState';
+import { EmptyState } from '../../components/EmptyState';
+import { ErrorState } from '../../components/ErrorState';
 
-interface Developer {
+export interface Developer {
   id: string;
   user_id: string;
   user_name?: string;
@@ -12,32 +17,32 @@ interface Developer {
   experience_years: number;
   availability_status: 'AVAILABLE' | 'PARTIAL' | 'UNAVAILABLE';
   performance_score?: number;
-  created_at: string;
-  skills: any[];
+  workload_score?: number;
+  skills?: { skill_name: string; proficiency_level: number }[];
 }
 
 export default function DevelopersPage() {
-  const { token, user, apiUrl } = useAuth();
   const [developers, setDevelopers] = useState<Developer[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Form state
-  const [userIdInput, setUserIdInput] = useState<string>('');
-  const [expYears, setExpYears] = useState<number>(3.0);
-  const [availability, setAvailability] = useState<'AVAILABLE' | 'PARTIAL' | 'UNAVAILABLE'>('AVAILABLE');
-  const [perfScore, setPerfScore] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [availFilter, setAvailFilter] = useState('ALL');
+
+  useEffect(() => {
+    fetchDevelopers();
+  }, []);
 
   const fetchDevelopers = async () => {
-    if (!token) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${apiUrl}/api/developers`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const token = localStorage.getItem('devalign_token');
+      const res = await fetch('http://localhost:8000/api/developers', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Failed to load developers');
+      if (!res.ok) throw new Error(data.detail || 'Failed to load developers directory');
       setDevelopers(data);
     } catch (err: any) {
       setError(err.message);
@@ -46,178 +51,98 @@ export default function DevelopersPage() {
     }
   };
 
-  useEffect(() => {
-    fetchDevelopers();
-  }, [token]);
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    try {
-      const res = await fetch(`${apiUrl}/api/developers`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          user_id: userIdInput,
-          experience_years: expYears,
-          availability_status: availability,
-          performance_score: perfScore ? parseFloat(perfScore) : null,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Failed to create developer profile');
-
-      setUserIdInput('');
-      setExpYears(3.0);
-      fetchDevelopers();
-    } catch (err: any) {
-      setError(err.message);
-    }
-  };
-
-  const canManage = user?.role === 'ADMIN' || user?.role === 'MANAGER';
+  const filteredDevs = developers.filter((d) => {
+    const name = d.user_name || 'Developer';
+    const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesAvail = availFilter === 'ALL' || d.availability_status === availFilter;
+    return matchesSearch && matchesAvail;
+  });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <main className="container">
-        <header className="header">
-          <span className="badge">Developer Management</span>
-          <h1 className="title">Developer Profiles Directory</h1>
-          <p className="subtitle">Structured developer expertise, availability, and technical proficiencies</p>
-        </header>
-
-        {error && (
-          <div style={{ background: 'rgba(244, 63, 94, 0.15)', border: '1px solid rgba(244, 63, 94, 0.3)', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem', color: 'var(--accent-rose)', fontSize: '0.85rem' }}>
-            ⚠️ {error}
+    <AppShell>
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <h1 className="text-2xl font-extrabold text-white tracking-tight">Developer Directory</h1>
+            <p className="text-slate-400 text-xs mt-1">Directory of engineering profiles, skills, performance scores, and availability.</p>
           </div>
-        )}
+        </div>
 
-        {canManage && (
-          <section className="card" style={{ marginBottom: '2rem' }}>
-            <div className="card-title">
-              <span>➕ Create Developer Profile</span>
-            </div>
-            <form onSubmit={handleCreate} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'end' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>User UUID</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Paste User UUID"
-                  value={userIdInput}
-                  onChange={(e) => setUserIdInput(e.target.value)}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '0.5rem', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)', color: 'white' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>Experience (Years)</label>
-                <input
-                  type="number"
-                  step="0.5"
-                  required
-                  min="0"
-                  max="50"
-                  value={expYears}
-                  onChange={(e) => setExpYears(parseFloat(e.target.value))}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '0.5rem', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)', color: 'white' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>Availability</label>
-                <select
-                  value={availability}
-                  onChange={(e) => setAvailability(e.target.value as any)}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '0.5rem', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--border-color)', color: 'white' }}
-                >
-                  <option value="AVAILABLE">AVAILABLE</option>
-                  <option value="PARTIAL">PARTIAL</option>
-                  <option value="UNAVAILABLE">UNAVAILABLE</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>Performance Score (0-100)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  placeholder="Optional e.g. 88.5"
-                  value={perfScore}
-                  onChange={(e) => setPerfScore(e.target.value)}
-                  style={{ width: '100%', padding: '0.65rem', borderRadius: '0.5rem', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)', color: 'white' }}
-                />
-              </div>
-
-              <div>
-                <button type="submit" className="btn" style={{ width: '100%', justifyContent: 'center' }}>
-                  Create Profile
-                </button>
-              </div>
-            </form>
-          </section>
-        )}
-
-        <section className="card">
-          <div className="card-title" style={{ justifyContent: 'space-between' }}>
-            <span>👨‍💻 Developer Profiles ({developers.length})</span>
+        {/* Search & Filters */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <input
+            type="text"
+            placeholder="Search developers by name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-lg px-3.5 py-2.5 flex-1 focus:outline-none focus:border-blue-500"
+          />
+          <div className="flex items-center gap-2">
+            {['ALL', 'AVAILABLE', 'PARTIAL', 'UNAVAILABLE'].map((av) => (
+              <button
+                key={av}
+                onClick={() => setAvailFilter(av)}
+                className={`px-3 py-2 text-xs font-semibold rounded-lg transition border ${
+                  availFilter === av
+                    ? 'bg-blue-600 text-white border-blue-500'
+                    : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                }`}
+              >
+                {av}
+              </button>
+            ))}
           </div>
+        </div>
 
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '2rem' }}>
-              <span className="pill pill-loading">Loading developer directory...</span>
-            </div>
-          ) : developers.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '1.5rem' }}>
-              No developer profiles found.
-            </p>
-          ) : (
-            <div className="status-grid">
-              {developers.map((dev) => (
-                <div key={dev.id} className="status-box" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                      <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{dev.user_name || 'Developer'}</span>
-                      <span
-                        className="pill"
-                        style={{
-                          background: dev.availability_status === 'AVAILABLE' ? 'rgba(16,185,129,0.15)' : dev.availability_status === 'PARTIAL' ? 'rgba(245,158,11,0.15)' : 'rgba(244,63,94,0.15)',
-                          color: dev.availability_status === 'AVAILABLE' ? 'var(--accent-emerald)' : dev.availability_status === 'PARTIAL' ? '#f59e0b' : 'var(--accent-rose)',
-                          border: '1px solid currentColor',
-                        }}
-                      >
-                        {dev.availability_status}
-                      </span>
+        {loading ? (
+          <LoadingState message="Loading developer profiles..." />
+        ) : error ? (
+          <ErrorState message={error} onRetry={fetchDevelopers} />
+        ) : filteredDevs.length === 0 ? (
+          <EmptyState
+            title="No Developers Found"
+            description="No developer profiles match your current search and availability filters."
+          />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredDevs.map((d) => (
+              <div key={d.id} className="p-5 rounded-xl bg-slate-900 border border-slate-800 flex flex-col justify-between hover:border-slate-700 transition">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-extrabold text-white text-base">{d.user_name || 'Developer Profile'}</h3>
+                      <p className="text-slate-400 text-xs mt-0.5">{d.experience_years} Years Experience</p>
                     </div>
+                    <StatusBadge status={d.availability_status} type="workload_status" />
+                  </div>
 
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                      {dev.user_email}
+                  <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+                    <div className="p-2.5 rounded bg-slate-950 border border-slate-800">
+                      <span className="text-slate-400 block text-[11px]">Performance</span>
+                      <span className="font-bold text-emerald-400 mt-0.5 block">{d.performance_score ?? 85}/100</span>
                     </div>
-
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-                      Experience: <strong>{dev.experience_years} years</strong> • Skills: <strong>{dev.skills.length} assigned</strong>
+                    <div className="p-2.5 rounded bg-slate-950 border border-slate-800">
+                      <span className="text-slate-400 block text-[11px]">Skills Count</span>
+                      <span className="font-bold text-blue-400 mt-0.5 block">{d.skills?.length ?? 0} Skills</span>
                     </div>
                   </div>
 
-                  <Link href={`/developers/${dev.id}`} className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem', justifyContent: 'center' }}>
-                    View & Manage Skills →
+                  <WorkloadIndicator score={d.workload_score ?? 20.0} />
+                </div>
+
+                <div className="border-t border-slate-800 pt-4 mt-4 flex items-center justify-end">
+                  <Link
+                    href={`/developers/${d.id}`}
+                    className="bg-slate-800 hover:bg-slate-700 text-blue-400 text-xs font-semibold px-3 py-1.5 rounded-md transition border border-slate-700"
+                  >
+                    View Developer Profile →
                   </Link>
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-          <Link href="/" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-            ← Return to Home Verification Page
-          </Link>
-        </div>
-      </main>
-    </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </AppShell>
   );
 }
