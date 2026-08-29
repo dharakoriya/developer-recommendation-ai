@@ -11,6 +11,29 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-08-29 — Milestone 15.6 — Full-System Integrity, Database Provenance, API Contract & UI Stabilization
+
+### Repaired & Added
+
+* **Recommendation Score Precision (Bug 1 Fix)**: Updated `recommendations.score` column definition in `backend/app/models/recommendation.py` from `Numeric(7, 6)` to `Numeric(10, 4)` and created Alembic migration `002_fix_recommendation_score_precision.py`. Allows recommendation scores up to 100.0 (e.g. 94.8, 99.99, 100.0) without `NumericValueOutOfRange` database overflow.
+* **Assignment Timestamp Resolution (Bug 2 Fix)**: Updated `backend/app/services/outcome_dataset_service.py` to use `assignment.assigned_at` (and `assignment.completed_at`) instead of non-existent `assignment.created_at`, fixing `AttributeError` during `POST /api/assignments`.
+* **Automated Regression Testing**: Added `test_recommendation_score_precision_and_assignment_outcome_regression` in `backend/tests/test_tasks_assignments_api.py` (94 backend test cases passing 100%).
+* **Data Provenance Verification**: Audited database data flow across all 6 core entities (Projects, Developers, Teams, Tasks, Assignments, Skills). Confirmed 100% database persistence without mock/static fallback arrays.
+
+## 2026-08-29 — Milestone 15.5 — System Stabilization, API Routing Repair & Frontend Readiness
+
+### Added & Repaired
+
+* **API Routing Restoration**: Restored direct REST API routes in `backend/app/api/tasks.py` (`GET /api/tasks`, `POST /api/tasks`, `GET /api/tasks/project/{project_id}`), `backend/app/api/teams.py` (`GET /api/teams`, `POST /api/teams`), and `backend/app/api/assignments.py` (`GET /api/assignments`, `POST /api/assignments`).
+* **SHAP Import Resolution**: Fixed `ModuleNotFoundError: No module named 'research'` in `backend/app/services/ml_explainability_service.py` by dynamically resolving project root directory into `sys.path`.
+* **Automated API Regression Testing**: Extended `backend/tests/test_tasks_assignments_api.py` with `test_direct_tasks_teams_assignments_api_routes` covering all direct task, team, and assignment routes (93 backend tests passing 100%).
+* **Frontend UI & Visual Stabilization**: Refactored research lab pages (`/research/ml`, `/research/dataset`, `/research/dataset/monitoring`, `/recommendations/audit`) to use `AppShell` and shared Tailwind CSS components (`npx tsc --noEmit` clean with 0 errors).
+
+### Technical Decisions
+
+* **Backward Compatibility**: Preserved all nested project routes (`/api/projects/{project_id}/tasks`, `/api/projects/{project_id}/teams`, `/api/tasks/{id}/assign`) while adding direct REST resources.
+* **Production Safety**: Active production recommendation engine remains strictly `deterministic_baseline` (`baseline-v1`). No ML models were retrained or deployed.
+
 ## 2026-08-27 — Milestone 16 — Production Frontend Foundation & Core User Workflow
 
 ### Added

@@ -25,6 +25,7 @@ class TeamMemberResponse(BaseModel):
 
 
 class TeamCreate(BaseModel):
+    project_id: Optional[uuid.UUID] = None
     name: str = Field(..., min_length=1, max_length=150)
     description: Optional[str] = None
 

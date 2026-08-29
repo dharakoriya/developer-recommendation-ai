@@ -124,11 +124,11 @@ def update_assignment_outcome(
     if outcome:
         outcome.was_assigned = True
         outcome.assignment_id = assignment.id
-        outcome.assignment_created_at = assignment.created_at
+        outcome.assignment_created_at = assignment.assigned_at
         outcome.assignment_outcome_status = OutcomeStatus.ASSIGNED
         if assignment.status.value == "COMPLETED":
             outcome.assignment_outcome_status = OutcomeStatus.COMPLETED
-            outcome.completed_at = assignment.updated_at
+            outcome.completed_at = assignment.completed_at if assignment.completed_at else func.now()
         db.commit()
         db.refresh(outcome)
 

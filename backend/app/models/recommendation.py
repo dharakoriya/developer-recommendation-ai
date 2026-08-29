@@ -36,7 +36,7 @@ class Recommendation(Base):
     )
     model_version: Mapped[str] = mapped_column(String(50), nullable=False)
     score: Mapped[Decimal] = mapped_column(
-        Numeric(7, 6), nullable=False
+        Numeric(10, 4), nullable=False
     )
     rank: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[DateTime] = mapped_column(

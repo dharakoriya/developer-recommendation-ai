@@ -30,6 +30,7 @@ class TaskSkillResponse(BaseModel):
 
 # Assignment Schemas
 class AssignmentCreate(BaseModel):
+    task_id: Optional[uuid.UUID] = None
     developer_id: uuid.UUID
     notes: Optional[str] = None
 
@@ -58,6 +59,7 @@ class AssignmentResponse(BaseModel):
 
 # Task Schemas
 class TaskCreate(BaseModel):
+    project_id: Optional[uuid.UUID] = None
     title: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
     category: Optional[str] = None

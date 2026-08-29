@@ -351,3 +351,120 @@ def test_developer_assignment_and_history_preservation(client):
     # Verify task status is now COMPLETED
     task_after = client.get(f"/api/tasks/{t_id}", headers=mgr_headers).json()
     assert task_after["status"] == "COMPLETED"
+
+
+def test_direct_tasks_teams_assignments_api_routes(client):
+    mgr_token = get_token(client, "mgr_direct@d.ai", "pass123", role="MANAGER")
+    mgr_headers = {"Authorization": f"Bearer {mgr_token}"}
+
+    proj = create_project(client, mgr_token, "Direct Route Project")
+    proj_id = proj["id"]
+
+    # 1. Test direct GET /api/tasks and POST /api/tasks
+    create_t_res = client.post(
+        "/api/tasks",
+        json={
+            "project_id": proj_id,
+            "title": "Direct Task",
+            "priority": "HIGH",
+            "complexity": "MEDIUM",
+            "estimated_hours": 12.0,
+            "status": "TODO",
+        },
+        headers=mgr_headers,
+    )
+    assert create_t_res.status_code == 201
+    task_data = create_t_res.json()
+    t_id = task_data["id"]
+
+    list_t_res = client.get("/api/tasks", headers=mgr_headers)
+    assert list_t_res.status_code == 200
+    assert len(list_t_res.json()) >= 1
+
+    alias_t_res = client.get(f"/api/tasks/project/{proj_id}", headers=mgr_headers)
+    assert alias_t_res.status_code == 200
+    assert len(alias_t_res.json()) >= 1
+
+    # 2. Test direct GET /api/teams and POST /api/teams
+    create_team_res = client.post(
+        "/api/teams",
+        json={"project_id": proj_id, "name": "Direct Team"},
+        headers=mgr_headers,
+    )
+    assert create_team_res.status_code == 201
+
+    list_teams_res = client.get("/api/teams", headers=mgr_headers)
+    assert list_teams_res.status_code == 200
+    assert len(list_teams_res.json()) >= 1
+
+    # 3. Test direct GET /api/assignments and POST /api/assignments
+    dev_u = client.post(
+        "/api/auth/register",
+        json={"name": "Dev Direct", "email": "dev_direct@d.ai", "password": "pass", "role": "DEVELOPER"},
+    ).json()
+    dev_prof = create_dev_profile(client, mgr_token, dev_u["id"])
+
+    assign_direct_res = client.post(
+        "/api/assignments",
+        json={"task_id": t_id, "developer_id": dev_prof["id"]},
+        headers=mgr_headers,
+    )
+    assert assign_direct_res.status_code == 201
+
+    list_assign_res = client.get("/api/assignments", headers=mgr_headers)
+    assert list_assign_res.status_code == 200
+    assert len(list_assign_res.json()) >= 1
+
+
+def test_recommendation_score_precision_and_assignment_outcome_regression(client):
+    """
+    Regression test for Milestone 15.6:
+    1. Verify high recommendation scores (e.g., 94.8, 99.99, 100.0) persist without NumericValueOutOfRange.
+    2. Verify POST /api/assignments updates RecommendationOutcome using assignment.assigned_at without AttributeError.
+    """
+    mgr_token = get_token(client, "mgr_reg156@d.ai", "pass123", role="MANAGER")
+    mgr_headers = {"Authorization": f"Bearer {mgr_token}"}
+
+    proj = create_project(client, mgr_token, "Regression 15.6 Project")
+    proj_id = proj["id"]
+
+    # Create task
+    t_res = client.post(
+        "/api/tasks",
+        json={
+            "project_id": proj_id,
+            "title": "Regression Task",
+            "priority": "HIGH",
+            "complexity": "HIGH",
+            "estimated_hours": 20.0,
+            "status": "TODO",
+        },
+        headers=mgr_headers,
+    )
+    assert t_res.status_code == 201
+    t_id = t_res.json()["id"]
+
+    # Register developer
+    dev_u = client.post(
+        "/api/auth/register",
+        json={"name": "Dev Reg", "email": "dev_reg156@d.ai", "password": "pass", "role": "DEVELOPER"},
+    ).json()
+    dev_prof = create_dev_profile(client, mgr_token, dev_u["id"])
+
+    # 1. Generate task recommendations (tests persistence of score like 94.8 / 100.0)
+    rec_res = client.get(f"/api/recommendations/tasks/{t_id}", headers=mgr_headers)
+    assert rec_res.status_code == 200
+    rec_data = rec_res.json()
+    assert rec_data["total_recommendations"] >= 1
+
+    # 2. Create assignment (tests outcome_dataset_service integration without AttributeError: 'Assignment' object has no attribute 'created_at')
+    assign_res = client.post(
+        "/api/assignments",
+        json={"task_id": t_id, "developer_id": dev_prof["id"]},
+        headers=mgr_headers,
+    )
+    assert assign_res.status_code == 201
+    assign_data = assign_res.json()
+    assert assign_data["status"] == "ACTIVE"
+
+

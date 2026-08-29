@@ -1,8 +1,14 @@
 import os
+import sys
 import json
 import uuid
 from typing import Dict, Any
 from sqlalchemy.orm import Session
+
+# Ensure project root is in sys.path for safe resolution of research package
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 from app.services.feature_engineering_service import extract_developer_task_feature_vector
 from research.ml.explainability.global_explanation import generate_global_shap_importance

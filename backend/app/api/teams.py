@@ -22,6 +22,45 @@ from app.api.projects import build_team_response, build_team_member_response
 router = APIRouter()
 
 
+# Direct Team routes
+@router.get("/teams", response_model=List[TeamResponse], summary="List all teams")
+def list_all_teams(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Lists all teams across projects.
+    Accessible to all authenticated users.
+    """
+    stmt = (
+        select(Team)
+        .options(
+            joinedload(Team.members).joinedload(TeamMember.developer_profile).joinedload(DeveloperProfile.user)
+        )
+        .order_by(Team.created_at.asc())
+    )
+    teams = db.execute(stmt).unique().scalars().all()
+    return [build_team_response(t, include_members=True) for t in teams]
+
+
+@router.post("/teams", response_model=TeamResponse, status_code=status.HTTP_201_CREATED, summary="Create a team directly")
+def create_team_direct(
+    team_in: TeamCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+):
+    """
+    Creates a new team directly with project_id specified in team_in.
+    Requires ADMIN or MANAGER role.
+    """
+    if not team_in.project_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="project_id is required to create a team.",
+        )
+    return create_team(project_id=team_in.project_id, team_in=team_in, db=db, current_user=current_user)
+
+
 # Project-nested team routes
 @router.get("/projects/{project_id}/teams", response_model=List[TeamResponse], summary="List teams in project")
 def list_teams_for_project(

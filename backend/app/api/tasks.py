@@ -106,6 +106,56 @@ def get_task_options():
 
 
 # Task CRUD Routes
+@router.get("/tasks", response_model=List[TaskResponse], summary="List all tasks")
+def list_all_tasks(
+    status_filter: Optional[TaskStatus] = Query(None, alias="status"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Lists all tasks across projects.
+    Accessible to all authenticated users.
+    """
+    query = select(Task).options(*get_task_options())
+    if status_filter:
+        query = query.where(Task.status == status_filter)
+
+    query = query.order_by(Task.created_at.desc())
+    tasks = db.execute(query).unique().scalars().all()
+    return [build_task_response(t) for t in tasks]
+
+
+@router.post("/tasks", response_model=TaskResponse, status_code=status.HTTP_201_CREATED, summary="Create task directly")
+def create_task_direct(
+    task_in: TaskCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+):
+    """
+    Creates a new task directly with project_id specified in task_in.
+    Requires ADMIN or MANAGER role.
+    """
+    if not task_in.project_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="project_id is required to create a task.",
+        )
+    return create_task(project_id=task_in.project_id, task_in=task_in, db=db, current_user=current_user)
+
+
+@router.get("/tasks/project/{project_id}", response_model=List[TaskResponse], summary="List tasks in project (alias)")
+def list_tasks_by_project_alias(
+    project_id: uuid.UUID,
+    status_filter: Optional[TaskStatus] = Query(None, alias="status"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Alias route for listing tasks belonging to a specific project.
+    """
+    return list_project_tasks(project_id=project_id, status_filter=status_filter, db=db, current_user=current_user)
+
+
 @router.get("/projects/{project_id}/tasks", response_model=List[TaskResponse], summary="List tasks in project")
 def list_project_tasks(
     project_id: uuid.UUID,

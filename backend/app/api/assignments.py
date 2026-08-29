@@ -20,6 +20,46 @@ from app.api.tasks import build_assignment_response
 router = APIRouter()
 
 
+@router.get("/assignments", response_model=List[AssignmentResponse], summary="List all task assignments")
+def list_all_assignments(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Lists all task assignments across all tasks and developers.
+    Accessible to all authenticated users.
+    """
+    stmt = (
+        select(Assignment)
+        .options(
+            joinedload(Assignment.developer_profile).joinedload(DeveloperProfile.user),
+            joinedload(Assignment.assigner),
+            joinedload(Assignment.task),
+        )
+        .order_by(Assignment.assigned_at.desc())
+    )
+    assignments = db.execute(stmt).unique().scalars().all()
+    return [build_assignment_response(a) for a in assignments]
+
+
+@router.post("/assignments", response_model=AssignmentResponse, status_code=status.HTTP_201_CREATED, summary="Create task assignment directly")
+def create_assignment_direct(
+    assign_in: AssignmentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+):
+    """
+    Creates a new assignment directly using task_id specified in assign_in.
+    Requires ADMIN or MANAGER role.
+    """
+    if not assign_in.task_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="task_id is required to create an assignment.",
+        )
+    return assign_task(id=assign_in.task_id, assign_in=assign_in, db=db, current_user=current_user)
+
+
 @router.post("/tasks/{id}/assign", response_model=AssignmentResponse, status_code=status.HTTP_201_CREATED, summary="Assign task to developer")
 def assign_task(
     id: uuid.UUID,
