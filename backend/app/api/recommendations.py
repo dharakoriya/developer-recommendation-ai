@@ -175,6 +175,7 @@ def get_single_recommendation_audit(
 
 
 @router.get("/audit", response_model=List[RecommendationAuditResponse], summary="List recommendation audit records")
+@router.get("/audit/logs", response_model=List[RecommendationAuditResponse], summary="List recommendation audit records (alias)")
 def list_recommendation_audits(
     environment: Optional[str] = None,
     model_version: Optional[str] = None,

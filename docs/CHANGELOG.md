@@ -11,6 +11,16 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-08-31 — Milestone 17 — Role-Based Product Experience, API Contract Stabilization & Transparency
+
+### Repaired & Added
+
+* **API Contract Mismatch Repair (Bug Fix)**: Fixed 404 error on recommendation audit log endpoint by registering route alias `@router.get("/audit/logs")` in `backend/app/api/recommendations.py` and updating request URL in `frontend/app/recommendations/audit/page.tsx`.
+* **Role-Based Access Control (RBAC)**: Implemented centralized permission guards in `frontend/lib/permissions.ts` and `frontend/lib/navigation.ts`. Enforced backend `require_roles(UserRole.ADMIN, UserRole.MANAGER)` dependency guards on creation/modification endpoints returning HTTP 403 Forbidden for unauthorized requests.
+* **Role-Tailored Dashboards**: Updated `frontend/app/dashboard/page.tsx` with dedicated dashboards for `ADMIN` (system oversight, research metrics), `MANAGER` (team workload, project allocations), and `DEVELOPER` (my assigned tasks, personal workload capacity, availability status).
+* **Recommendation Engine Transparency & Decision Flow**: Added "How Developer Recommendations Work" decision flow section on `/recommendations` explaining the 6 weighted scoring factors of `deterministic_baseline / baseline-v1` (Skill Match 35%, Skill Coverage 15%, Workload Capacity 20%, Performance 15%, Experience 10%, Availability 5%). Added interactive Score Breakdown Drawer showing itemized candidate score contributions.
+* **Documentation & Testing**: Published `docs/MANUAL_VERIFICATION_GUIDE.md` detailing role testing and 5 controlled test scenarios (Scenarios A, B, C, D, E). Verified 100% pass rate on backend `pytest` (94 tests) and 0 errors on frontend `npx tsc --noEmit`.
+
 ## 2026-08-31 — Milestone 16 — Frontend Product Experience, Auth Flow & Recommendation Verification
 
 ### Repaired & Added

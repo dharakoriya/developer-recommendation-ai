@@ -17,6 +17,7 @@ export interface RecommendationCandidate {
   weighted_skill_match_score?: number;
   skill_coverage_ratio?: number;
   model_version: string;
+  explanations?: any[];
 }
 
 interface RecommendationCardProps {

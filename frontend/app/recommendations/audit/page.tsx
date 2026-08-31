@@ -36,7 +36,7 @@ export default function RecommendationsAuditPage() {
     setError(null);
     try {
       const token = localStorage.getItem('devalign_token');
-      const res = await fetch('http://localhost:8000/api/recommendations/audit/logs', {
+      const res = await fetch('http://localhost:8000/api/recommendations/audit', {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) throw new Error('Failed to load recommendation audit logs');

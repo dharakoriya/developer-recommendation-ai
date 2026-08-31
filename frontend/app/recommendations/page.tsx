@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AppShell } from '../../components/AppShell';
 import { RecommendationCard, RecommendationCandidate } from '../../components/RecommendationCard';
-import { ExplanationModal } from '../../components/ExplanationModal';
 import { LoadingState } from '../../components/LoadingState';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
@@ -110,7 +109,7 @@ export default function RecommendationsPage() {
     }
   };
 
-  const handleAcceptRecommendation = async (candidate: RecommendationCandidate) => {
+  const handleAccept = async (candidate: RecommendationCandidate) => {
     try {
       const token = localStorage.getItem('devalign_token');
       const res = await fetch(`http://localhost:8000/api/recommendations/${candidate.id}/feedback`, {
@@ -119,21 +118,17 @@ export default function RecommendationsPage() {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({
-          decision: 'ACCEPTED',
-          comments: 'Accepted recommendation via production UI',
-        }),
+        body: JSON.stringify({ decision: 'ACCEPTED', comment: 'Accepted by manager' }),
       });
-
       if (res.ok) {
         setAcceptedIds((prev) => new Set(prev).add(candidate.id));
       }
-    } catch (err: any) {
-      console.error(err);
+    } catch (err) {
+      console.error('Feedback error:', err);
     }
   };
 
-  const handleAssignDeveloper = async (candidate: RecommendationCandidate) => {
+  const handleAssign = async (candidate: RecommendationCandidate) => {
     try {
       const token = localStorage.getItem('devalign_token');
       const res = await fetch('http://localhost:8000/api/assignments', {
@@ -145,76 +140,126 @@ export default function RecommendationsPage() {
         body: JSON.stringify({
           task_id: candidate.task_id,
           developer_id: candidate.developer_id,
+          notes: `Assigned via baseline recommendation #${candidate.rank}`,
         }),
       });
-
       if (res.ok) {
         setAssignedIds((prev) => new Set(prev).add(candidate.id));
-      } else {
-        const data = await res.json();
-        throw new Error(data.detail || 'Failed to assign developer to task');
+        // Refresh recommendations to reflect updated workload
+        generateRecommendations(candidate.task_id, true);
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      console.error('Assignment error:', err);
     }
   };
 
   return (
     <AppShell>
-      <div className="space-y-6 max-w-5xl mx-auto">
+      <div className="space-y-6">
+        {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">Developer Recommendation Engine</h1>
-            <p className="text-slate-400 text-xs mt-1">Deterministic baseline developer ranking & allocation system (baseline-v1).</p>
+            <h1 className="text-2xl font-extrabold text-white tracking-tight">Developer Recommendations</h1>
+            <p className="text-slate-400 text-xs mt-1">
+              Transparent, explainable baseline recommendation engine for task assignment.
+            </p>
           </div>
-
           <div className="flex items-center gap-2">
-            <span className="text-xs bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded-lg font-mono font-bold">
-              Prod Engine: baseline-v1
+            <span className="text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3 py-1.5 rounded-lg font-mono font-bold">
+              deterministic_baseline (baseline-v1)
             </span>
           </div>
         </div>
 
         {/* Task Selection Bar */}
-        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 flex flex-col sm:flex-row items-center gap-4">
-          <label className="text-xs font-bold text-slate-300 shrink-0">Select Target Task:</label>
-          <select
-            value={selectedTaskId}
-            onChange={(e) => setSelectedTaskId(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-lg p-2.5 flex-1"
-          >
-            {tasks.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.title}
-              </option>
-            ))}
-          </select>
+        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+          <div className="w-full sm:w-2/3">
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+              Select Task for Candidate Analysis
+            </label>
+            <select
+              value={selectedTaskId}
+              onChange={(e) => setSelectedTaskId(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 text-white text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-purple-500"
+            >
+              {tasks.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.title} ({t.project_name || 'Project'})
+                </option>
+              ))}
+            </select>
+          </div>
+
           <button
-            onClick={() => selectedTaskId && generateRecommendations(selectedTaskId)}
+            onClick={() => selectedTaskId && generateRecommendations(selectedTaskId, true)}
             disabled={recLoading || !selectedTaskId}
-            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-5 py-2.5 rounded-lg transition shadow-lg shadow-blue-600/20 shrink-0"
+            className="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-semibold text-xs px-5 py-3 rounded-xl transition shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2"
           >
-            {recLoading ? 'Ranking...' : 'FIND BEST DEVELOPER'}
+            {recLoading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span>Evaluating Candidates...</span>
+              </>
+            ) : (
+              <span>⚡ Find Best Developer</span>
+            )}
           </button>
         </div>
 
-        {loading || recLoading ? (
-          <LoadingState message="Calculating baseline recommendation scores & workload suitability..." />
+        {/* Decision Flow Explanation Component */}
+        <div className="p-5 rounded-xl bg-slate-900/90 border border-purple-500/20 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-purple-400 font-bold text-sm">💡 How Developer Recommendations Work</span>
+            <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">baseline-v1 formula</span>
+          </div>
+          <p className="text-xs text-slate-300">
+            The active recommendation engine uses a transparent, deterministic weighted scoring model based on 6 core factors:
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
+            <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
+              <span className="text-purple-400 font-bold block">35%</span>
+              <span className="text-slate-300 font-medium block text-[11px]">Skill Match</span>
+            </div>
+            <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
+              <span className="text-blue-400 font-bold block">15%</span>
+              <span className="text-slate-300 font-medium block text-[11px]">Skill Coverage</span>
+            </div>
+            <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
+              <span className="text-emerald-400 font-bold block">20%</span>
+              <span className="text-slate-300 font-medium block text-[11px]">Workload Capacity</span>
+            </div>
+            <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
+              <span className="text-amber-400 font-bold block">15%</span>
+              <span className="text-slate-300 font-medium block text-[11px]">Performance</span>
+            </div>
+            <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
+              <span className="text-indigo-400 font-bold block">10%</span>
+              <span className="text-slate-300 font-medium block text-[11px]">Experience</span>
+            </div>
+            <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800">
+              <span className="text-rose-400 font-bold block">5%</span>
+              <span className="text-slate-300 font-medium block text-[11px]">Availability</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Results List */}
+        {loading ? (
+          <LoadingState message="Loading task catalog..." />
+        ) : recLoading ? (
+          <LoadingState message="Evaluating developer candidate scores & workload capacity..." />
         ) : error ? (
-          <ErrorState message={error} onRetry={() => selectedTaskId && generateRecommendations(selectedTaskId)} />
+          <ErrorState message={error} onRetry={() => selectedTaskId && generateRecommendations(selectedTaskId, true)} />
         ) : candidates.length === 0 ? (
           <EmptyState
             title="No Candidate Recommendations"
-            description="Select an active task above to compute developer suitability rankings."
+            description="Select an active task above to calculate suitable candidate rankings."
           />
         ) : (
           <div className="space-y-4">
-            <div className="flex items-center justify-between px-1">
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider">
-                Ranked Developer Recommendations for: <span className="text-blue-400">{taskTitle}</span>
-              </h2>
-              <span className="text-xs text-slate-400 font-mono">{candidates.length} Candidates Evaluated</span>
-            </div>
+            <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider">
+              Ranked Candidates for <span className="text-white font-extrabold">{taskTitle}</span>
+            </h2>
 
             <div className="space-y-4">
               {candidates.map((cand) => (
@@ -222,8 +267,8 @@ export default function RecommendationsPage() {
                   key={cand.id}
                   candidate={cand}
                   onWhyThisDeveloper={(c) => setExplanationCandidate(c)}
-                  onAccept={(c) => handleAcceptRecommendation(c)}
-                  onAssign={(c) => handleAssignDeveloper(c)}
+                  onAccept={handleAccept}
+                  onAssign={handleAssign}
                   isAccepted={acceptedIds.has(cand.id)}
                   isAssigned={assignedIds.has(cand.id)}
                 />
@@ -232,12 +277,57 @@ export default function RecommendationsPage() {
           </div>
         )}
 
-        {/* Explanation Modal */}
-        <ExplanationModal
-          candidate={explanationCandidate}
-          taskTitle={taskTitle}
-          onClose={() => setExplanationCandidate(null)}
-        />
+        {/* Score Breakdown Modal */}
+        {explanationCandidate && (
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div>
+                  <span className="text-xs text-purple-400 font-mono font-bold block">#{explanationCandidate.rank} CANDIDATE BREAKDOWN</span>
+                  <h3 className="text-lg font-extrabold text-white">{explanationCandidate.developer_name}</h3>
+                </div>
+                <button onClick={() => setExplanationCandidate(null)} className="text-slate-400 hover:text-white">✕</button>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-slate-400 block">Total Recommendation Score</span>
+                  <span className="text-2xl font-extrabold text-purple-400 font-mono">
+                    {explanationCandidate.recommendation_score.toFixed(1)} / 100
+                  </span>
+                </div>
+                <span className="text-xs bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full font-mono font-bold">
+                  {explanationCandidate.model_version}
+                </span>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <h4 className="font-bold text-slate-300 uppercase tracking-wider text-[11px]">Score Component Contributions</h4>
+                {(explanationCandidate.explanations || []).map((exp: any, i: number) => (
+                  <div key={i} className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-slate-200">{exp.feature_name}</span>
+                      <span className="font-mono text-purple-400 font-bold">+{exp.contribution_score} pts</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-slate-400">
+                      <span>Value: <strong className="text-slate-300">{exp.feature_value}</strong></span>
+                      <span className={exp.direction === 'POSITIVE' ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+                        {exp.direction}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setExplanationCandidate(null)}
+                className="w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2.5 rounded-xl text-xs transition"
+              >
+                Close Score Breakdown
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </AppShell>
   );
