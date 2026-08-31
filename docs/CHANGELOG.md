@@ -20,13 +20,15 @@ Each entry should contain:
 * **Automated Regression Testing**: Added `test_recommendation_score_precision_and_assignment_outcome_regression` in `backend/tests/test_tasks_assignments_api.py` (94 backend test cases passing 100%).
 * **Data Provenance Verification**: Audited database data flow across all 6 core entities (Projects, Developers, Teams, Tasks, Assignments, Skills). Confirmed 100% database persistence without mock/static fallback arrays.
 
-## 2026-08-29 — Milestone 15.5 — System Stabilization, API Routing Repair & Frontend Readiness
+## 2026-08-29 — Milestone 15.5 — System Stabilization, API Routing Repair & Controlled Demo Data
 
 ### Added & Repaired
 
+* **Idempotent Development Seed Script**: Created `backend/scripts/seed_demo_data.py` to safely reset local development database tables and seed a small, controlled, reproducible demo dataset (2 Projects, 2 Teams, 6 Users/Developers, 6 Skills, 6 Tasks, 3 Assignments, and pre-calculated baseline recommendations).
+* **Environment Documentation**: Created `docs/DEMO_DATA.md` providing step-by-step reproduction instructions, development login credentials, workload calculations, recommendation test scenarios (Scenarios A, B, C, D), and manual SQL inspection queries.
 * **API Routing Restoration**: Restored direct REST API routes in `backend/app/api/tasks.py` (`GET /api/tasks`, `POST /api/tasks`, `GET /api/tasks/project/{project_id}`), `backend/app/api/teams.py` (`GET /api/teams`, `POST /api/teams`), and `backend/app/api/assignments.py` (`GET /api/assignments`, `POST /api/assignments`).
 * **SHAP Import Resolution**: Fixed `ModuleNotFoundError: No module named 'research'` in `backend/app/services/ml_explainability_service.py` by dynamically resolving project root directory into `sys.path`.
-* **Automated API Regression Testing**: Extended `backend/tests/test_tasks_assignments_api.py` with `test_direct_tasks_teams_assignments_api_routes` covering all direct task, team, and assignment routes (93 backend tests passing 100%).
+* **Automated API Regression Testing**: Extended `backend/tests/test_tasks_assignments_api.py` with `test_direct_tasks_teams_assignments_api_routes` covering all direct task, team, and assignment routes (94 backend tests passing 100%).
 * **Frontend UI & Visual Stabilization**: Refactored research lab pages (`/research/ml`, `/research/dataset`, `/research/dataset/monitoring`, `/recommendations/audit`) to use `AppShell` and shared Tailwind CSS components (`npx tsc --noEmit` clean with 0 errors).
 
 ### Technical Decisions
