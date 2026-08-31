@@ -11,6 +11,15 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-08-31 — Milestone 16 — Frontend Product Experience, Auth Flow & Recommendation Verification
+
+### Repaired & Added
+
+* **Modern SaaS Login Experience**: Redesigned `/login` using a clean dark-mode B2B SaaS interface with password visibility toggle, validation banners, loading spinners, disabled submission state, and automatic post-authentication redirect to `/dashboard`.
+* **Recommendation Freshness & Feature Resolution**: Updated `get_persisted_task_recommendations()` in `backend/app/services/recommendation_service.py` and passed `?regenerate=true` in `frontend/app/recommendations/page.tsx` so candidate evaluation always computes live feature vectors (`workload_score`, `skill_coverage_ratio`, availability) for accurate ranking.
+* **Complete Interactive Entity CRUD**: Added creation modals and API bindings across Projects (`/projects`), Teams (`/teams`), Developers (`/developers`), Tasks (`/tasks`), and Assignments (`/assignments`).
+* **Complete Documentation & Testing**: Created `docs/FRONTEND_USER_GUIDE.md` detailing user navigation, controlled test scenarios (A, B, C, D), and manual testing procedures. Verified 100% pass rate on backend `pytest` (94 tests) and 0 errors on frontend `npx tsc --noEmit`.
+
 ## 2026-08-29 — Milestone 15.6 — Full-System Integrity, Database Provenance, API Contract & UI Stabilization
 
 ### Repaired & Added

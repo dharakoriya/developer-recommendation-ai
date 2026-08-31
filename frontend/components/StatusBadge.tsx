@@ -2,7 +2,7 @@ import React from 'react';
 
 interface StatusBadgeProps {
   status: string;
-  type?: 'priority' | 'complexity' | 'task_status' | 'project_status' | 'workload_status' | 'assignment_status' | 'environment';
+  type?: 'priority' | 'complexity' | 'task_status' | 'project_status' | 'workload_status' | 'assignment_status' | 'availability_status' | 'environment';
 }
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, type = 'task_status' }) => {

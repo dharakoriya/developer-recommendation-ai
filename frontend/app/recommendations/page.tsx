@@ -67,12 +67,13 @@ export default function RecommendationsPage() {
     }
   };
 
-  const generateRecommendations = async (taskId: string) => {
+  const generateRecommendations = async (taskId: string, forceRegenerate: boolean = true) => {
     setRecLoading(true);
     setError(null);
     try {
       const token = localStorage.getItem('devalign_token');
-      const res = await fetch(`http://localhost:8000/api/recommendations/tasks/${taskId}`, {
+      const url = `http://localhost:8000/api/recommendations/tasks/${taskId}${forceRegenerate ? '?regenerate=true' : ''}`;
+      const res = await fetch(url, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) {
@@ -91,12 +92,13 @@ export default function RecommendationsPage() {
         experience_years: r.experience_years ?? 3,
         performance_score: r.performance_score ?? 85,
         availability_status: r.availability_status || 'AVAILABLE',
-        workload_score: r.workload_score ?? 20,
+        workload_score: r.workload_score ?? 0,
         rank: r.rank,
         recommendation_score: r.score ?? 0,
-        weighted_skill_match_score: r.weighted_skill_match_score ?? 90,
+        weighted_skill_match_score: (r.skill_coverage_ratio ?? 1.0) * 100,
         skill_coverage_ratio: r.skill_coverage_ratio ?? 1.0,
         model_version: r.model_version || 'baseline-v1',
+        explanations: r.explanations || [],
       }));
 
       setCandidates(mappedCandidates);

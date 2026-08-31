@@ -47,7 +47,7 @@ export default function AssignmentsPage() {
   const handleComplete = async (assignmentId: string) => {
     try {
       const token = localStorage.getItem('devalign_token');
-      const res = await fetch(`http://localhost:8000/api/assignments/complete/${assignmentId}`, {
+      const res = await fetch(`http://localhost:8000/api/assignments/${assignmentId}/complete`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });

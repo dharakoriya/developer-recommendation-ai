@@ -401,6 +401,15 @@ def get_persisted_task_recommendations(
             for e in (r.explanations or [])
         ]
 
+        # Extract live feature vector to populate accurate workload_score & skill_coverage_ratio
+        try:
+            vec = extract_developer_task_feature_vector(db, r.developer_id, r.task_id)
+            workload_val = float(vec.dev_workload_score)
+            coverage_val = float(vec.skill_coverage_ratio)
+        except Exception:
+            workload_val = 0.0
+            coverage_val = 1.0
+
         rec_responses.append(
             RecommendationResponse(
                 id=r.id,
@@ -410,8 +419,8 @@ def get_persisted_task_recommendations(
                 developer_email=dev.user.email if dev and dev.user else "",
                 experience_years=float(dev.experience_years) if dev else 0.0,
                 availability_status=dev.availability_status if dev else AvailabilityStatus.AVAILABLE,
-                workload_score=0.0,
-                skill_coverage_ratio=0.0,
+                workload_score=workload_val,
+                skill_coverage_ratio=coverage_val,
                 performance_score=float(dev.performance_score) if dev else 0.0,
                 model_version=r.model_version,
                 score=float(r.score),
