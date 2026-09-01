@@ -103,7 +103,66 @@ def get_dashboard_summary(
             "assigned_at": a.assigned_at.isoformat() if a.assigned_at else None,
         })
 
+    # Additional DEVELOPER role personal metrics
+    developer_profile_id = None
+    my_tasks = []
+    my_workload_score = 0.0
+    my_availability = "AVAILABLE"
+    my_skills = []
+
+    dev_profile_obj = db.scalar(select(DeveloperProfile).where(DeveloperProfile.user_id == current_user.id))
+    if dev_profile_obj:
+        developer_profile_id = str(dev_profile_obj.id)
+        my_availability = str(dev_profile_obj.availability_status.value)
+        
+        # Get active assignments for developer
+        dev_assignments = db.execute(
+            select(Assignment)
+            .where(
+                Assignment.developer_id == dev_profile_obj.id,
+                Assignment.status == AssignmentStatus.ACTIVE,
+            )
+        ).scalars().all()
+        
+        for a in dev_assignments:
+            task_obj = db.scalar(select(Task).where(Task.id == a.task_id))
+            if task_obj:
+                my_tasks.append({
+                    "id": str(task_obj.id),
+                    "title": task_obj.title,
+                    "project_name": task_obj.project.name if task_obj.project else "Project",
+                    "priority": task_obj.priority.value,
+                    "complexity": task_obj.complexity.value,
+                    "estimated_hours": float(task_obj.estimated_hours),
+                    "status": task_obj.status.value,
+                })
+
+        # Latest workload score
+        latest_wl = db.scalar(
+            select(WorkloadRecord)
+            .where(WorkloadRecord.developer_id == dev_profile_obj.id)
+            .order_by(desc(WorkloadRecord.calculated_at))
+        )
+        if latest_wl:
+            my_workload_score = float(latest_wl.workload_score)
+
+        # Developer skills
+        from app.models.developer import DeveloperSkill
+        from app.models.skill import Skill
+        skills_db = db.execute(
+            select(DeveloperSkill, Skill)
+            .join(Skill, DeveloperSkill.skill_id == Skill.id)
+            .where(DeveloperSkill.developer_id == dev_profile_obj.id)
+        ).all()
+        for ds, sk in skills_db:
+            my_skills.append({
+                "skill_name": sk.name,
+                "proficiency_level": float(ds.proficiency_level),
+            })
+
     return {
+        "user_role": current_user.role.value,
+        "developer_profile_id": developer_profile_id,
         "total_projects": total_projects,
         "active_projects": active_projects,
         "total_developers": total_developers,
@@ -114,6 +173,10 @@ def get_dashboard_summary(
         "high_workload_developers": high_workload_count,
         "recent_recommendations": recent_recommendations,
         "recent_assignments": recent_assignments,
+        "my_tasks": my_tasks,
+        "my_workload_score": my_workload_score,
+        "my_availability": my_availability,
+        "my_skills": my_skills,
     }
 
 

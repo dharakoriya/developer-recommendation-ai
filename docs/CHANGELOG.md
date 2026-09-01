@@ -11,6 +11,16 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-09-01 — Milestone 18 — End-to-End RBAC Runtime Audit & Role Isolation
+
+### Repaired & Added
+
+* **Runtime Truth Audit & Authentication Flow**: Audited authentication state propagation from login JWT to `AuthContext` to `AppShell` and backend dependencies. Guaranteed one single source of truth for user role identity.
+* **Client-Side AppShell Route Protection Guard**: Integrated `hasPermission(user?.role, pathname)` inside `AppShell` (`frontend/components/AppShell.tsx`) so unauthorized access attempts (e.g. `DEVELOPER` navigating to `/projects`, `/recommendations`, or `/research/*`) render a clean **Access Denied / 403 Forbidden** banner with return to workspace button.
+* **Role-Aware Dashboard API**: Refactored `GET /api/dashboard/summary` in `backend/app/api/dashboard.py` to return role-specific metrics. Developers receive `my_tasks`, `my_workload_score`, `my_availability`, and `my_skills`.
+* **Role-Isolated Dashboards**: Rendered 3 distinct dashboards for `ADMIN` (system overview, audit trail, research status), `MANAGER` (managed projects, team workload, candidate allocations), and `DEVELOPER` (welcome banner, my tasks queue, capacity workload bar, skills).
+* **Documentation & Verification**: Published `docs/ROLE_BASED_ACCESS_GUIDE.md` detailing Admin, Manager, and Developer permissions, task creation workflow, recommendation scoring steps, and runtime verification matrix. Verified 100% pass rate on backend `pytest` (94 tests) and 0 errors on frontend `npx tsc --noEmit`.
+
 ## 2026-08-31 — Milestone 17 — Role-Based Product Experience, API Contract Stabilization & Transparency
 
 ### Repaired & Added
