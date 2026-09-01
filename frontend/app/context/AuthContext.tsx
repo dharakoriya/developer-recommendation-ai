@@ -11,7 +11,6 @@ export interface User {
   role: UserRole;
   is_active: boolean;
   created_at?: string;
-
   updated_at?: string;
 }
 
@@ -22,6 +21,7 @@ interface AuthContextType {
   login: (token: string, user: User) => void;
   logout: () => void;
   apiUrl: string;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,40 +33,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-  useEffect(() => {
-    // Check localStorage for existing session
+  const refreshUser = async () => {
     const storedToken = localStorage.getItem('devalign_token');
-    const storedUser = localStorage.getItem('devalign_user');
+    if (!storedToken) {
+      logout();
+      setLoading(false);
+      return;
+    }
 
-    if (storedToken && storedUser) {
-      try {
+    try {
+      const res = await fetch(`${apiUrl}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${storedToken}` },
+      });
+      if (res.ok) {
+        const validUser: User = await res.json();
+        setUser(validUser);
         setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-        // Verify token with backend
-        fetch(`${apiUrl}/api/auth/me`, {
-          headers: { Authorization: `Bearer ${storedToken}` },
-        })
-          .then((res) => {
-            if (res.ok) {
-              return res.json();
-            }
-            throw new Error('Session expired');
-          })
-          .then((validUser) => {
-            setUser(validUser);
-            localStorage.setItem('devalign_user', JSON.stringify(validUser));
-          })
-          .catch(() => {
-            logout();
-          })
-          .finally(() => setLoading(false));
-      } catch {
+        localStorage.setItem('devalign_user', JSON.stringify(validUser));
+      } else {
         logout();
-        setLoading(false);
       }
-    } else {
+    } catch (err) {
+      console.error('Session validation error:', err);
+      logout();
+    } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    refreshUser();
   }, [apiUrl]);
 
   const login = (newToken: string, newUser: User) => {
@@ -84,7 +80,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, apiUrl }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, apiUrl, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

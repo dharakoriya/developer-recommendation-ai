@@ -11,6 +11,15 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-09-01 — Milestone 18.5 — Runtime Auth Truth Audit, RBAC Verification & Product Stabilization
+
+### Repaired & Added
+
+* **Single Source of Truth Authentication**: Enhanced `AuthContext` (`frontend/app/context/AuthContext.tsx`) with `refreshUser()` that validates session tokens directly against `GET /api/auth/me`. Ensured user role identity originates strictly from backend JWT claim.
+* **Development-Only RBAC Runtime Debug Panel**: Created `frontend/components/RuntimeAuthDebug.tsx` rendering active User Name, Email, AuthContext Role, JWT Role, `/api/auth/me` Role, and real-time status badge (`CONSISTENT AUTH STATE ✓` vs `AUTH STATE MISMATCH ❌`).
+* **Complete Stale State Elimination**: Updated `logout()` to wipe `localStorage` (`devalign_token`, `devalign_user`), clear `user` and `token` state, and reset React context completely when switching between `ADMIN`, `MANAGER`, and `DEVELOPER` accounts.
+* **Documentation & Testing**: Published `docs/RUNTIME_RBAC_VERIFICATION.md` detailing step-by-step account switching tests, route barrier verification, task recommendation calculation flow, and test execution results. Verified 100% pass rate on backend `pytest` (94 tests) and 0 errors on frontend `npx tsc --noEmit`.
+
 ## 2026-09-01 — Milestone 18 — End-to-End RBAC Runtime Audit & Role Isolation
 
 ### Repaired & Added

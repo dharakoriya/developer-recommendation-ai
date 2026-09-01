@@ -7,6 +7,7 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { useAuth } from '../app/context/AuthContext';
 import { hasPermission } from '../lib/permissions';
+import { RuntimeAuthDebug } from './RuntimeAuthDebug';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -51,6 +52,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           )}
         </main>
       </div>
+      <RuntimeAuthDebug />
     </div>
   );
 };
