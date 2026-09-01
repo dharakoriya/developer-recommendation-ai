@@ -7,6 +7,7 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { LoadingState } from '../../components/LoadingState';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
+import { useToast } from '../../context/ToastContext';
 
 export interface ProjectOption {
   id: string;
@@ -28,6 +29,7 @@ export interface TaskItem {
 }
 
 export default function TasksPage() {
+  const { showToast } = useToast();
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,12 +109,14 @@ export default function TasksPage() {
         throw new Error(data.detail || 'Failed to create task');
       }
 
+      showToast(`Task "${title.trim()}" created successfully!`, 'success');
       setTitle('');
       setDescription('');
       setShowTaskModal(false);
       fetchTasksAndProjects();
     } catch (err: any) {
       setError(err.message);
+      showToast(err.message, 'error');
     } finally {
       setCreatingTask(false);
     }

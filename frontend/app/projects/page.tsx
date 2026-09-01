@@ -7,6 +7,7 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { LoadingState } from '../../components/LoadingState';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
+import { useToast } from '../../context/ToastContext';
 
 export interface Project {
   id: string;
@@ -21,6 +22,7 @@ export interface Project {
 }
 
 export default function ProjectsPage() {
+  const { showToast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,13 +84,16 @@ export default function ProjectsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Failed to create project');
+
+      showToast(`Project "${data.name}" created successfully!`, 'success');
+      setShowModal(false);
       setName('');
       setDescription('');
       setStatus('ACTIVE');
-      setShowModal(false);
       fetchProjects();
     } catch (err: any) {
       setError(err.message);
+      showToast(err.message, 'error');
     } finally {
       setIsSubmitting(false);
     }

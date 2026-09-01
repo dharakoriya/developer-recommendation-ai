@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { AppShell } from '../../components/AppShell';
 import { StatCard } from '../../components/StatCard';
 import { StatusBadge } from '../../components/StatusBadge';
-import { WorkloadIndicator } from '../../components/WorkloadIndicator';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
 
@@ -39,24 +39,30 @@ interface DashboardSummary {
     status: string;
     assigned_at: string;
   }[];
-}
-
-interface DeveloperMyTasks {
-  id: string;
-  title: string;
-  project_name: string;
-  priority: string;
-  complexity: string;
-  estimated_hours: number;
-  status: string;
+  my_tasks?: {
+    id: string;
+    title: string;
+    project_name: string;
+    priority: string;
+    complexity: string;
+    estimated_hours: number;
+    status: string;
+  }[];
+  my_workload_score?: number;
+  my_availability?: string;
+  my_skills?: {
+    skill_name: string;
+    proficiency_level: number;
+  }[];
 }
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [data, setData] = useState<DashboardSummary | null>(null);
-  const [myTasks, setMyTasks] = useState<DeveloperMyTasks[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDashboard();
@@ -76,27 +82,6 @@ export default function DashboardPage() {
       } else {
         throw new Error('Failed to load dashboard statistics');
       }
-
-      // If developer, fetch developer's tasks
-      if (user?.role === 'DEVELOPER') {
-        const tRes = await fetch('http://localhost:8000/api/tasks', { headers });
-        if (tRes.ok) {
-          const allTasks: any[] = await tRes.json();
-          // Filter tasks assigned to current user
-          const devTasks = allTasks
-            .filter((t) => t.assigned_developer_name === user.name || t.assigned_developer_id === user.id)
-            .map((t) => ({
-              id: t.id,
-              title: t.title,
-              project_name: t.project_name || 'Project',
-              priority: t.priority,
-              complexity: t.complexity,
-              estimated_hours: t.estimated_hours,
-              status: t.status,
-            }));
-          setMyTasks(devTasks);
-        }
-      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -104,12 +89,45 @@ export default function DashboardPage() {
     }
   };
 
+  const handleCompleteTask = async (taskId: string) => {
+    setCompletingTaskId(taskId);
+    try {
+      const token = localStorage.getItem('devalign_token');
+      // Fetch assignment for task
+      const assignRes = await fetch(`http://localhost:8000/api/assignments/tasks/${taskId}/assignments`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (assignRes.ok) {
+        const assignments: any[] = await assignRes.json();
+        const activeAssign = assignments.find((a) => a.status === 'ACTIVE') || assignments[0];
+        if (activeAssign) {
+          const compRes = await fetch(`http://localhost:8000/api/assignments/${activeAssign.id}/complete`, {
+            method: 'POST',
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          });
+          if (compRes.ok) {
+            showToast('Task marked completed successfully!', 'success');
+            fetchDashboard();
+            return;
+          }
+        }
+      }
+      showToast('Failed to complete task', 'error');
+    } catch (err) {
+      showToast('Failed to complete task', 'error');
+    } finally {
+      setCompletingTaskId(null);
+    }
+  };
+
   const isDev = user?.role === 'DEVELOPER';
   const isAdmin = user?.role === 'ADMIN';
 
+  const myTasks = data?.my_tasks || [];
+
   return (
     <AppShell>
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-7xl mx-auto">
         {/* Role-Specific Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
           <div>
@@ -132,13 +150,13 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2">
               <Link
                 href="/projects"
-                className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-lg transition border border-slate-700"
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl transition border border-slate-700"
               >
                 + New Project
               </Link>
               <Link
                 href="/tasks"
-                className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-lg shadow-purple-600/20"
+                className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition shadow-lg shadow-purple-600/20"
               >
                 + Create Task
               </Link>
@@ -147,18 +165,18 @@ export default function DashboardPage() {
         </div>
 
         {loading ? (
-          <LoadingState message="Loading role dashboard stats..." />
+          <LoadingState message="Loading workspace statistics..." />
         ) : error ? (
           <ErrorState message={error} onRetry={fetchDashboard} />
         ) : isDev ? (
           /* DEVELOPER ROLE DASHBOARD */
           <div className="space-y-6">
-            <div className="p-6 rounded-2xl bg-gradient-to-r from-purple-900/30 to-slate-900 border border-purple-500/20 shadow-xl space-y-3">
+            <div className="p-6 rounded-2xl bg-gradient-to-r from-purple-950/40 via-slate-900 to-indigo-950/30 border border-purple-500/20 shadow-xl space-y-3">
               <div className="flex items-center gap-3">
                 <span className="text-3xl">👋</span>
                 <div>
-                  <h2 className="text-xl font-bold text-white">Welcome back, {user?.name}!</h2>
-                  <p className="text-xs text-slate-300">You are currently assigned {myTasks.length} active tasks across your projects.</p>
+                  <h2 className="text-xl font-extrabold text-white">Welcome back, {user?.name}!</h2>
+                  <p className="text-xs text-slate-300">You have {myTasks.length} active tasks assigned in your personal engineering workspace.</p>
                 </div>
               </div>
             </div>
@@ -166,34 +184,69 @@ export default function DashboardPage() {
             {/* Developer Stat Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <StatCard title="My Active Tasks" value={myTasks.length} subtext={`${myTasks.filter(t => t.status === 'IN_PROGRESS').length} in progress`} icon="📋" accentColor="purple" />
-              <StatCard title="My Workload Capacity" value={`${Math.round((myTasks.reduce((acc, t) => acc + t.estimated_hours, 0) / 40) * 100)}%`} subtext={`${myTasks.reduce((acc, t) => acc + t.estimated_hours, 0)} est. hours allocated`} icon="📈" accentColor="blue" />
-              <StatCard title="Availability Status" value="AVAILABLE" subtext="Standard 40h capacity" icon="✅" accentColor="emerald" />
+              <StatCard title="My Workload Capacity" value={`${Math.round(data?.my_workload_score ?? 0)}%`} subtext="Calculated from active tasks" icon="📈" accentColor="blue" />
+              <StatCard title="Availability Status" value={data?.my_availability || 'AVAILABLE'} subtext="Standard capacity" icon="✅" accentColor="emerald" />
             </div>
 
-            {/* Developer Assigned Tasks */}
-            <div className="p-6 rounded-xl bg-slate-900 border border-slate-800 space-y-4">
+            {/* Developer Assigned Tasks Table */}
+            <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 className="font-bold text-white text-sm flex items-center gap-2">
                   <span>📌</span> My Assigned Tasks
                 </h3>
-                <span className="text-xs text-slate-400 font-mono">{myTasks.length} Assigned</span>
+                <span className="text-xs text-slate-400 font-mono">{myTasks.length} Active Tasks</span>
               </div>
 
               {myTasks.length === 0 ? (
-                <p className="text-slate-500 text-xs py-4 text-center italic">No tasks currently assigned to you. Enjoy your clear queue!</p>
+                <div className="py-8 text-center space-y-2">
+                  <span className="text-3xl block">🎉</span>
+                  <h4 className="text-sm font-bold text-slate-300">Clear Task Queue</h4>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">You currently have no active task assignments. Enjoy your clear workload queue!</p>
+                </div>
               ) : (
                 <div className="divide-y divide-slate-800">
                   {myTasks.map((t) => (
-                    <div key={t.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div key={t.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
                         <h4 className="font-bold text-white text-sm">{t.title}</h4>
-                        <span className="text-xs text-slate-400 font-mono">{t.project_name} • {t.estimated_hours}h</span>
+                        <span className="text-xs text-slate-400 font-mono">{t.project_name} • {t.estimated_hours}h estimated</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <StatusBadge status={t.priority} type="priority" />
                         <StatusBadge status={t.complexity} type="complexity" />
                         <StatusBadge status={t.status} type="task_status" />
+                        {t.status !== 'COMPLETED' && (
+                          <button
+                            onClick={() => handleCompleteTask(t.id)}
+                            disabled={completingTaskId === t.id}
+                            className="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 font-semibold text-[11px] px-3 py-1 rounded-lg transition ml-2"
+                          >
+                            {completingTaskId === t.id ? 'Completing...' : '✓ Mark Complete'}
+                          </button>
+                        )}
                       </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* My Skills & Proficiencies */}
+            <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
+              <h3 className="font-bold text-white text-sm flex items-center gap-2 border-b border-slate-800 pb-3">
+                <span>🛠️</span> My Skill Proficiencies
+              </h3>
+              {!data?.my_skills || data.my_skills.length === 0 ? (
+                <p className="text-slate-500 text-xs py-2 italic">No skill proficiencies recorded.</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {data.my_skills.map((sk, i) => (
+                    <div key={i} className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                      <span className="text-xs font-bold text-slate-200 block">{sk.skill_name}</span>
+                      <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                        <div className="bg-purple-500 h-full rounded-full" style={{ width: `${sk.proficiency_level}%` }} />
+                      </div>
+                      <span className="text-[10px] text-purple-400 font-mono block text-right font-bold">{sk.proficiency_level}%</span>
                     </div>
                   ))}
                 </div>
@@ -214,7 +267,7 @@ export default function DashboardPage() {
             {/* Content Split: Recent Allocations & Recommendation Activity */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Recent Task Assignments */}
-              <div className="p-6 rounded-xl bg-slate-900 border border-slate-800 space-y-4">
+              <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <h3 className="font-bold text-white text-sm flex items-center gap-2">
                     <span>🎯</span> Recent Task Assignments
@@ -239,7 +292,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Recent Recommendation Engine Output */}
-              <div className="p-6 rounded-xl bg-slate-900 border border-slate-800 space-y-4">
+              <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <h3 className="font-bold text-white text-sm flex items-center gap-2">
                     <span>⚡</span> Recent Recommendation Activity
