@@ -11,6 +11,15 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-09-01 — Milestone 19.1 — Clean Database Audit, Controlled Test Environment & QA Verification
+
+### Repaired & Added
+
+* **Full Read-Only Database Audit**: Audited local PostgreSQL database tables, identifying row counts before cleanup (`users`: 61 -> 6, `projects`: 57 -> 2, `tasks`: 62 -> 4, `recommendations`: 821 -> 0).
+* **Safe Idempotent Reset & Seed Script**: Created `backend/scripts/reset_and_seed_test_environment.py` with environment safety checks (`DATABASE_URL` localhost validation). Wiped non-research clutter, preserved Alembic history, and seeded a clean controlled dataset (6 Users, 4 Developers, 6 Skills, 2 Projects, 2 Teams, 4 Tasks, 2 Assignments, 4 Workload Records).
+* **User Manual & Database Reference Guides**: Published [`docs/CONTROLLED_TESTING_GUIDE.md`](file:///d:/Custom%20Project/dhara/devalign-ai/docs/CONTROLLED_TESTING_GUIDE.md) (step-by-step non-technical testing guide) and [`docs/CONTROLLED_DATABASE_REFERENCE.md`](file:///d:/Custom%20Project/dhara/devalign-ai/docs/CONTROLLED_DATABASE_REFERENCE.md) (table schema matrix and SQL inspection guide).
+* **Automated & Runtime QA Verification**: Verified 100% pass rate on backend `pytest` (94 tests) and 0 errors on frontend `npx tsc --noEmit`.
+
 ## 2026-09-01 — Milestone 19 — End-to-End Product Workflow, Premium UI/UX & Recommendation Lifecycle
 
 ### Repaired & Added
