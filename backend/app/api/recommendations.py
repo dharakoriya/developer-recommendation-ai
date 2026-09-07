@@ -2,7 +2,7 @@ import uuid
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import select
+from sqlalchemy import select, desc
 
 from app.database import get_db
 from app.models.task import Task
@@ -141,39 +141,6 @@ def submit_feedback(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
-@router.get("/{id}/audit", response_model=RecommendationAuditResponse, summary="Get audit record for a single recommendation")
-def get_single_recommendation_audit(
-    id: uuid.UUID,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """
-    Retrieves the immutable audit log record and feature snapshot for a single recommendation.
-    """
-    from app.models.recommendation_audit import RecommendationAudit
-    audit = db.scalar(select(RecommendationAudit).where(RecommendationAudit.recommendation_id == id))
-    if not audit:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Audit record for recommendation {id} not found.")
-
-    return RecommendationAuditResponse(
-        id=audit.id,
-        recommendation_id=audit.recommendation_id,
-        developer_id=audit.developer_id,
-        developer_name=audit.developer_profile.user.name if audit.developer_profile and audit.developer_profile.user else "Developer",
-        task_id=audit.task_id,
-        task_title=audit.task.title if audit.task else "Task",
-        project_id=audit.project_id,
-        project_name=audit.project.name if audit.project else "Project",
-        rank=audit.rank,
-        recommendation_score=float(audit.recommendation_score),
-        model_name=audit.model_name,
-        model_version=audit.model_version,
-        environment=audit.environment,
-        feature_snapshot=audit.feature_snapshot,
-        generated_at=audit.generated_at,
-    )
-
-
 @router.get("/audit", response_model=List[RecommendationAuditResponse], summary="List recommendation audit records")
 @router.get("/audit/logs", response_model=List[RecommendationAuditResponse], summary="List recommendation audit records (alias)")
 def list_recommendation_audits(
@@ -220,6 +187,39 @@ def list_recommendation_audits(
             )
         )
     return results
+
+
+@router.get("/{id}/audit", response_model=RecommendationAuditResponse, summary="Get audit record for a single recommendation")
+def get_single_recommendation_audit(
+    id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieves the immutable audit log record and feature snapshot for a single recommendation.
+    """
+    from app.models.recommendation_audit import RecommendationAudit
+    audit = db.scalar(select(RecommendationAudit).where(RecommendationAudit.recommendation_id == id))
+    if not audit:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Audit record for recommendation {id} not found.")
+
+    return RecommendationAuditResponse(
+        id=audit.id,
+        recommendation_id=audit.recommendation_id,
+        developer_id=audit.developer_id,
+        developer_name=audit.developer_profile.user.name if audit.developer_profile and audit.developer_profile.user else "Developer",
+        task_id=audit.task_id,
+        task_title=audit.task.title if audit.task else "Task",
+        project_id=audit.project_id,
+        project_name=audit.project.name if audit.project else "Project",
+        rank=audit.rank,
+        recommendation_score=float(audit.recommendation_score),
+        model_name=audit.model_name,
+        model_version=audit.model_version,
+        environment=audit.environment,
+        feature_snapshot=audit.feature_snapshot,
+        generated_at=audit.generated_at,
+    )
 
 
 @router.get("/feedback", response_model=List[RecommendationFeedbackResponse], summary="List recommendation feedbacks")

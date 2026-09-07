@@ -4,22 +4,26 @@ interface MetricCardProps {
   title: string;
   value: string | number;
   subtext?: string;
+  subtitle?: string;
   icon?: React.ReactNode;
   trend?: {
     value: string;
     isPositive: boolean;
   };
-  accentColor?: 'indigo' | 'emerald' | 'amber' | 'cyan' | 'rose' | 'purple';
+  accentColor?: 'indigo' | 'emerald' | 'amber' | 'cyan' | 'rose' | 'purple' | 'blue';
 }
 
 export const MetricCard: React.FC<MetricCardProps> = ({
   title,
   value,
   subtext,
+  subtitle,
   icon,
   trend,
   accentColor = 'indigo',
 }) => {
+  const displaySubtext = subtext || subtitle;
+
   const accentBorderMap = {
     indigo: 'border-l-indigo-500',
     emerald: 'border-l-emerald-500',
@@ -27,6 +31,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
     cyan: 'border-l-sky-400',
     rose: 'border-l-rose-500',
     purple: 'border-l-purple-500',
+    blue: 'border-l-blue-500',
   };
 
   const accentBgMap = {
@@ -36,31 +41,31 @@ export const MetricCard: React.FC<MetricCardProps> = ({
     cyan: 'bg-sky-400/10 text-sky-400',
     rose: 'bg-rose-500/10 text-rose-400',
     purple: 'bg-purple-500/10 text-purple-400',
+    blue: 'bg-blue-500/10 text-blue-400',
   };
 
   return (
     <div
-      className={`glass-panel glass-panel-hover rounded-xl p-5 border-l-4 ${accentBorderMap[accentColor]} flex flex-col justify-between`}
+      className={`glass-panel p-5 rounded-2xl border border-slate-800 border-l-4 ${accentBorderMap[accentColor]} shadow-lg transition-all hover:translate-y-[-2px]`}
     >
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
           {title}
         </span>
         {icon && (
-          <div className={`p-2 rounded-lg ${accentBgMap[accentColor]}`}>
+          <div className={`p-2 rounded-xl ${accentBgMap[accentColor]}`}>
             {icon}
           </div>
         )}
       </div>
 
-      <div className="flex items-baseline justify-between mt-1">
-        <span className="text-2xl font-bold text-slate-100 tracking-tight">
+      <div className="mt-3 flex items-baseline justify-between">
+        <span className="text-2xl font-extrabold text-slate-100 font-mono tracking-tight">
           {value}
         </span>
-
         {trend && (
           <span
-            className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+            className={`text-xs font-bold font-mono px-2 py-0.5 rounded-md ${
               trend.isPositive
                 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
                 : 'bg-rose-500/15 text-rose-400 border border-rose-500/20'
@@ -71,8 +76,10 @@ export const MetricCard: React.FC<MetricCardProps> = ({
         )}
       </div>
 
-      {subtext && (
-        <p className="text-xs text-slate-400 mt-2 font-medium">{subtext}</p>
+      {displaySubtext && (
+        <p className="mt-1.5 text-xs text-slate-400 font-medium">
+          {displaySubtext}
+        </p>
       )}
     </div>
   );

@@ -3,11 +3,13 @@ import React from 'react';
 interface PerformanceBadgeProps {
   score: number;
   showScore?: boolean;
+  size?: 'sm' | 'md' | 'lg';
 }
 
 export const PerformanceBadge: React.FC<PerformanceBadgeProps> = ({
   score,
   showScore = true,
+  size = 'md',
 }) => {
   let label = 'Standard';
   let badgeStyle = 'bg-slate-800/80 text-slate-300 border-slate-700';
@@ -23,13 +25,17 @@ export const PerformanceBadge: React.FC<PerformanceBadgeProps> = ({
     badgeStyle = 'bg-sky-950/80 text-sky-300 border-sky-500/40';
   }
 
+  const sizeClass = size === 'sm' ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs';
+
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border ${badgeStyle}`}
+      className={`inline-flex items-center gap-1.5 rounded-md font-semibold border ${sizeClass} ${badgeStyle}`}
     >
       <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
       <span>{label}</span>
-      {showScore && <span className="opacity-75 font-mono ml-0.5">({score.toFixed(1)})</span>}
+      {showScore && (
+        <span className="font-mono opacity-85 text-[10px]">({Math.round(score)})</span>
+      )}
     </span>
   );
 };

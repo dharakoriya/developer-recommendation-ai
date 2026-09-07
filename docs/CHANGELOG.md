@@ -11,6 +11,17 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-09-07 — Milestone 20 — Project Intelligence Analytics, Performance Insights & Final API Stabilization
+
+### Repaired & Added
+
+* **Recommendation Audit API CORS & Route Stabilization**: Resolved CORS and 500 errors on `GET /api/recommendations/audit` by adding missing `from sqlalchemy import desc` import and placing static `@router.get("/audit")` before dynamic `@router.get("/{id}/audit")`. Verified browser console `startTime` error originates from external dev tools.
+* **Project Health & Intelligence Engine**: Built `analytics_service.py`, `analytics.py` schemas, and `analytics.py` router calculating real-time Project Health Scores (0 – 100) and statuses (`HEALTHY`, `AT RISK`, `CRITICAL`) based on task completion, overdue tasks, unassigned backlog, and workload risks.
+* **Team Capacity & Developer Comparison Matrix**: Implemented `/api/analytics/teams` (capacity utilization, workload distribution, productivity) and `/api/analytics/developers` (side-by-side developer comparison matrix for Admin/Manager with 403 Forbidden RBAC protection for Developer role).
+* **Task Intelligence & Recommendation Conversion Funnel**: Added `/api/analytics/tasks` (weight distribution, priority, complexity, estimate vs actual time) and `/api/analytics/recommendations` (conversion funnel: `RECOMMENDED` -> `ACCEPTED` -> `ASSIGNED` -> `COMPLETED` and conversion rates).
+* **Centralized API Client & Frontend Hub**: Created `frontend/lib/api.ts` fetch wrapper for standardized token injection (`devalign_token`) and status error handling. Built multi-tab analytics navigation (`/analytics`, `/analytics/teams`, `/analytics/developers`, `/analytics/tasks`, `/analytics/recommendations`) and enhanced Admin, Manager, and Developer dashboards.
+* **Automated Tests & Documentation**: Added `test_analytics_api.py` pytest suite (110 total tests, 100% pass rate) and `npx tsc --noEmit` (0 errors). Published [`docs/ANALYTICS_AND_PROJECT_INTELLIGENCE_GUIDE.md`](file:///d:/Custom%20Project/dhara/devalign-ai/docs/ANALYTICS_AND_PROJECT_INTELLIGENCE_GUIDE.md) and [`docs/MILESTONE_20_RUNTIME_VERIFICATION.md`](file:///d:/Custom%20Project/dhara/devalign-ai/docs/MILESTONE_20_RUNTIME_VERIFICATION.md).
+
 ## 2026-09-07 — Milestone 19.2 — Developer Performance Intelligence, Task Weighting, Streaks & Incentive Engine
 
 ### Repaired & Added

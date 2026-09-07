@@ -9,6 +9,7 @@ import { StatCard } from '../../components/StatCard';
 import { StatusBadge } from '../../components/StatusBadge';
 import { LoadingState } from '../../components/LoadingState';
 import { ErrorState } from '../../components/ErrorState';
+import { apiClient, ApiError } from '../../lib/api';
 
 interface DashboardSummary {
   total_projects: number;
@@ -72,18 +73,14 @@ export default function DashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('devalign_token');
-      const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-
-      const res = await fetch('http://localhost:8000/api/dashboard/summary', { headers });
-      if (res.ok) {
-        const summary: DashboardSummary = await res.json();
-        setData(summary);
-      } else {
-        throw new Error('Failed to load dashboard statistics');
-      }
+      const summary = await apiClient.get<DashboardSummary>('/dashboard/summary');
+      setData(summary);
     } catch (err: any) {
-      setError(err.message);
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('Failed to load dashboard statistics.');
+      }
     } finally {
       setLoading(false);
     }
@@ -92,29 +89,17 @@ export default function DashboardPage() {
   const handleCompleteTask = async (taskId: string) => {
     setCompletingTaskId(taskId);
     try {
-      const token = localStorage.getItem('devalign_token');
-      // Fetch assignment for task
-      const assignRes = await fetch(`http://localhost:8000/api/assignments/tasks/${taskId}/assignments`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (assignRes.ok) {
-        const assignments: any[] = await assignRes.json();
-        const activeAssign = assignments.find((a) => a.status === 'ACTIVE') || assignments[0];
-        if (activeAssign) {
-          const compRes = await fetch(`http://localhost:8000/api/assignments/${activeAssign.id}/complete`, {
-            method: 'POST',
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-          });
-          if (compRes.ok) {
-            showToast('Task marked completed successfully!', 'success');
-            fetchDashboard();
-            return;
-          }
-        }
+      const assignments = await apiClient.get<any[]>(`/assignments/tasks/${taskId}/assignments`);
+      const activeAssign = assignments.find((a) => a.status === 'ACTIVE') || assignments[0];
+      if (activeAssign) {
+        await apiClient.post(`/assignments/${activeAssign.id}/complete`);
+        showToast('Task marked completed successfully!', 'success');
+        fetchDashboard();
+        return;
       }
-      showToast('Failed to complete task', 'error');
-    } catch (err) {
-      showToast('Failed to complete task', 'error');
+      showToast('No active assignment found for task', 'error');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to complete task', 'error');
     } finally {
       setCompletingTaskId(null);
     }
@@ -127,7 +112,7 @@ export default function DashboardPage() {
 
   return (
     <AppShell>
-      <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-6 max-w-7xl mx-auto pb-12">
         {/* Role-Specific Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
           <div>
@@ -136,32 +121,40 @@ export default function DashboardPage() {
               <span className="text-xs text-slate-400 font-mono">Signed in as {user?.name}</span>
             </div>
             <h1 className="text-2xl font-extrabold text-white tracking-tight">
-              {isAdmin ? 'Admin Operations Dashboard' : isDev ? 'Developer Workspace' : 'Manager Team Dashboard'}
+              {isAdmin ? 'Admin Operations Command Center' : isDev ? 'Developer Workspace' : 'Manager Command Center'}
             </h1>
             <p className="text-slate-400 text-xs mt-1">
               {isAdmin
-                ? 'Full system oversight, governance, research metrics, and team allocations.'
+                ? 'System oversight, project health scores, team analytics, and recommendation governance.'
                 : isDev
-                ? 'Personal task queue, current capacity workload, and skill proficiencies.'
-                : 'Project management overview, active developer allocations, and workload balancing.'}
+                ? 'Personal task queue, current capacity workload, streaks, and performance.'
+                : 'Scoped team capacity, unassigned tasks, workload balancing, and quick actions.'}
             </p>
           </div>
-          {!isDev && (
-            <div className="flex items-center gap-2">
-              <Link
-                href="/projects"
-                className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl transition border border-slate-700"
-              >
-                + New Project
-              </Link>
-              <Link
-                href="/tasks"
-                className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition shadow-lg shadow-purple-600/20"
-              >
-                + Create Task
-              </Link>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <Link
+              href="/analytics"
+              className="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-semibold px-3.5 py-2 rounded-xl transition border border-indigo-500/30 flex items-center gap-1.5"
+            >
+              <span>🧠</span> View Analytics Hub
+            </Link>
+            {!isDev && (
+              <>
+                <Link
+                  href="/projects"
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl transition border border-slate-700"
+                >
+                  + New Project
+                </Link>
+                <Link
+                  href="/tasks"
+                  className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition shadow-lg shadow-purple-600/20"
+                >
+                  + Create Task
+                </Link>
+              </>
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -198,128 +191,154 @@ export default function DashboardPage() {
               </div>
 
               {myTasks.length === 0 ? (
-                <div className="py-8 text-center space-y-2">
-                  <span className="text-3xl block">🎉</span>
-                  <h4 className="text-sm font-bold text-slate-300">Clear Task Queue</h4>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto">You currently have no active task assignments. Enjoy your clear workload queue!</p>
+                <div className="p-8 text-center text-slate-400 text-xs bg-slate-950/40 rounded-xl border border-slate-800">
+                  You currently have no tasks assigned. Check back later or notify your project manager.
                 </div>
               ) : (
-                <div className="divide-y divide-slate-800">
-                  {myTasks.map((t) => (
-                    <div key={t.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <h4 className="font-bold text-white text-sm">{t.title}</h4>
-                        <span className="text-xs text-slate-400 font-mono">{t.project_name} • {t.estimated_hours}h estimated</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <StatusBadge status={t.priority} type="priority" />
-                        <StatusBadge status={t.complexity} type="complexity" />
-                        <StatusBadge status={t.status} type="task_status" />
-                        {t.status !== 'COMPLETED' && (
-                          <button
-                            onClick={() => handleCompleteTask(t.id)}
-                            disabled={completingTaskId === t.id}
-                            className="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 font-semibold text-[11px] px-3 py-1 rounded-lg transition ml-2"
-                          >
-                            {completingTaskId === t.id ? 'Completing...' : '✓ Mark Complete'}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* My Skills & Proficiencies */}
-            <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
-              <h3 className="font-bold text-white text-sm flex items-center gap-2 border-b border-slate-800 pb-3">
-                <span>🛠️</span> My Skill Proficiencies
-              </h3>
-              {!data?.my_skills || data.my_skills.length === 0 ? (
-                <p className="text-slate-500 text-xs py-2 italic">No skill proficiencies recorded.</p>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {data.my_skills.map((sk, i) => (
-                    <div key={i} className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                      <span className="text-xs font-bold text-slate-200 block">{sk.skill_name}</span>
-                      <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                        <div className="bg-purple-500 h-full rounded-full" style={{ width: `${sk.proficiency_level}%` }} />
-                      </div>
-                      <span className="text-[10px] text-purple-400 font-mono block text-right font-bold">{sk.proficiency_level}%</span>
-                    </div>
-                  ))}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-950 text-slate-400 uppercase font-semibold border-b border-slate-800">
+                      <tr>
+                        <th className="p-3">Task Title</th>
+                        <th className="p-3">Project</th>
+                        <th className="p-3">Priority</th>
+                        <th className="p-3">Complexity</th>
+                        <th className="p-3">Est. Hours</th>
+                        <th className="p-3">Status</th>
+                        <th className="p-3 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                      {myTasks.map((task) => (
+                        <tr key={task.id} className="hover:bg-slate-800/40 transition">
+                          <td className="p-3 font-bold text-white max-w-xs truncate">{task.title}</td>
+                          <td className="p-3 text-slate-400">{task.project_name}</td>
+                          <td className="p-3"><StatusBadge status={task.priority} type="priority" /></td>
+                          <td className="p-3"><StatusBadge status={task.complexity} type="complexity" /></td>
+                          <td className="p-3 font-mono">{task.estimated_hours} hrs</td>
+                          <td className="p-3"><StatusBadge status={task.status} type="status" /></td>
+                          <td className="p-3 text-right">
+                            {task.status !== 'COMPLETED' && (
+                              <button
+                                onClick={() => handleCompleteTask(task.id)}
+                                disabled={completingTaskId === task.id}
+                                className="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                              >
+                                {completingTaskId === task.id ? 'Updating...' : 'Mark Complete'}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
           </div>
         ) : (
-          /* ADMIN & MANAGER ROLE DASHBOARD */
-          <>
-            {/* Stat Cards Grid */}
+          /* ADMIN & MANAGER DASHBOARD */
+          <div className="space-y-6">
+            {/* Top Stat Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard title="Total Projects" value={data?.total_projects ?? 0} subtext={`${data?.active_projects ?? 0} active projects`} icon="📁" accentColor="blue" />
-              <StatCard title="Team Developers" value={data?.total_developers ?? 0} subtext={`${data?.available_developers ?? 0} available for tasks`} icon="👥" accentColor="emerald" />
-              <StatCard title="Active Tasks" value={data?.active_tasks ?? 0} subtext={`${data?.unassigned_tasks ?? 0} unassigned tasks`} icon="📋" accentColor="amber" />
-              <StatCard title="High Workload" value={data?.high_workload_developers ?? 0} subtext="Developers >= 75% capacity" icon="⚠️" accentColor="purple" />
+              <StatCard title="Active Projects" value={data?.active_projects || 0} subtext={`${data?.total_projects || 0} Total Projects`} icon="📁" accentColor="purple" />
+              <StatCard title="Active Developers" value={data?.total_developers || 0} subtext={`${data?.available_developers || 0} Available for Tasks`} icon="👥" accentColor="blue" />
+              <StatCard title="Unassigned Tasks" value={data?.unassigned_tasks || 0} subtext={`${data?.active_tasks || 0} Active Tasks`} icon="📋" accentColor="amber" />
+              <StatCard title="High Workload Devs" value={data?.high_workload_developers || 0} subtext="Capacity > 75%" icon="📈" accentColor="amber" />
             </div>
 
-            {/* Content Split: Recent Allocations & Recommendation Activity */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Recent Task Assignments */}
-              <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                    <span>🎯</span> Recent Task Assignments
-                  </h3>
-                  <Link href="/assignments" className="text-xs text-purple-400 hover:text-purple-300 font-medium">View All →</Link>
+            {/* Quick Actions & Navigation Bar */}
+            <div className="glass-panel p-5 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <span className="text-lg">⚡</span>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-100">Project Intelligence Quick Actions</h3>
+                  <p className="text-xs text-slate-400">Navigate directly to specific operational analytics views.</p>
                 </div>
-                {!data?.recent_assignments || data.recent_assignments.length === 0 ? (
-                  <p className="text-slate-500 text-xs py-4 text-center italic">No assignments recorded yet.</p>
-                ) : (
-                  <div className="divide-y divide-slate-800">
-                    {data.recent_assignments.map((a) => (
-                      <div key={a.id} className="py-3 flex items-center justify-between text-xs">
-                        <div>
-                          <h4 className="font-bold text-white">{a.task_title}</h4>
-                          <span className="text-slate-400 font-mono">Assigned to: <strong className="text-slate-200">{a.developer_name}</strong></span>
-                        </div>
-                        <StatusBadge status={a.status} type="assignment_status" />
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Link href="/analytics" className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700">
+                  Project Health
+                </Link>
+                <Link href="/analytics/teams" className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700">
+                  Team Capacity
+                </Link>
+                <Link href="/analytics/developers" className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700">
+                  Dev Comparison
+                </Link>
+                <Link href="/analytics/tasks" className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700">
+                  Task Intelligence
+                </Link>
+                <Link href="/analytics/recommendations" className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-semibold rounded-lg border border-indigo-500/30">
+                  Recommendation Funnel
+                </Link>
+              </div>
+            </div>
 
-              {/* Recent Recommendation Engine Output */}
+            {/* Recent Recommendations & Assignments Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Recommendations Box */}
               <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                    <span>⚡</span> Recent Recommendation Activity
+                    <span>⚡</span> Recent AI Recommendations
                   </h3>
-                  <Link href="/recommendations" className="text-xs text-purple-400 hover:text-purple-300 font-medium">Run Recommendations →</Link>
+                  <Link href="/recommendations" className="text-xs text-purple-400 hover:underline">
+                    View Engine →
+                  </Link>
                 </div>
                 {!data?.recent_recommendations || data.recent_recommendations.length === 0 ? (
-                  <p className="text-slate-500 text-xs py-4 text-center italic">No recommendation runs generated yet.</p>
+                  <div className="p-6 text-center text-xs text-slate-400 bg-slate-950/40 rounded-xl border border-slate-800">
+                    No recent AI recommendations generated yet.
+                  </div>
                 ) : (
-                  <div className="divide-y divide-slate-800">
-                    {data.recent_recommendations.map((r) => (
-                      <div key={r.id} className="py-3 flex items-center justify-between text-xs">
+                  <div className="space-y-2">
+                    {data.recent_recommendations.map((rec) => (
+                      <div key={rec.id} className="p-3 rounded-xl bg-slate-950/50 border border-slate-800/80 flex items-center justify-between text-xs">
                         <div>
-                          <h4 className="font-bold text-white">{r.task_title}</h4>
-                          <span className="text-slate-400 font-mono">Top Candidate: <strong className="text-purple-400">#{r.rank} {r.developer_name}</strong></span>
+                          <div className="font-bold text-white">{rec.task_title}</div>
+                          <div className="text-slate-400 mt-0.5">Top Match: <span className="text-purple-300 font-semibold">{rec.developer_name}</span></div>
                         </div>
-                        <div className="text-right">
-                          <span className="font-mono font-bold text-purple-400 block">{r.recommendation_score.toFixed(1)} / 100</span>
-                          <span className="text-[10px] text-slate-500 font-mono">{r.model_version}</span>
+                        <div className="text-right font-mono">
+                          <div className="font-bold text-emerald-400">{Math.round(rec.recommendation_score > 1 ? rec.recommendation_score : rec.recommendation_score * 100)} / 100</div>
+                          <div className="text-[10px] text-slate-500">{rec.model_version}</div>
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
+
+              {/* Assignments Box */}
+              <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <h3 className="font-bold text-white text-sm flex items-center gap-2">
+                    <span>🎯</span> Active Assignments
+                  </h3>
+                  <Link href="/assignments" className="text-xs text-purple-400 hover:underline">
+                    Manage All →
+                  </Link>
+                </div>
+                {!data?.recent_assignments || data.recent_assignments.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-slate-400 bg-slate-950/40 rounded-xl border border-slate-800">
+                    No active assignments recorded yet.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {data.recent_assignments.map((asg) => (
+                      <div key={asg.id} className="p-3 rounded-xl bg-slate-950/50 border border-slate-800/80 flex items-center justify-between text-xs">
+                        <div>
+                          <div className="font-bold text-white">{asg.task_title}</div>
+                          <div className="text-slate-400 mt-0.5">Assigned to: <span className="text-indigo-300 font-semibold">{asg.developer_name}</span></div>
+                        </div>
+                        <StatusBadge status={asg.status} type="status" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </>
+          </div>
         )}
       </div>
     </AppShell>
