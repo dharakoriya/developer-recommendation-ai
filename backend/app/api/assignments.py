@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
@@ -260,6 +261,24 @@ def update_assignment_status(
         assignment.completed_at = func.now()
         if assignment.task:
             assignment.task.status = TaskStatus.COMPLETED
+
+        # Calculate & persist task weight
+        from app.services.task_weight_service import calculate_task_weight_score
+        task_weight = calculate_task_weight_score(assignment.task)
+        assignment.task.task_weight_score = Decimal(str(task_weight))
+        db.commit()
+
+        # Performance Intelligence triggers
+        from app.services.performance_service import (
+            update_developer_streak_on_task_completion,
+            evaluate_and_grant_developer_achievements,
+            calculate_and_record_incentive_points,
+            snapshot_developer_performance,
+        )
+        update_developer_streak_on_task_completion(db, assignment.developer_id, task_weight)
+        calculate_and_record_incentive_points(db, assignment.developer_id, assignment.task_id)
+        evaluate_and_grant_developer_achievements(db, assignment.developer_id)
+        snapshot_developer_performance(db, assignment.developer_id)
     elif status_in.status == AssignmentStatus.CANCELLED:
         assignment.reassigned_at = func.now()
 

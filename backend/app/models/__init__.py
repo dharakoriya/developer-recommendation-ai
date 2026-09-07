@@ -27,6 +27,12 @@ from app.models.recommendation_audit import (
 )
 from app.models.recommendation_validation import RecommendationLabelValidation
 from app.models.recommendation_snapshot import RecommendationDatasetSnapshot
+from app.models.performance import (
+    DeveloperStreak,
+    DeveloperAchievement,
+    DeveloperIncentiveLedger,
+    DeveloperPerformanceSnapshot,
+)
 
 __all__ = [
     "Base",
@@ -61,4 +67,8 @@ __all__ = [
     "RecommendationOutcome",
     "RecommendationLabelValidation",
     "RecommendationDatasetSnapshot",
+    "DeveloperStreak",
+    "DeveloperAchievement",
+    "DeveloperIncentiveLedger",
+    "DeveloperPerformanceSnapshot",
 ]

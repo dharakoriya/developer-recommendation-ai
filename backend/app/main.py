@@ -13,6 +13,7 @@ from app.api.workload import router as workload_router
 from app.api.features import router as features_router
 from app.api.recommendations import router as recommendations_router
 from app.api.dashboard import router as dashboard_router
+from app.api.performance import router as performance_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -36,6 +37,7 @@ app.include_router(health_router, prefix=settings.API_PREFIX, tags=["Health"])
 app.include_router(auth_router, prefix=f"{settings.API_PREFIX}/auth", tags=["Authentication & Authorization"])
 app.include_router(skills_router, prefix=f"{settings.API_PREFIX}/skills", tags=["Skills Catalog"])
 app.include_router(developers_router, prefix=f"{settings.API_PREFIX}/developers", tags=["Developer Profiles"])
+app.include_router(performance_router, prefix=settings.API_PREFIX, tags=["Performance Intelligence"])
 app.include_router(projects_router, prefix=f"{settings.API_PREFIX}/projects", tags=["Projects Management"])
 app.include_router(teams_router, prefix=settings.API_PREFIX, tags=["Teams Management"])
 app.include_router(tasks_router, prefix=settings.API_PREFIX, tags=["Tasks Management"])

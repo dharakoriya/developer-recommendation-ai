@@ -11,6 +11,16 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-09-07 — Milestone 19.2 — Developer Performance Intelligence, Task Weighting, Streaks & Incentive Engine
+
+### Repaired & Added
+
+* **Task Weighting Engine**: Implemented `task_weight_service.py` calculating a deterministic Task Weight Score (1 – 100) based on complexity factor (40%), effort factor (35%), and skill requirement difficulty (25%).
+* **Developer Performance & Streaks Intelligence**: Added `performance_service.py` and `performance.py` models/schemas, tracking completion rate, weighted productivity, on-time delivery rate, composite performance score (0 – 100), qualifying productivity completion streaks (task weight $\ge 20$), CodeChef-inspired achievement badges, and internal incentive points.
+* **Recommendation Engine Upgrade (`baseline-v1.1`)**: Enhanced `recommendation_service.py` with `baseline-v1.1` deterministic matching and dynamic candidate filtering (`min_performance_score`, `min_completion_rate`, `availability_status`, `max_workload_score`, `min_experience_years`, `min_skill_match_pct`, `min_streak`), while preserving backward compatibility with `baseline-v1`.
+* **Frontend Operations UI & Auth Token Fix**: Built reusable components (`MetricCard`, `PerformanceBadge`, `StreakBadge`, `AchievementCard`, `IncentivePointsCard`, `ConfirmDialog`), Developer Performance view (`/developers/[id]/performance`), and Manager Performance Analytics dashboard (`/analytics/performance`). Fixed local storage token key mismatch (`devalign_token`) resolving 401 Unauthorized errors on performance endpoints.
+* **Documentation & Verification**: Published [`docs/PERFORMANCE_INTELLIGENCE_GUIDE.md`](file:///d:/Custom%20Project/dhara/devalign-ai/docs/PERFORMANCE_INTELLIGENCE_GUIDE.md) and [`docs/MILESTONE_19_TESTING_GUIDE.md`](file:///d:/Custom%20Project/dhara/devalign-ai/docs/MILESTONE_19_TESTING_GUIDE.md). Verified 100% backend test pass rate (104 tests) and 0 TypeScript compilation errors.
+
 ## 2026-09-01 — Milestone 19.1 — Clean Database Audit, Controlled Test Environment & QA Verification
 
 ### Repaired & Added

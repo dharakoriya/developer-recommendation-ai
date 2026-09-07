@@ -266,14 +266,79 @@ def seed_demo_data():
         db.add_all([a1, a2, a3])
         db.commit()
 
-        # 8. Recalculate Workload & Generate Baseline Recommendations
+        # 8. Calculate Task Weights & Seed Performance Intelligence Data
+        print("[*] Calculating Task Weight Scores...")
+        from app.services.task_weight_service import calculate_task_weight_score
+        for t in [t1, t2, t3, t4, t5, t6]:
+            weight = calculate_task_weight_score(t)
+            t.task_weight_score = Decimal(str(weight))
+        db.commit()
+
+        print("[*] Seeding developer streaks, achievements & incentive ledgers...")
+        from app.models.performance import DeveloperStreak, DeveloperAchievement, DeveloperIncentiveLedger
+        from app.services.performance_service import (
+            evaluate_and_grant_developer_achievements,
+            snapshot_developer_performance,
+        )
+
+        # Alice: 4-day active streak, 850 incentive points
+        streak_alice = DeveloperStreak(
+            developer_id=d_alice.id,
+            current_streak=4,
+            longest_streak=6,
+            last_completion_date=now_utc.date(),
+        )
+        inc_alice1 = DeveloperIncentiveLedger(
+            developer_id=d_alice.id, task_id=t5.id, base_points=Decimal("600.00"),
+            difficulty_bonus=Decimal("120.00"), on_time_bonus=Decimal("90.00"), streak_bonus=Decimal("40.00"),
+            total_points=Decimal("850.00"), description="Completed Containerize Backend Service"
+        )
+
+        # Rahul: 2-day streak
+        streak_rahul = DeveloperStreak(
+            developer_id=d_rahul.id,
+            current_streak=2,
+            longest_streak=3,
+            last_completion_date=now_utc.date(),
+        )
+        inc_rahul1 = DeveloperIncentiveLedger(
+            developer_id=d_rahul.id, task_id=t2.id, base_points=Decimal("400.00"),
+            difficulty_bonus=Decimal("0.00"), on_time_bonus=Decimal("60.00"), streak_bonus=Decimal("20.00"),
+            total_points=Decimal("480.00"), description="Completed Implement Payment Dashboard"
+        )
+
+        # Priya: 3-day streak
+        streak_priya = DeveloperStreak(
+            developer_id=d_priya.id,
+            current_streak=3,
+            longest_streak=4,
+            last_completion_date=now_utc.date(),
+        )
+
+        # David: 1-day streak
+        streak_david = DeveloperStreak(
+            developer_id=d_david.id,
+            current_streak=1,
+            longest_streak=1,
+            last_completion_date=now_utc.date() - timedelta(days=1),
+        )
+
+        db.add_all([streak_alice, streak_rahul, streak_priya, streak_david, inc_alice1, inc_rahul1])
+        db.commit()
+
+        # Evaluate Achievements & Snapshots
+        for dev in [d_alice, d_rahul, d_priya, d_david]:
+            evaluate_and_grant_developer_achievements(db, dev.id)
+            snapshot_developer_performance(db, dev.id)
+
+        # 9. Recalculate Workload & Generate Baseline Recommendations
         print("[*] Recalculating developer workloads...")
         for dev in [d_alice, d_rahul, d_priya, d_david]:
             calculate_developer_workload_details(db, dev.id)
 
-        print("[*] Pre-generating baseline-v1 recommendations for tasks...")
+        print("[*] Pre-generating baseline-v1.1 recommendations for tasks...")
         for t in [t1, t2, t3, t4, t6]:
-            generate_and_persist_task_recommendations(db, t.id)
+            generate_and_persist_task_recommendations(db, t.id, model_version="baseline-v1.1")
 
         print("\n[OK] DEMO DATA SEEDED SUCCESSFULLY!")
         print("==================================================")
@@ -282,8 +347,9 @@ def seed_demo_data():
         print("  Users Created      : 6 (Admin, Manager, 4 Developers)")
         print("  Developers Seeded  : 4 (Alice, Rahul, Priya, David)")
         print("  Skills Seeded      : 6 (Python, FastAPI, React, TS, PG, Docker)")
-        print("  Tasks Seeded       : 6")
+        print("  Tasks Seeded       : 6 (with Task Weight Scores)")
         print("  Assignments Seeded : 3")
+        print("  Streaks & Badges   : Seeded & Calculated")
         print("==================================================")
 
     except Exception as e:

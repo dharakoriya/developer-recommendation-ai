@@ -244,6 +244,13 @@ def extract_developer_task_feature_vector(
     # 3. Workload Integration
     workload_details = calculate_developer_workload_details(db, developer_id)
 
+    # 3.5 Performance Intelligence & Task Weight Integration
+    from app.services.performance_service import calculate_developer_performance_metrics
+    from app.services.task_weight_service import calculate_task_weight_score
+
+    perf_metrics = calculate_developer_performance_metrics(db, developer_id)
+    t_weight = float(task.task_weight_score) if task.task_weight_score is not None else calculate_task_weight_score(task)
+
     # 4. Skill Matching Features
     dev_skills_dict = {
         ds.skill_id: float(ds.proficiency_level) for ds in (dev.developer_skills or [])
@@ -292,6 +299,8 @@ def extract_developer_task_feature_vector(
     # 5. Historical Assignment Check
     is_assigned = 1 if any(a.developer_id == developer_id for a in (task.assignments or [])) else 0
 
+    dev_perf_score = perf_metrics.get("performance_score", 75.0)
+
     return CandidateFeatureVector(
         developer_id=dev.id,
         user_name=dev.user.name if dev.user else "Unknown",
@@ -305,13 +314,17 @@ def extract_developer_task_feature_vector(
         dev_experience_years=float(dev.experience_years),
         dev_availability_status=dev.availability_status.value if hasattr(dev.availability_status, "value") else str(dev.availability_status),
         dev_availability_encoded=AVAILABILITY_ENCODING.get(dev.availability_status, 1.0),
-        dev_performance_score=float(dev.performance_score),
+        dev_performance_score=dev_perf_score,
         dev_total_skills_count=len(dev.developer_skills or []),
         dev_workload_score=float(workload_details.workload_score),
         dev_capacity_hours=float(workload_details.capacity_hours),
         dev_active_task_count=workload_details.active_task_count,
         dev_workload_status=workload_details.workload_status,
         dev_workload_status_encoded=WORKLOAD_STATUS_ENCODING.get(workload_details.workload_status, 0),
+        dev_completion_rate=perf_metrics.get("completion_rate", 100.0),
+        dev_on_time_rate=perf_metrics.get("on_time_rate", 100.0),
+        dev_weighted_productivity=perf_metrics.get("weighted_productivity", 0.0),
+        dev_current_streak=perf_metrics.get("current_streak", 0),
 
         # Task Features
         task_estimated_hours=float(task.estimated_hours),
@@ -321,6 +334,7 @@ def extract_developer_task_feature_vector(
         task_priority_encoded=PRIORITY_ENCODING.get(task.priority, 1),
         task_status=task.status.value if hasattr(task.status, "value") else str(task.status),
         task_required_skill_count=task_req_count,
+        task_weight_score=t_weight,
 
         # Skill Match Features
         matching_skill_count=matching_count,
@@ -409,6 +423,10 @@ def export_dataset_csv(
         "dev_active_task_count",
         "dev_workload_status",
         "dev_workload_status_encoded",
+        "dev_completion_rate",
+        "dev_on_time_rate",
+        "dev_weighted_productivity",
+        "dev_current_streak",
         "task_estimated_hours",
         "task_complexity",
         "task_complexity_encoded",
@@ -416,6 +434,7 @@ def export_dataset_csv(
         "task_priority_encoded",
         "task_status",
         "task_required_skill_count",
+        "task_weight_score",
         "matching_skill_count",
         "skill_coverage_ratio",
         "avg_required_level",
@@ -428,7 +447,7 @@ def export_dataset_csv(
     ]
 
     output = io.StringIO()
-    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction="ignore")
     writer.writeheader()
 
     for r in rows:

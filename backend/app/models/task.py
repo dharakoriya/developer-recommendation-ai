@@ -50,6 +50,9 @@ class Task(Base):
     estimated_hours: Mapped[Decimal] = mapped_column(
         Numeric(6, 2), nullable=False
     )
+    task_weight_score: Mapped[Decimal | None] = mapped_column(
+        Numeric(5, 2), nullable=True
+    )
     deadline: Mapped[DateTime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, index=True
     )

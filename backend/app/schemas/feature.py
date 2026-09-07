@@ -31,6 +31,10 @@ class CandidateFeatureVector(BaseModel):
     dev_active_task_count: int
     dev_workload_status: str
     dev_workload_status_encoded: int
+    dev_completion_rate: float = 100.0
+    dev_on_time_rate: float = 100.0
+    dev_weighted_productivity: float = 0.0
+    dev_current_streak: int = 0
 
     # Task Features
     task_estimated_hours: float
@@ -40,6 +44,7 @@ class CandidateFeatureVector(BaseModel):
     task_priority_encoded: int
     task_status: str
     task_required_skill_count: int
+    task_weight_score: float = 50.0
 
     # Skill Match Features
     matching_skill_count: int
