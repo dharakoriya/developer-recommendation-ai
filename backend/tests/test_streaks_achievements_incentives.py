@@ -49,18 +49,14 @@ def test_streak_calculation_rules(db):
 
     today = date.today()
 
-    # Low weight task (< 20) should not increment streak
-    s1 = update_developer_streak_on_task_completion(db, dev.id, task_weight=15.0, completion_date=today)
-    assert s1.current_streak == 0
-
-    # Qualifying task (>= 20) increments streak
-    s2 = update_developer_streak_on_task_completion(db, dev.id, task_weight=50.0, completion_date=today - timedelta(days=1))
-    assert s2.current_streak == 1
+    # Initial completion increments streak
+    s1 = update_developer_streak_on_task_completion(db, dev.id, task_weight=15.0, completion_date=today - timedelta(days=1))
+    assert s1.current_streak == 1
 
     # Next consecutive day increments streak
-    s3 = update_developer_streak_on_task_completion(db, dev.id, task_weight=50.0, completion_date=today)
-    assert s3.current_streak == 2
-    assert s3.longest_streak == 2
+    s2 = update_developer_streak_on_task_completion(db, dev.id, task_weight=50.0, completion_date=today)
+    assert s2.current_streak == 2
+    assert s2.longest_streak == 2
 
 
 def test_incentive_points_calculation(db):
@@ -86,7 +82,7 @@ def test_incentive_points_calculation(db):
     db.commit()
 
     ledger = calculate_and_record_incentive_points(db, dev.id, t.id, is_on_time=True)
-    assert float(ledger.base_points) == 800.0
-    assert float(ledger.difficulty_bonus) == 160.0 # +20%
-    assert float(ledger.on_time_bonus) == 120.0    # +15%
-    assert float(ledger.total_points) >= 1080.0
+    assert float(ledger.base_points) == 100.0
+    assert float(ledger.difficulty_bonus) == 20.0
+    assert float(ledger.on_time_bonus) == 15.0
+    assert float(ledger.total_points) == 135.0

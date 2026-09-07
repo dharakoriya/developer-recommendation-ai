@@ -106,3 +106,10 @@ class TeamPerformanceAnalyticsResponse(BaseModel):
     best_streaks: List[PerformanceLeaderboardItem]
     task_difficulty_distribution: dict
     leaderboard: List[PerformanceLeaderboardItem]
+
+
+class AdminIncentiveAdjustmentRequest(BaseModel):
+    developer_id: uuid.UUID
+    points: float
+    reason: str
+

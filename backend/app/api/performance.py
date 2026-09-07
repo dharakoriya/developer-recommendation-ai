@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
@@ -23,6 +24,7 @@ from app.schemas.performance import (
     DeveloperPerformanceDetailResponse,
     PerformanceLeaderboardItem,
     TeamPerformanceAnalyticsResponse,
+    AdminIncentiveAdjustmentRequest,
 )
 from app.api.deps import get_current_user, require_roles
 from app.services.performance_service import (
@@ -245,3 +247,62 @@ def get_team_performance_analytics(
         task_difficulty_distribution=task_complexity_counts,
         leaderboard=leaderboard,
     )
+
+
+@router.post(
+    "/incentives/adjust",
+    response_model=DeveloperIncentiveLedgerResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Admin manual incentive point adjustment",
+)
+def admin_adjust_incentive_points(
+    adjust_in: AdminIncentiveAdjustmentRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
+):
+    """
+    Manually adjusts incentive points for a developer (positive or negative bonus).
+    STRICTLY RESTRICTED TO ADMIN ROLE.
+    """
+    dev = db.execute(
+        select(DeveloperProfile).where(DeveloperProfile.id == adjust_in.developer_id)
+    ).scalar_one_or_none()
+
+    if not dev:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Developer profile with ID {adjust_in.developer_id} not found.",
+        )
+
+    pts = Decimal(str(adjust_in.points))
+    ledger_entry = DeveloperIncentiveLedger(
+        developer_id=adjust_in.developer_id,
+        task_id=None,
+        base_points=pts,
+        difficulty_bonus=Decimal("0.0"),
+        on_time_bonus=Decimal("0.0"),
+        streak_bonus=Decimal("0.0"),
+        total_points=pts,
+        description=f"ADMIN Adjustment by {current_user.name}: {adjust_in.reason}",
+    )
+    db.add(ledger_entry)
+    db.commit()
+    db.refresh(ledger_entry)
+
+    # Refresh snapshot
+    from app.services.performance_service import snapshot_developer_performance
+    snapshot_developer_performance(db, adjust_in.developer_id)
+
+    return DeveloperIncentiveLedgerResponse(
+        id=ledger_entry.id,
+        developer_id=ledger_entry.developer_id,
+        task_id=ledger_entry.task_id,
+        base_points=float(ledger_entry.base_points),
+        difficulty_bonus=float(ledger_entry.difficulty_bonus),
+        on_time_bonus=float(ledger_entry.on_time_bonus),
+        streak_bonus=float(ledger_entry.streak_bonus),
+        total_points=float(ledger_entry.total_points),
+        description=ledger_entry.description,
+        earned_at=ledger_entry.earned_at,
+    )
+

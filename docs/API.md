@@ -121,7 +121,13 @@ Updates user information.
 
 ### GET `/api/developers`
 
-Returns all developer profiles with user info and assigned skills.
+Returns developer profiles with user info and assigned skills. Supports query parameters for multi-attribute filtering:
+- `performance_tier`: `top_performers` (>=85), `high_performers` (70-84), `average` (50-69), `needs_improvement` (<50)
+- `min_completion_rate`: Minimum completion rate percentage (e.g. 50, 75, 90)
+- `availability_status`: `AVAILABLE`, `PARTIAL`, `UNAVAILABLE`
+- `skills`: Comma-separated skill names
+- `experience_range`: `0-1`, `1-3`, `3-5`, `5+`
+- `workload_status`: `underutilized`, `balanced`, `high_workload`, `overloaded`
 
 Header: `Authorization: Bearer <token>`
 

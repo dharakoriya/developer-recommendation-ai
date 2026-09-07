@@ -1,6 +1,6 @@
 import uuid
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select
 
@@ -8,10 +8,12 @@ from app.database import get_db
 from app.models.developer import DeveloperProfile, DeveloperSkill
 from app.models.user import User
 from app.models.skill import Skill
-from app.models.enums import UserRole
+from app.models.enums import UserRole, AvailabilityStatus
 from app.schemas.developer import DeveloperCreate, DeveloperUpdate, DeveloperResponse
 from app.schemas.skill import DeveloperSkillAssign, DeveloperSkillUpdate, DeveloperSkillResponse
 from app.api.deps import get_current_user, require_roles
+from app.services.performance_service import calculate_developer_performance_metrics
+from app.services.workload_service import calculate_developer_workload_details
 
 router = APIRouter()
 
@@ -47,30 +49,83 @@ def _format_developer_response(dev: DeveloperProfile) -> DeveloperResponse:
     )
 
 
-@router.get("", response_model=List[DeveloperResponse], summary="List developer profiles")
+@router.get("", response_model=List[DeveloperResponse], summary="List developer profiles with filters")
 def list_developers(
+    performance_tier: Optional[str] = Query(None, description="top_performers, high_performers, average, needs_improvement"),
+    min_completion_rate: Optional[float] = Query(None, description="Minimum completion rate percentage (e.g. 50, 75, 90)"),
+    availability_status: Optional[AvailabilityStatus] = Query(None, description="AVAILABLE, PARTIAL, UNAVAILABLE"),
+    skills: Optional[str] = Query(None, description="Comma-separated skill names"),
+    experience_range: Optional[str] = Query(None, description="0-1, 1-3, 3-5, 5+"),
+    workload_status: Optional[str] = Query(None, description="underutilized, balanced, high_workload, overloaded"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """
-    Returns all developer profiles with user info and skills.
+    Returns filtered developer profiles with user info and skills.
+    Supported filters: performance_tier, min_completion_rate, availability_status, skills, experience_range, workload_status.
     Accessible to all authenticated users.
     """
-    developers = (
-        db.execute(
-            select(DeveloperProfile)
-            .options(
-                joinedload(DeveloperProfile.user),
-                joinedload(DeveloperProfile.developer_skills).joinedload(DeveloperSkill.skill),
-            )
-            .order_by(DeveloperProfile.created_at.desc())
+    query = (
+        select(DeveloperProfile)
+        .options(
+            joinedload(DeveloperProfile.user),
+            joinedload(DeveloperProfile.developer_skills).joinedload(DeveloperSkill.skill),
         )
-        .unique()
-        .scalars()
-        .all()
+        .order_by(DeveloperProfile.created_at.desc())
     )
 
-    return [_format_developer_response(dev) for dev in developers]
+    if availability_status:
+        query = query.where(DeveloperProfile.availability_status == availability_status)
+
+    developers = db.execute(query).unique().scalars().all()
+    filtered_devs = []
+
+    for dev in developers:
+        # Experience range check
+        exp = float(dev.experience_years) if dev.experience_years is not None else 0.0
+        if experience_range == "0-1" and not (0 <= exp <= 1.0):
+            continue
+        elif experience_range == "1-3" and not (1.0 < exp <= 3.0):
+            continue
+        elif experience_range == "3-5" and not (3.0 < exp <= 5.0):
+            continue
+        elif experience_range == "5+" and not (exp > 5.0):
+            continue
+
+        # Skills check
+        if skills:
+            req_skill_names = [s.strip().lower() for s in skills.split(",") if s.strip()]
+            dev_skill_names = [ds.skill.name.lower() for ds in dev.developer_skills if ds.skill]
+            if not all(s_req in dev_skill_names for s_req in req_skill_names):
+                continue
+
+        # Calculate metrics if performance or workload filter specified
+        if performance_tier or min_completion_rate is not None or workload_status:
+            metrics = calculate_developer_performance_metrics(db, dev.id)
+            score = metrics["performance_score"]
+            c_rate = metrics["completion_rate"]
+
+            if performance_tier == "top_performers" and score < 85.0:
+                continue
+            elif performance_tier == "high_performers" and not (70.0 <= score < 85.0):
+                continue
+            elif performance_tier == "average" and not (50.0 <= score < 70.0):
+                continue
+            elif performance_tier == "needs_improvement" and score >= 50.0:
+                continue
+
+            if min_completion_rate is not None and c_rate < min_completion_rate:
+                continue
+
+            if workload_status:
+                wl = calculate_developer_workload_details(db, dev.id)
+                status_key = str(wl.capacity_status).lower()
+                if workload_status.lower() not in status_key:
+                    continue
+
+        filtered_devs.append(dev)
+
+    return [_format_developer_response(dev) for dev in filtered_devs]
 
 
 @router.post("", response_model=DeveloperResponse, status_code=status.HTTP_201_CREATED, summary="Create developer profile")

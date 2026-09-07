@@ -14,65 +14,66 @@ from app.models.performance import (
     DeveloperPerformanceSnapshot,
 )
 from app.models.enums import AssignmentStatus, TaskComplexity, TaskStatus
-from app.services.task_weight_service import calculate_task_weight_score, update_and_persist_task_weight
+from app.services.task_weight_service import calculate_task_weight_score, update_and_persist_task_weight, get_task_weight_category
+from app.services.workload_service import calculate_developer_workload_details
 
 
 ACHIEVEMENT_CATALOG = [
     {
+        "key": "FIRST_TASK_COMPLETED",
+        "category": "productivity",
+        "title": "First Task Completed",
+        "description": "Successfully completed your first assigned task.",
+        "icon": "trophy",
+    },
+    {
         "key": "STREAK_3_DAYS",
         "category": "consistency",
-        "title": "3-Day Completion Streak",
+        "title": "3 Day Streak",
         "description": "Completed qualifying tasks on 3 consecutive days.",
         "icon": "flame",
     },
     {
         "key": "STREAK_7_DAYS",
         "category": "consistency",
-        "title": "7-Day Power Streak",
+        "title": "7 Day Streak",
         "description": "Maintained an active completion streak for a full week.",
         "icon": "flame",
     },
     {
         "key": "STREAK_30_DAYS",
         "category": "consistency",
-        "title": "30-Day Master Streak",
+        "title": "30 Day Streak",
         "description": "Achieved legendary 30-day consistent task delivery.",
-        "icon": "flame",
-    },
-    {
-        "key": "TASKS_1_COMPLETED",
-        "category": "productivity",
-        "title": "First Milestone Completed",
-        "description": "Successfully completed your first assigned task.",
-        "icon": "rocket",
-    },
-    {
-        "key": "TASKS_5_COMPLETED",
-        "category": "productivity",
-        "title": "5 Tasks Delivered",
-        "description": "Successfully completed 5 tasks with high quality.",
-        "icon": "rocket",
-    },
-    {
-        "key": "TASKS_10_COMPLETED",
-        "category": "productivity",
-        "title": "10 Tasks Delivered",
-        "description": "Reached a milestone of 10 completed tasks.",
-        "icon": "rocket",
-    },
-    {
-        "key": "HIGH_COMPLEXITY_MASTER",
-        "category": "difficulty",
-        "title": "High Complexity Specialist",
-        "description": "Completed a high-complexity task (Task Weight >= 75).",
-        "icon": "brain",
-    },
-    {
-        "key": "SPEED_DEMON",
-        "category": "speed",
-        "title": "Ahead of Schedule",
-        "description": "Delivered task on-time ahead of estimated effort.",
         "icon": "zap",
+    },
+    {
+        "key": "HEAVY_TASK_SPECIALIST",
+        "category": "difficulty",
+        "title": "Heavy Task Specialist",
+        "description": "Successfully completed a Heavy task (Task Weight >= 51).",
+        "icon": "armflex",
+    },
+    {
+        "key": "CRITICAL_TASK_COMPLETED",
+        "category": "difficulty",
+        "title": "Critical Task Completed",
+        "description": "Delivered a Critical task with Task Weight >= 76.",
+        "icon": "rocket",
+    },
+    {
+        "key": "TOP_PERFORMER",
+        "category": "mastery",
+        "title": "Top Performer",
+        "description": "Achieved an overall Developer Performance Score >= 85.",
+        "icon": "star",
+    },
+    {
+        "key": "ON_TIME_CHAMPION",
+        "category": "speed",
+        "title": "On-Time Champion",
+        "description": "Maintained a 100% on-time delivery rate with at least 3 completed tasks.",
+        "icon": "target",
     },
 ]
 
@@ -80,14 +81,17 @@ ACHIEVEMENT_CATALOG = [
 def calculate_developer_performance_metrics(db: Session, developer_id: uuid.UUID) -> Dict[str, Any]:
     """
     Computes comprehensive developer performance metrics:
-    - Completion Rate
-    - Weighted Productivity
-    - On-Time Completion Rate
-    - Composite Performance Score (0..100)
+    - Task Completion Rate (30%)
+    - On-Time Completion Rate (25%)
+    - Weighted Productivity (25%)
+    - Workload Reliability (10%)
+    - Skill Growth (10%)
     """
     dev_profile = db.execute(
-        select(DeveloperProfile).where(DeveloperProfile.id == developer_id)
-    ).scalar_one_or_none()
+        select(DeveloperProfile)
+        .options(joinedload(DeveloperProfile.developer_skills))
+        .where(DeveloperProfile.id == developer_id)
+    ).unique().scalar_one_or_none()
 
     if not dev_profile:
         raise ValueError(f"Developer profile with ID {developer_id} not found.")
@@ -108,15 +112,22 @@ def calculate_developer_performance_metrics(db: Session, developer_id: uuid.UUID
     else:
         completion_rate = 100.0
 
-    # Weighted Productivity
+    # Weighted Productivity & On-Time Rate
     weighted_productivity = 0.0
     on_time_count = 0
+    heavy_tasks_completed = 0
+    critical_tasks_completed = 0
 
     for a in completed_assignments:
         task = a.task
         if task:
             weight = float(task.task_weight_score) if task.task_weight_score is not None else calculate_task_weight_score(task)
             weighted_productivity += weight
+
+            if weight >= 51.0:
+                heavy_tasks_completed += 1
+            if weight >= 76.0:
+                critical_tasks_completed += 1
 
             # On-time check
             if a.completed_at and a.assigned_at:
@@ -135,30 +146,36 @@ def calculate_developer_performance_metrics(db: Session, developer_id: uuid.UUID
     else:
         on_time_rate = 100.0
 
-    # Get current streak
+    # Workload Reliability (10%)
+    workload = calculate_developer_workload_details(db, developer_id)
+    workload_val = float(workload.workload_score)
+    if workload_val > 100.0:
+        workload_reliability = max(50.0, 100.0 - (workload_val - 100.0))
+    else:
+        workload_reliability = 100.0
+
+    # Experience / Skill Growth (10%)
+    skill_count = len(dev_profile.developer_skills or [])
+    exp_years = float(dev_profile.experience_years) if dev_profile.experience_years is not None else 1.0
+    skill_growth = min(100.0, (exp_years * 15.0) + (skill_count * 5.0))
+
+    # Current streak
     streak_record = db.execute(
         select(DeveloperStreak).where(DeveloperStreak.developer_id == developer_id)
     ).scalar_one_or_none()
     current_streak = streak_record.current_streak if streak_record else 0
 
-    # Calculate Composite Developer Performance Score (0..100)
-    # Completion Rate (30%), Weighted Productivity (25%), On-Time (20%), Quality/Skills (15%), Streak (10%)
     if completed_count == 0:
-        # Initial baseline if developer has no completed tasks yet
         performance_score = float(dev_profile.performance_score) if dev_profile.performance_score is not None else 75.0
     else:
-        # Normalized weighted productivity factor (100 weighted pts ~ 100% capacity)
         productivity_factor = min(100.0, (weighted_productivity / max(1.0, completed_count * 50.0)) * 100.0)
-        streak_factor = min(100.0, current_streak * 20.0)
-        skill_count = len(dev_profile.developer_skills or [])
-        quality_factor = min(100.0, 50.0 + (skill_count * 10.0))
 
         score = (
             (0.30 * completion_rate)
+            + (0.25 * on_time_rate)
             + (0.25 * productivity_factor)
-            + (0.20 * on_time_rate)
-            + (0.15 * quality_factor)
-            + (0.10 * streak_factor)
+            + (0.10 * workload_reliability)
+            + (0.10 * skill_growth)
         )
         performance_score = round(min(100.0, max(0.0, score)), 2)
 
@@ -169,7 +186,11 @@ def calculate_developer_performance_metrics(db: Session, developer_id: uuid.UUID
         "completion_rate": completion_rate,
         "weighted_productivity": round(weighted_productivity, 2),
         "on_time_rate": on_time_rate,
+        "workload_reliability": round(workload_reliability, 2),
+        "skill_growth": round(skill_growth, 2),
         "current_streak": current_streak,
+        "heavy_tasks_completed": heavy_tasks_completed,
+        "critical_tasks_completed": critical_tasks_completed,
         "performance_score": performance_score,
     }
 
@@ -178,7 +199,9 @@ def update_developer_streak_on_task_completion(
     db: Session, developer_id: uuid.UUID, task_weight: float, completion_date: Optional[date] = None
 ) -> DeveloperStreak:
     """
-    Updates developer productivity streak upon completing a qualifying task (Task Weight >= 20.0).
+    Updates developer activity streak on qualifying task completion (Task Weight >= 1.0).
+    Consecutive active calendar days increment the streak.
+    Missed calendar days reset current_streak to 1.
     """
     if completion_date is None:
         completion_date = datetime.now(timezone.utc).date()
@@ -197,10 +220,6 @@ def update_developer_streak_on_task_completion(
         db.add(streak)
         db.flush()
 
-    # Rule: Streak only increases for qualifying tasks (Task Weight >= 20.0)
-    if task_weight < 20.0:
-        return streak
-
     if streak.last_completion_date is None:
         streak.current_streak = 1
         streak.longest_streak = 1
@@ -208,14 +227,14 @@ def update_developer_streak_on_task_completion(
     else:
         diff_days = (completion_date - streak.last_completion_date).days
         if diff_days == 0:
-            # Same calendar day completion: maintain current streak
+            # Same calendar day completion: preserve current streak
             pass
         elif diff_days == 1:
-            # Next consecutive day completion: increment streak
+            # Next consecutive calendar day completion: increment streak
             streak.current_streak += 1
             streak.last_completion_date = completion_date
-        else:
-            # Gap > 1 day: reset streak to 1
+        elif diff_days > 1:
+            # Missed calendar days: reset current streak to 1
             streak.current_streak = 1
             streak.last_completion_date = completion_date
 
@@ -231,7 +250,7 @@ def evaluate_and_grant_developer_achievements(
     db: Session, developer_id: uuid.UUID
 ) -> List[DeveloperAchievement]:
     """
-    Evaluates developer metrics and awards non-duplicative achievements.
+    Evaluates developer activity metrics and grants non-duplicative achievement badges.
     """
     metrics = calculate_developer_performance_metrics(db, developer_id)
     streak_rec = db.execute(
@@ -257,21 +276,21 @@ def evaluate_and_grant_developer_achievements(
             continue
 
         earned = False
-        if key == "STREAK_3_DAYS" and current_streak >= 3:
+        if key == "FIRST_TASK_COMPLETED" and completed_count >= 1:
+            earned = True
+        elif key == "STREAK_3_DAYS" and current_streak >= 3:
             earned = True
         elif key == "STREAK_7_DAYS" and current_streak >= 7:
             earned = True
         elif key == "STREAK_30_DAYS" and current_streak >= 30:
             earned = True
-        elif key == "TASKS_1_COMPLETED" and completed_count >= 1:
+        elif key == "HEAVY_TASK_SPECIALIST" and metrics.get("heavy_tasks_completed", 0) >= 1:
             earned = True
-        elif key == "TASKS_5_COMPLETED" and completed_count >= 5:
+        elif key == "CRITICAL_TASK_COMPLETED" and metrics.get("critical_tasks_completed", 0) >= 1:
             earned = True
-        elif key == "TASKS_10_COMPLETED" and completed_count >= 10:
+        elif key == "TOP_PERFORMER" and metrics["performance_score"] >= 85.0:
             earned = True
-        elif key == "HIGH_COMPLEXITY_MASTER" and metrics["weighted_productivity"] >= 75.0:
-            earned = True
-        elif key == "SPEED_DEMON" and metrics["on_time_rate"] >= 100.0 and completed_count >= 2:
+        elif key == "ON_TIME_CHAMPION" and metrics["on_time_rate"] >= 100.0 and completed_count >= 3:
             earned = True
 
         if earned:
@@ -299,26 +318,46 @@ def calculate_and_record_incentive_points(
     db: Session, developer_id: uuid.UUID, task_id: uuid.UUID, is_on_time: bool = True
 ) -> DeveloperIncentiveLedger:
     """
-    Calculates incentive points for completing a task:
-    - Base Points = Task Weight * 10
-    - Difficulty Bonus = +20% if Task Weight >= 75
-    - On-Time Bonus = +15% if on time
-    - Streak Bonus = +10% per streak day (up to max +50%)
+    Records immutable incentive transaction ledger points for completing a task:
+    - Base Points: Task Weight (LIGHT -> 25, MODERATE -> 50, HEAVY -> 75, CRITICAL -> 100)
+    - On-Time Bonus: +15% of Base Points if completed before deadline
+    - Streak Bonus: +10% per consecutive streak day (max +50%)
+    - Difficulty Bonus: +20% for Heavy/Critical tasks (Weight >= 51)
     """
+    # Prevent duplicate point award for the same task
+    existing_entry = db.execute(
+        select(DeveloperIncentiveLedger).where(
+            DeveloperIncentiveLedger.developer_id == developer_id,
+            DeveloperIncentiveLedger.task_id == task_id,
+        )
+    ).scalar_one_or_none()
+
+    if existing_entry:
+        return existing_entry
+
     task = db.execute(select(Task).where(Task.id == task_id)).scalar_one_or_none()
     if not task:
         raise ValueError(f"Task with ID {task_id} not found.")
 
     task_weight = float(task.task_weight_score) if task.task_weight_score is not None else calculate_task_weight_score(task)
+    category = get_task_weight_category(task_weight)
+
+    # Base points map by task weight category
+    if category == "LIGHT":
+        base_points = 25.0
+    elif category == "MODERATE":
+        base_points = 50.0
+    elif category == "HEAVY":
+        base_points = 75.0
+    else:
+        base_points = 100.0
 
     streak_rec = db.execute(
         select(DeveloperStreak).where(DeveloperStreak.developer_id == developer_id)
     ).scalar_one_or_none()
     current_streak = streak_rec.current_streak if streak_rec else 0
 
-    base_points = round(task_weight * 10.0, 2)
-
-    if task_weight >= 75.0:
+    if task_weight >= 51.0:
         difficulty_bonus = round(base_points * 0.20, 2)
     else:
         difficulty_bonus = 0.0
@@ -341,7 +380,7 @@ def calculate_and_record_incentive_points(
         on_time_bonus=Decimal(str(on_time_bonus)),
         streak_bonus=Decimal(str(streak_bonus)),
         total_points=Decimal(str(total_points)),
-        description=f"Incentive points for completing task '{task.title}' (Weight: {task_weight:.1f})",
+        description=f"Task Completion Reward ({category}): '{task.title}' (Weight: {task_weight:.1f})",
     )
     db.add(ledger_entry)
     db.commit()
@@ -353,11 +392,10 @@ def snapshot_developer_performance(
     db: Session, developer_id: uuid.UUID
 ) -> DeveloperPerformanceSnapshot:
     """
-    Creates a performance snapshot for trend tracking and updates DeveloperProfile.performance_score.
+    Creates a historical performance snapshot for trend analytics and updates DeveloperProfile.performance_score.
     """
     metrics = calculate_developer_performance_metrics(db, developer_id)
 
-    # Sync DeveloperProfile.performance_score
     dev_profile = db.execute(
         select(DeveloperProfile).where(DeveloperProfile.id == developer_id)
     ).scalar_one_or_none()
@@ -365,7 +403,6 @@ def snapshot_developer_performance(
         dev_profile.performance_score = Decimal(str(metrics["performance_score"]))
         db.commit()
 
-    # Sum total incentive points
     total_incentive_points = db.execute(
         select(func.coalesce(func.sum(DeveloperIncentiveLedger.total_points), 0)).where(
             DeveloperIncentiveLedger.developer_id == developer_id

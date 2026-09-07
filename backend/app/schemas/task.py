@@ -101,6 +101,8 @@ class TaskResponse(BaseModel):
     creator_name: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+    task_weight_score: Optional[Decimal] = None
+    task_weight_category: Optional[str] = None
     required_skills: List[TaskSkillResponse] = []
     current_assignment: Optional[AssignmentResponse] = None
     assignment_history: List[AssignmentResponse] = []

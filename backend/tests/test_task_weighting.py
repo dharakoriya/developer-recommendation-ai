@@ -10,9 +10,9 @@ from app.services.task_weight_service import (
 
 
 def test_task_effort_factor_scaling():
-    assert calculate_task_effort_factor(2.0) == 15.0
-    assert calculate_task_effort_factor(10.0) == 40.0
-    assert calculate_task_effort_factor(30.0) == 75.0
+    assert calculate_task_effort_factor(2.0) == 20.0
+    assert calculate_task_effort_factor(6.0) == 40.0
+    assert calculate_task_effort_factor(30.0) == 80.0
     assert calculate_task_effort_factor(50.0) == 100.0
 
 

@@ -13,10 +13,13 @@
 ## 🌟 Key Features
 
 - 👤 **Dynamic Developer Profiling**: Continuously updates developer skill profiles based on commit history, issue completions, code review metrics, and active availability.
-- 🎯 **Intelligent Developer Recommendation Engine**: Evaluates task complexity, required technologies, estimated effort, and developer historic affinity to rank candidates for any backlog item.
-- 🔍 **Explainable AI (XAI) Attribution**: Integrates **SHAP** (SHapley Additive exPlanations) and **LIME** (Local Interpretable Model-Agnostic Explanations) to provide feature-level transparency (e.g., skill match vs. workload impact) for every recommendation.
-- ⚖️ **Workload Balancing & Redistribution**: Computes real-time capacity scores ($Workload = Task\ Count \times Complexity + Hours + Deadline\ Pressure$) and alerts managers to overloaded developers while recommending fair task redistribution.
-- 📊 **Manager Decision-Support Dashboard**: An interactive management interface that displays confidence scores, visual XAI breakdowns, and interactive task assignment controls—ensuring final allocation decisions remain in human hands.
+- 🏋️ **Task Weighting Intelligence Engine**: Calculates transparent, deterministic Task Weight Scores (1–100) based on Complexity (40%), Priority (25%), Effort (20%), and Skill Difficulty (15%), categorized into `LIGHT`, `MODERATE`, `HEAVY`, and `CRITICAL`.
+- ⚡ **Developer Performance & Activity Streaks**: Evaluates multi-factor performance scores (0–100) combining completion rate, on-time delivery, weighted productivity, workload reliability, and skill growth, tracking UTC calendar-day delivery streaks and achievements.
+- 🎁 **Immutable Incentive & Achievement Engine**: Rewards task completion, speed, and difficulty with transparent incentive points and non-duplicative achievement badges (`FIRST_TASK_COMPLETED`, `TOP_PERFORMER`, `ON_TIME_CHAMPION`).
+- 🎯 **Intelligent Developer Recommendation Engine**: Evaluates task complexity, required technologies, estimated effort, and developer historic affinity using the production `baseline-v1` algorithm.
+- 🔍 **Explainable AI (XAI) Attribution**: Integrates **SHAP** and **LIME** research models to provide feature-level transparency for recommendations.
+- ⚖️ **Workload Balancing & Redistribution**: Computes real-time capacity scores and alerts managers to overloaded developers while recommending fair task redistribution.
+- 📊 **Manager Decision-Support Dashboard**: Modern "Intelligent Command Center" providing team performance leaderboards, multi-attribute developer filtering, and interactive assignment controls.
 
 ---
 

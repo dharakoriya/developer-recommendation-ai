@@ -62,7 +62,6 @@ def test_developer_performance_metrics_with_completed_tasks(db):
     db.add(dev)
     db.commit()
 
-    # Create project & task
     from app.models.project import Project, ProjectStatus
     proj = Project(name="Test Proj", status=ProjectStatus.ACTIVE, created_by=u_mgr.id)
     db.add(proj)
@@ -87,3 +86,4 @@ def test_developer_performance_metrics_with_completed_tasks(db):
     assert metrics["completed_tasks"] == 1
     assert metrics["completion_rate"] == 100.0
     assert metrics["weighted_productivity"] == 80.0
+    assert metrics["performance_score"] > 80.0

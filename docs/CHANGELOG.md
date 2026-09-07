@@ -11,6 +11,18 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-09-08 — Milestone 21 — Developer Performance Intelligence, Task Weighting, Filtering, Incentives & Achievement System
+
+### Repaired & Added
+
+* **Task Weighting Intelligence Engine**: Updated `task_weight_service.py` to calculate transparent, deterministic Task Weight Scores (1–100) using the exact 40/25/20/15 formula (Complexity 40%, Priority 25%, Effort 20%, Skill Difficulty 15%). Automatically maps tasks into `LIGHT` (1–25), `MODERATE` (26–50), `HEAVY` (51–75), and `CRITICAL` (76–100) categories and updates weights on task creation, modification, and skill assignment.
+* **Developer Performance Intelligence**: Refactored `performance_service.py` to compute deterministic composite performance scores (0–100) combining Task Completion Rate (30%), On-Time Completion Rate (25%), Weighted Productivity (25%), Workload Reliability (10%), and Skill Growth (10%).
+* **Multi-Attribute Developer Filtering**: Enhanced `GET /api/developers` in `developers.py` to support filtering by `performance_tier` (`top_performers`, `high_performers`, `average`, `needs_improvement`), `min_completion_rate`, `availability_status`, `skills`, `experience_range`, and `workload_status` while preserving strict RBAC.
+* **Immutable Incentive Ledger & Admin Manual Adjustments**: Maintained append-only ledger entries (`DeveloperIncentiveLedger`) for base rewards, on-time delivery bonuses, streak bonuses, and difficulty bonuses. Created `POST /api/performance/incentives/adjust` endpoint strictly restricted to `ADMIN` users for manual point adjustments.
+* **Developer Activity Streak & Achievement System**: Implemented UTC calendar-day streak tracking (`current_streak`, `longest_streak`, `last_completion_date`) and automatic evaluation for 8 standard achievement badges (🏆 First Task Completed, 🔥 3/7/30 Day Streaks, 💪 Heavy Task Specialist, 🚀 Critical Task Completed, ⭐ Top Performer, 🎯 On-Time Champion).
+* **Production Algorithm Governance**: Preserved `baseline-v1` as the active production recommendation algorithm without breaking changes.
+* **Documentation & Testing**: Added `test_milestone21_performance_incentives.py` pytest suite and published [`docs/DEVELOPER_PERFORMANCE_AND_INCENTIVES_GUIDE.md`](file:///d:/Custom%20Project/dhara/devalign-ai/docs/DEVELOPER_PERFORMANCE_AND_INCENTIVES_GUIDE.md).
+
 ## 2026-09-07 — Milestone 20 — Project Intelligence Analytics, Performance Insights & Final API Stabilization
 
 ### Repaired & Added
