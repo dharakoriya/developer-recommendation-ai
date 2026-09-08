@@ -58,10 +58,10 @@ def get_model_metadata(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Returns active recommendation engine metadata (e.g. deterministic baseline v1.0).
+    Returns active recommendation engine metadata (deterministic baseline v2.0).
     Accessible to all authenticated users.
     """
-    model = get_active_recommendation_model()
+    model = get_active_recommendation_model(model_version="baseline-v2")
     return model.get_model_metadata()
 
 
@@ -509,7 +509,7 @@ def create_dataset_snapshot_api(
 def get_task_recommendations(
     task_id: uuid.UUID,
     regenerate: bool = False,
-    model_version: str = "baseline-v1",
+    model_version: str = "baseline-v2",
     min_performance_score: Optional[float] = None,
     min_completion_rate: Optional[float] = None,
     availability_status: Optional[str] = None,
@@ -522,9 +522,14 @@ def get_task_recommendations(
 ):
     """
     Generates and returns ranked developer candidates for a task with score explanations.
-    Supports filtering by performance score, completion rate, workload, availability, experience, skill match %, and streaks.
-    Accessible to all authenticated users.
+    Requires ADMIN or MANAGER role. DEVELOPER role is restricted.
     """
+    if current_user.role == UserRole.DEVELOPER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden. Developer role is restricted from viewing organization recommendation rankings.",
+        )
+
     task = db.execute(select(Task).where(Task.id == task_id)).scalar_one_or_none()
     if not task:
         raise HTTPException(
@@ -546,7 +551,7 @@ def get_task_recommendations(
                 min_streak,
             ]
         )
-        if regenerate or has_filters or model_version != "baseline-v1":
+        if regenerate or has_filters or model_version != "baseline-v2":
             return generate_and_persist_task_recommendations(
                 db=db,
                 task_id=task_id,

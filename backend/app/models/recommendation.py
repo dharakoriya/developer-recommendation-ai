@@ -5,6 +5,7 @@ from sqlalchemy import (
     Text,
     Numeric,
     Integer,
+    Boolean,
     ForeignKey,
     Enum as SQLEnum,
     DateTime,
@@ -39,6 +40,9 @@ class Recommendation(Base):
         Numeric(10, 4), nullable=False
     )
     rank: Mapped[int] = mapped_column(Integer, nullable=False)
+    eligibility_status: Mapped[str] = mapped_column(String(50), nullable=False, default="ELIGIBLE")
+    exclusion_reasons: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_stale: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

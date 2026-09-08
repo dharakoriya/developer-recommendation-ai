@@ -39,6 +39,11 @@ class RecommendationResponse(BaseModel):
     model_version: str
     score: float
     rank: int
+    eligibility_status: str = "ELIGIBLE"
+    exclusion_reasons: List[str] = []
+    task_weight_score: Optional[float] = None
+    task_weight_category: Optional[str] = None
+    is_stale: bool = False
     created_at: datetime
     explanations: List[RecommendationExplanationResponse] = []
 
@@ -52,5 +57,7 @@ class RecommendationListResponse(BaseModel):
     project_name: str
     model_type: str
     model_version: str
+    freshness_status: str = "FRESH"
     total_recommendations: int
     recommendations: List[RecommendationResponse]
+    excluded_recommendations: List[RecommendationResponse] = []

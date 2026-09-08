@@ -21,6 +21,7 @@ from app.schemas.task import (
     AssignmentResponse,
 )
 from app.api.deps import get_current_user, require_roles
+from app.services.recommendation_service import invalidate_task_recommendations
 
 router = APIRouter()
 
@@ -311,6 +312,7 @@ def update_task(
 
     db.commit()
     db.refresh(task)
+    invalidate_task_recommendations(db, id)
     return build_task_response(task)
 
 
@@ -422,6 +424,7 @@ def add_task_skill(
     )
     db.add(new_task_skill)
     db.commit()
+    invalidate_task_recommendations(db, id)
 
     stmt = (
         select(TaskSkill)
@@ -459,6 +462,7 @@ def update_task_skill(
     task_skill.required_level = skill_in.required_level
     db.commit()
     db.refresh(task_skill)
+    invalidate_task_recommendations(db, id)
     return build_task_skill_response(task_skill)
 
 
@@ -488,4 +492,5 @@ def delete_task_skill(
 
     db.delete(task_skill)
     db.commit()
+    invalidate_task_recommendations(db, id)
     return None

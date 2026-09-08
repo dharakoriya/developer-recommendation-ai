@@ -13,7 +13,7 @@ from app.schemas.workload import (
     DeveloperWorkloadDetailResponse,
     WorkloadRecordResponse,
 )
-from app.api.tasks import build_task_response
+
 
 COMPLEXITY_WEIGHTS = {
     TaskComplexity.LOW: Decimal("1.0"),
@@ -102,6 +102,7 @@ def calculate_developer_workload_details(
     ).scalars().first()
 
     last_snapshot_at = last_record.calculated_at if last_record else None
+    from app.api.tasks import build_task_response
     task_responses = [build_task_response(t) for t in active_tasks]
 
     return DeveloperWorkloadDetailResponse(

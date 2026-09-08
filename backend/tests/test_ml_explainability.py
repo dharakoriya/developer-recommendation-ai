@@ -87,6 +87,7 @@ def test_research_only_protection():
     active_model = get_active_recommendation_model()
     meta = active_model.get_model_metadata()
 
-    # Verify active production recommendation engine remains strictly deterministic baseline-v1
+    # Verify active production recommendation engine remains strictly deterministic baseline-v2
     assert meta.model_type == "deterministic_baseline"
-    assert meta.model_version == "baseline-v1"
+    assert meta.model_version == "baseline-v2"
+

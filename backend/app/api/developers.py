@@ -14,6 +14,8 @@ from app.schemas.skill import DeveloperSkillAssign, DeveloperSkillUpdate, Develo
 from app.api.deps import get_current_user, require_roles
 from app.services.performance_service import calculate_developer_performance_metrics
 from app.services.workload_service import calculate_developer_workload_details
+from app.services.recommendation_service import invalidate_all_recommendations
+
 
 router = APIRouter()
 
@@ -247,6 +249,7 @@ def update_developer(
 
     db.commit()
     db.refresh(dev)
+    invalidate_all_recommendations(db)
 
     return _format_developer_response(dev)
 
@@ -379,6 +382,8 @@ def assign_developer_skill(
         .where(DeveloperSkill.id == new_ds.id)
     ).scalar_one()
 
+    invalidate_all_recommendations(db)
+
     return DeveloperSkillResponse(
         id=created_ds.id,
         developer_id=created_ds.developer_id,
@@ -436,6 +441,7 @@ def update_developer_skill(
     ds.proficiency_level = skill_update.proficiency_level
     db.commit()
     db.refresh(ds)
+    invalidate_all_recommendations(db)
 
     return DeveloperSkillResponse(
         id=ds.id,
@@ -490,4 +496,5 @@ def remove_developer_skill(
 
     db.delete(ds)
     db.commit()
+    invalidate_all_recommendations(db)
     return None

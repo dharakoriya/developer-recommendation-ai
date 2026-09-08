@@ -2,15 +2,15 @@ import pytest
 from app.schemas.feature import CandidateFeatureVector
 from app.services.recommendation_service import (
     BaselineRecommendationModel,
-    BaselineV11RecommendationModel,
+    BaselineV2RecommendationModel,
     get_active_recommendation_model,
 )
 
 
-def test_baseline_v11_model_metadata():
-    model = BaselineV11RecommendationModel()
+def test_baseline_v2_model_metadata():
+    model = BaselineV2RecommendationModel()
     meta = model.get_model_metadata()
-    assert meta.model_version == "baseline-v1.1"
+    assert meta.model_version == "baseline-v2"
     assert meta.model_type == "deterministic_baseline"
 
 
@@ -18,11 +18,11 @@ def test_get_active_recommendation_model_selection():
     m1 = get_active_recommendation_model("baseline-v1")
     assert m1.get_model_metadata().model_version == "baseline-v1"
 
-    m11 = get_active_recommendation_model("baseline-v1.1")
-    assert m11.get_model_metadata().model_version == "baseline-v1.1"
+    m2 = get_active_recommendation_model("baseline-v2")
+    assert m2.get_model_metadata().model_version == "baseline-v2"
 
 
-def test_baseline_v11_score_calculation():
+def test_baseline_v2_score_calculation():
     vec = CandidateFeatureVector(
         developer_id="11111111-1111-1111-1111-111111111111",
         user_name="Test Dev",
@@ -63,10 +63,10 @@ def test_baseline_v11_score_calculation():
         is_historically_assigned=0,
     )
 
-    model = BaselineV11RecommendationModel()
-    score, contribs = model.predict_candidate_score(vec)
+    model = BaselineV2RecommendationModel()
+    score, contribs, status, reasons = model.predict_candidate_score(vec, task_weight_score=60.0)
 
     assert 0.0 <= score <= 100.0
     assert len(contribs) == 7
-    feature_names = [c["feature_name"] for c in contribs]
-    assert "productivity_and_streak" in feature_names
+    assert status == "ELIGIBLE"
+    assert len(reasons) == 0

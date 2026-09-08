@@ -89,7 +89,7 @@ def test_model_metadata_endpoint(client):
     assert res.status_code == 200
     meta = res.json()
     assert meta["model_type"] == "deterministic_baseline"
-    assert meta["model_version"] == "baseline-v1"
+    assert meta["model_version"] == "baseline-v2"
     assert meta["training_required"] is False
 
 
@@ -116,7 +116,7 @@ def test_task_recommendation_ranking_and_explanations(client):
 
     # Verify explanations sum equals total score
     exps = recs[0]["explanations"]
-    assert len(exps) == 6
+    assert len(exps) == 7
     contrib_sum = round(sum(e["contribution_score"] for e in exps), 2)
     assert abs(contrib_sum - recs[0]["score"]) < 0.01
 
@@ -134,12 +134,14 @@ def test_workload_influence_on_ranking(client):
     # Regenerate recommendations
     res = client.get(f"/api/recommendations/tasks/{task['id']}?regenerate=true", headers=mgr_headers)
     assert res.status_code == 200
-    recs = res.json()["recommendations"]
+    data = res.json()
+    all_recs = data["recommendations"] + data["excluded_recommendations"]
 
     # Expert workload contribution should now be 0.0 because workload > 100%
-    exp_rec = [r for r in recs if r["developer_id"] == p_exp["id"]][0]
+    exp_rec = [r for r in all_recs if r["developer_id"] == p_exp["id"]][0]
     workload_exp = [e for e in exp_rec["explanations"] if e["feature_name"] == "dev_workload_score"][0]
     assert workload_exp["contribution_score"] == 0.0
+
 
 
 def test_recommendation_determinism(client):

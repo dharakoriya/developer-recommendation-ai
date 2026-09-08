@@ -539,45 +539,78 @@ Shortcut to mark assignment `COMPLETED` and update task status to `COMPLETED`.
 Shortcut to cancel an assignment. Requires `ADMIN` or `MANAGER` role.
 
 
-## 13. Recommendations
+## 13. Recommendations (`baseline-v2`)
 
-### POST `/api/recommendations/tasks/{task_id}`
+### GET `/api/recommendations/tasks/{task_id}`
 
-Generates developer recommendations for a task.
+Retrieves or auto-evaluates developer recommendations for a given task using active production model `baseline-v2`. Access is restricted to `ADMIN` and `MANAGER` roles (Returns `403 Forbidden` for `DEVELOPER` role).
 
-Response should contain:
+**Query Parameters**:
+- `regenerate` (optional boolean, default `false`): If `true` or if recommendations are stale (`is_stale = true`), forces full candidate re-evaluation and persists updated rankings.
 
-* Task
-* Recommended developers
-* Rank
-* Score
-* Explanation
-* Model version
-
-Example:
+**Response (200 OK)**:
 
 ```json
 {
-  "task_id": 15,
+  "task_id": "123e4567-e89b-12d3-a456-426614174000",
+  "task_title": "Build Authentication Module",
+  "project_id": "987e6543-e89b-12d3-a456-426614174000",
+  "project_name": "DevAlign SaaS Platform",
+  "model_type": "deterministic_baseline",
+  "model_version": "baseline-v2",
+  "freshness_status": "FRESH",
+  "total_recommendations": 3,
   "recommendations": [
     {
-      "developer_id": 4,
+      "id": "rec-001",
+      "task_id": "123e4567-e89b-12d3-a456-426614174000",
+      "developer_id": "dev-001",
+      "developer_name": "Alice Senior Dev",
+      "developer_email": "alice@company.com",
+      "experience_years": 6.5,
+      "availability_status": "AVAILABLE",
+      "workload_score": 15.0,
+      "skill_coverage_ratio": 1.0,
+      "performance_score": 92.5,
+      "model_version": "baseline-v2",
+      "score": 88.5,
       "rank": 1,
-      "score": 0.92,
-      "explanation": {
-        "skill_match": "high",
-        "experience": "high",
-        "availability": "medium",
-        "workload": "low"
-      }
+      "eligibility_status": "ELIGIBLE",
+      "exclusion_reasons": [],
+      "task_weight_score": 65.0,
+      "task_weight_category": "HEAVY",
+      "is_stale": false,
+      "explanations": [
+        {
+          "feature_name": "weighted_skill_match_score",
+          "feature_value": "95.0%",
+          "contribution_score": 28.5,
+          "direction": "POSITIVE"
+        },
+        {
+          "feature_name": "task_weight_compatibility",
+          "feature_value": "Weight: 65 (HEAVY) — Experienced candidate recommended",
+          "contribution_score": 10.0,
+          "direction": "POSITIVE"
+        }
+      ]
+    }
+  ],
+  "excluded_recommendations": [
+    {
+      "developer_id": "dev-002",
+      "developer_name": "Bob Overloaded",
+      "eligibility_status": "INELIGIBLE",
+      "exclusion_reasons": ["❌ Workload Exceeds Capacity Limit (115%)"]
     }
   ]
 }
 ```
 
-### GET `/api/recommendations/tasks/{task_id}`
+### GET `/api/recommendations/metadata/model`
 
-Returns the latest or stored recommendations for a task.
+Returns metadata for the currently active production recommendation model (`baseline-v2`).
+
 
 ## 10. Assignments
 

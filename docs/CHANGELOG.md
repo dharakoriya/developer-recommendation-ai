@@ -11,6 +11,21 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-09-08 — Milestone 22 — Intelligent Developer Recommendation Engine 2.0, Task-Developer Compatibility & Assignment Decision System
+
+### Repaired & Added
+
+* **Intelligent Recommendation Engine 2.0 (`baseline-v2`)**: Implemented `BaselineV2RecommendationModel` in `recommendation_service.py` as the active production recommendation model version, remaining strictly deterministic, explainable, and auditable.
+* **7-Factor Transparent Compatibility Scoring (0–100)**: Created `task_developer_compatibility_service.py` to evaluate candidates across 7 factors: Skill Proficiency Match (30%), Skill Coverage (15%), Workload & Anti-Monopoly Capacity (15%), Availability (10%), Experience (10%), Performance (10%), and Task Weight Compatibility (10%).
+* **Hard Eligibility Rules & Exclusion Reasons**: Classified candidates into `ELIGIBLE`, `CONDITIONALLY_ELIGIBLE`, and `INELIGIBLE` statuses with human-readable, auditable exclusion reasons for missing skills, unavailable availability, or overloaded capacity limits.
+* **Anti-Monopoly Workload Protection**: Implemented workload capacity penalties preventing high-performing developers with active workloads from monopolizing task assignments.
+* **Task Weight Compatibility Matching**: Calibrated candidate recommendations based on task weight classification (`LIGHT`, `MODERATE`, `HEAVY`, `CRITICAL`), routing critical tasks to experienced/high-performing candidates and reserving light tasks for capacity balancing.
+* **Automatic Recommendation Invalidation & Freshness Tracking**: Added `invalidate_task_recommendations` and `invalidate_all_recommendations` triggers across task, assignment, and developer APIs to set `is_stale = True` and auto-regenerate recommendations on data changes.
+* **Strict RBAC Security Enforcement**: Enforced `ADMIN` and `MANAGER` access to recommendation endpoints while restricting `DEVELOPER` role access with HTTP `403 Forbidden`.
+* **Immutable Audit Preservation**: Maintained full backward-compatibility and historical record immutability for `baseline-v1` audit logs.
+* **Premium SaaS Frontend UI Redesign**: Redesigned `/recommendations` with Task Intelligence Header, Task Weight Metadata, Best Developer Match Hero Card, Candidate Rankings with visual score progress bars, Score Breakdown Modal with positive/negative contribution pills, and an Excluded Candidates drawer ("Not Recommended").
+* **Automated Tests & Documentation**: Added `test_milestone22_recommendation_v2.py` pytest suite and published [`docs/RECOMMENDATION_ENGINE_V2_GUIDE.md`](file:///d:/Custom%20Project/dhara/devalign-ai/docs/RECOMMENDATION_ENGINE_V2_GUIDE.md) and [`docs/MILESTONE_22_VERIFICATION_GUIDE.md`](file:///d:/Custom%20Project/dhara/devalign-ai/docs/MILESTONE_22_VERIFICATION_GUIDE.md).
+
 ## 2026-09-08 — Milestone 21 — Developer Performance Intelligence, Task Weighting, Filtering, Incentives & Achievement System
 
 ### Repaired & Added

@@ -13,8 +13,11 @@ from research.ml.train_xgboost import train_xgboost_model
 from research.ml.model_selection import select_best_candidate_model
 from research.ml.evaluate import evaluate_model_on_test_set, compare_ml_against_baseline_benchmark
 from research.ml.explainability import extract_feature_importances
-from app.services.recommendation_service import MLRecommendationModelAdapter, CandidateFeatureVector
+from app.schemas.feature import CandidateFeatureVector
+from app.services.recommendation_service import MLRecommendationModelAdapter
 from app.models.enums import AvailabilityStatus
+
+
 
 
 @pytest.fixture
@@ -123,6 +126,7 @@ def test_ml_model_adapter_loading():
         label_target=None,
     )
 
-    score, contribs = adapter.predict_candidate_score(dummy_vec)
+    score, contribs, status, reasons = adapter.predict_candidate_score(dummy_vec)
     assert 0.0 <= score <= 100.0
     assert len(contribs) >= 1
+

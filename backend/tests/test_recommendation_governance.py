@@ -150,6 +150,7 @@ def test_production_baseline_isolation():
     active_model = get_active_recommendation_model()
     meta = active_model.get_model_metadata()
 
-    # Verify baseline-v1 is active in production
+    # Verify baseline-v2 is active in production
     assert meta.model_type == "deterministic_baseline"
-    assert meta.model_version == "baseline-v1"
+    assert meta.model_version == "baseline-v2"
+

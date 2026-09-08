@@ -17,6 +17,8 @@ from app.schemas.task import (
 )
 from app.api.deps import get_current_user, require_roles
 from app.api.tasks import build_assignment_response
+from app.services.recommendation_service import invalidate_all_recommendations
+
 
 router = APIRouter()
 
@@ -132,6 +134,7 @@ def assign_task(
     # Link assignment outcome tracking
     from app.services.outcome_dataset_service import update_assignment_outcome
     update_assignment_outcome(db, new_assignment)
+    invalidate_all_recommendations(db)
 
     stmt = (
         select(Assignment)
@@ -284,6 +287,7 @@ def update_assignment_status(
 
     db.commit()
     db.refresh(assignment)
+    invalidate_all_recommendations(db)
     return build_assignment_response(assignment)
 
 
