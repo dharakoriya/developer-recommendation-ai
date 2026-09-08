@@ -160,6 +160,41 @@ def get_dashboard_summary(
                 "proficiency_level": float(ds.proficiency_level),
             })
 
+        # Performance, Streak, Achievements, Incentives
+        from app.services.performance_service import calculate_developer_performance_metrics, evaluate_and_grant_developer_achievements
+        from app.models.performance import DeveloperStreak, DeveloperAchievement, DeveloperIncentiveLedger
+
+        perf_metrics = calculate_developer_performance_metrics(db, dev_profile_obj.id)
+        
+        streak_obj = db.scalar(select(DeveloperStreak).where(DeveloperStreak.developer_id == dev_profile_obj.id))
+        achievements_obj = db.scalars(select(DeveloperAchievement).where(DeveloperAchievement.developer_id == dev_profile_obj.id)).all()
+        incentive_pts = db.scalar(
+            select(func.coalesce(func.sum(DeveloperIncentiveLedger.total_points), 0)).where(
+                DeveloperIncentiveLedger.developer_id == dev_profile_obj.id
+            )
+        ) or 0.0
+
+        my_performance = {
+          "performance_score": perf_metrics.get("performance_score", 85.0),
+          "completion_rate": perf_metrics.get("completion_rate", 100.0),
+          "on_time_rate": perf_metrics.get("on_time_rate", 100.0),
+          "weighted_productivity": perf_metrics.get("weighted_productivity", 50.0),
+        }
+        my_streak = {
+          "current_streak": streak_obj.current_streak if streak_obj else 0,
+          "longest_streak": streak_obj.longest_streak if streak_obj else 0,
+        }
+        my_achievements = [
+          {"key": a.achievement_key, "title": a.title, "description": a.description, "icon": a.icon}
+          for a in achievements_obj
+        ]
+        my_incentives = float(incentive_pts)
+    else:
+        my_performance = {"performance_score": 0, "completion_rate": 0, "on_time_rate": 0, "weighted_productivity": 0}
+        my_streak = {"current_streak": 0, "longest_streak": 0}
+        my_achievements = []
+        my_incentives = 0.0
+
     return {
         "user_role": current_user.role.value,
         "developer_profile_id": developer_profile_id,
@@ -177,6 +212,10 @@ def get_dashboard_summary(
         "my_workload_score": my_workload_score,
         "my_availability": my_availability,
         "my_skills": my_skills,
+        "my_performance": my_performance,
+        "my_streak": my_streak,
+        "my_achievements": my_achievements,
+        "my_incentives": my_incentives,
     }
 
 

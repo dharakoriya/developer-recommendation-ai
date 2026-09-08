@@ -34,10 +34,13 @@ class TaskComplexity(str, enum.Enum):
 
 class TaskStatus(str, enum.Enum):
     TODO = "TODO"
+    READY = "READY"
     IN_PROGRESS = "IN_PROGRESS"
+    IN_REVIEW = "IN_REVIEW"
     COMPLETED = "COMPLETED"
     BLOCKED = "BLOCKED"
     CANCELLED = "CANCELLED"
+
 
 
 class AssignmentStatus(str, enum.Enum):

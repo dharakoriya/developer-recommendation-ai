@@ -147,7 +147,17 @@ class RecommendationOutcome(Base):
     assignment_outcome_status: Mapped[OutcomeStatus] = mapped_column(
         SQLEnum(OutcomeStatus), nullable=False, default=OutcomeStatus.RECOMMENDED
     )
-    completed_at: Mapped[DateTime] = mapped_column(
+    selected_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    selection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    override_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    assigned_at: Mapped[DateTime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    completed_at: Mapped[DateTime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     created_at: Mapped[DateTime] = mapped_column(
@@ -159,3 +169,5 @@ class RecommendationOutcome(Base):
     developer_profile = relationship("DeveloperProfile")
     task = relationship("Task")
     assignment = relationship("Assignment")
+    selected_by_user = relationship("User", foreign_keys=[selected_by_user_id])
+

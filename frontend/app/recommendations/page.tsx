@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AppShell } from '../../components/AppShell';
 import { RecommendationCard, RecommendationCandidate } from '../../components/RecommendationCard';
+import { AssignmentConfirmationModal } from '../../components/AssignmentConfirmationModal';
 import { LoadingState } from '../../components/LoadingState';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
@@ -140,6 +141,10 @@ export default function RecommendationsPage() {
     }
   };
 
+  const [assignmentCandidate, setAssignmentCandidate] = useState<RecommendationCandidate | null>(null);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState<boolean>(false);
+  const [assigning, setAssigning] = useState<boolean>(false);
+
   const handleAccept = async (candidate: RecommendationCandidate) => {
     try {
       const token = localStorage.getItem('devalign_token');
@@ -160,28 +165,57 @@ export default function RecommendationsPage() {
     }
   };
 
-  const handleAssign = async (candidate: RecommendationCandidate) => {
+  const handleOpenAssignModal = (candidate: RecommendationCandidate) => {
+    setAssignmentCandidate(candidate);
+    setIsAssignModalOpen(true);
+  };
+
+  const handleConfirmAssignment = async (overrideReason?: string) => {
+    if (!assignmentCandidate) return;
+    setAssigning(true);
     try {
       const token = localStorage.getItem('devalign_token');
-      const res = await fetch('http://localhost:8000/api/assignments', {
+      const isTopRanked = assignmentCandidate.rank === 1;
+      const defaultSelectionReason = isTopRanked ? 'Highest compatibility' : 'Manager preference';
+
+      const bodyPayload = {
+        developer_id: assignmentCandidate.developer_id,
+        recommendation_id: assignmentCandidate.id,
+        selection_reason: defaultSelectionReason,
+        override_reason: overrideReason || null,
+        force_override: Boolean(overrideReason),
+      };
+
+      const res = await fetch(`http://localhost:8000/api/tasks/${assignmentCandidate.task_id}/assign`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({
-          task_id: candidate.task_id,
-          developer_id: candidate.developer_id,
-          notes: `Assigned via baseline-v2 recommendation #${candidate.rank}`,
-        }),
+        body: JSON.stringify(bodyPayload),
       });
-      if (res.ok) {
-        setAssignedIds((prev) => new Set(prev).add(candidate.id));
-        showToast(`Task assigned to ${candidate.developer_name}!`, 'success');
-        generateRecommendations(candidate.task_id, true);
+
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 400 && data.requires_override) {
+          showToast(data.detail || 'Overload detected. Please select a manager override reason.', 'warning');
+          throw new Error(data.detail || 'Requires manager override');
+        }
+        throw new Error(data.detail || 'Failed to assign task');
       }
-    } catch (err) {
-      showToast('Failed to assign task', 'error');
+
+      setAssignedIds((prev) => new Set(prev).add(assignmentCandidate.id));
+      showToast(`Task successfully assigned to ${assignmentCandidate.developer_name}!`, 'success');
+      setIsAssignModalOpen(false);
+      setAssignmentCandidate(null);
+      generateRecommendations(assignmentCandidate.task_id, true);
+    } catch (err: any) {
+      if (!err.message?.includes('override')) {
+        showToast(err.message || 'Failed to assign developer', 'error');
+      }
+      throw err;
+    } finally {
+      setAssigning(false);
     }
   };
 
@@ -386,7 +420,7 @@ export default function RecommendationsPage() {
                     </div>
 
                     <button
-                      onClick={() => handleAssign(topCandidate)}
+                      onClick={() => handleOpenAssignModal(topCandidate)}
                       disabled={assignedIds.has(topCandidate.id)}
                       className={`px-5 py-2.5 rounded-xl font-semibold text-xs transition shadow-lg ${
                         assignedIds.has(topCandidate.id)
@@ -435,7 +469,7 @@ export default function RecommendationsPage() {
                     candidate={cand}
                     onWhyThisDeveloper={(c) => setExplanationCandidate(c)}
                     onAccept={handleAccept}
-                    onAssign={handleAssign}
+                    onAssign={handleOpenAssignModal}
                     isAccepted={acceptedIds.has(cand.id)}
                     isAssigned={assignedIds.has(cand.id)}
                   />
@@ -471,7 +505,7 @@ export default function RecommendationsPage() {
                         candidate={cand}
                         onWhyThisDeveloper={(c) => setExplanationCandidate(c)}
                         onAccept={handleAccept}
-                        onAssign={handleAssign}
+                        onAssign={handleOpenAssignModal}
                         isAccepted={acceptedIds.has(cand.id)}
                         isAssigned={assignedIds.has(cand.id)}
                       />
@@ -547,6 +581,39 @@ export default function RecommendationsPage() {
               </button>
             </div>
           </div>
+        )}
+
+        {/* Assignment Confirmation & Workload Safety Modal */}
+        {assignmentCandidate && selectedTask && (
+          <AssignmentConfirmationModal
+            isOpen={isAssignModalOpen}
+            onClose={() => setIsAssignModalOpen(false)}
+            task={{
+              id: selectedTask.id,
+              title: selectedTask.title,
+              estimated_hours: selectedTask.estimated_hours ?? 8,
+              complexity: selectedTask.complexity,
+              priority: selectedTask.priority,
+              task_weight_score: selectedTask.task_weight_score,
+              task_weight_category: selectedTask.task_weight_category,
+            }}
+            candidate={{
+              developer_id: assignmentCandidate.developer_id,
+              developer_name: assignmentCandidate.developer_name,
+              workload_score: assignmentCandidate.workload_score,
+              score: assignmentCandidate.recommendation_score,
+              rank: assignmentCandidate.rank,
+              eligibility_status: assignmentCandidate.eligibility_status,
+              recommendation_id: assignmentCandidate.id,
+            }}
+            onSuccess={() => {
+              setAssignedIds((prev) => new Set(prev).add(assignmentCandidate.id));
+              showToast(`Task assigned to ${assignmentCandidate.developer_name}!`, 'success');
+              setIsAssignModalOpen(false);
+              setAssignmentCandidate(null);
+              generateRecommendations(selectedTask.id, true);
+            }}
+          />
         )}
       </div>
     </AppShell>

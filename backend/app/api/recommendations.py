@@ -652,3 +652,118 @@ def get_recommendation_explanations(
         )
         for e in exps
     ]
+
+
+@router.post("/assign", status_code=status.HTTP_201_CREATED, summary="Assign developer directly from recommendation candidate selection")
+def assign_recommended_developer(
+    assign_in: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+):
+    """
+    Directly assigns a recommended developer profile to a task from recommendation results.
+    Delegates to assignment workflow with safety checks and manager override tracking.
+    """
+    from app.schemas.task import AssignmentCreate
+    from app.api.assignments import assign_task
+
+    task_id_str = assign_in.get("task_id")
+    dev_id_str = assign_in.get("developer_id")
+    if not task_id_str or not dev_id_str:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="task_id and developer_id are required.",
+        )
+
+    task_id = uuid.UUID(task_id_str) if isinstance(task_id_str, str) else task_id_str
+    developer_id = uuid.UUID(dev_id_str) if isinstance(dev_id_str, str) else dev_id_str
+    rec_id_str = assign_in.get("recommendation_id")
+    recommendation_id = uuid.UUID(rec_id_str) if rec_id_str and isinstance(rec_id_str, str) else rec_id_str
+
+    asgn_payload = AssignmentCreate(
+        task_id=task_id,
+        developer_id=developer_id,
+        recommendation_id=recommendation_id,
+        selection_reason=assign_in.get("selection_reason"),
+        override_reason=assign_in.get("override_reason"),
+        force_override=assign_in.get("force_override", False),
+        notes=assign_in.get("notes"),
+    )
+    return assign_task(id=task_id, assign_in=asgn_payload, db=db, current_user=current_user)
+
+
+@router.get("/tasks/{id}/history", summary="Get recommendation run history and decision audit trail for task")
+def get_task_recommendation_history(
+    id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+):
+    """
+    Returns auditable recommendation run history, ranked candidates, and selection decisions for a task.
+    """
+    from app.models.recommendation_audit import RecommendationAudit, RecommendationOutcome
+    from app.models.task import Assignment
+
+    audits = db.execute(
+        select(RecommendationAudit)
+        .options(joinedload(RecommendationAudit.developer_profile).joinedload(DeveloperProfile.user))
+        .where(RecommendationAudit.task_id == id)
+        .order_by(desc(RecommendationAudit.generated_at))
+    ).scalars().all()
+
+    outcomes = db.execute(
+        select(RecommendationOutcome)
+        .options(
+            joinedload(RecommendationOutcome.developer_profile).joinedload(DeveloperProfile.user),
+            joinedload(RecommendationOutcome.selected_by_user),
+        )
+        .where(RecommendationOutcome.task_id == id)
+        .order_by(desc(RecommendationOutcome.created_at))
+    ).scalars().all()
+
+    active_assign = db.execute(
+        select(Assignment)
+        .options(joinedload(Assignment.developer_profile).joinedload(DeveloperProfile.user))
+        .where(Assignment.task_id == id)
+        .order_by(desc(Assignment.assigned_at))
+    ).scalars().first()
+
+    return {
+        "task_id": id,
+        "active_assignment": {
+            "id": active_assign.id,
+            "developer_id": active_assign.developer_id,
+            "developer_name": active_assign.developer_profile.user.name if active_assign and active_assign.developer_profile and active_assign.developer_profile.user else "Unknown",
+            "assigned_at": active_assign.assigned_at,
+            "status": active_assign.status,
+        } if active_assign else None,
+        "recommendation_runs_count": len(audits),
+        "history_audits": [
+            {
+                "id": a.id,
+                "recommendation_id": a.recommendation_id,
+                "developer_id": a.developer_id,
+                "developer_name": a.developer_profile.user.name if a.developer_profile and a.developer_profile.user else "Developer",
+                "rank": a.rank,
+                "score": float(a.recommendation_score),
+                "model_version": a.model_version,
+                "generated_at": a.generated_at,
+            }
+            for a in audits
+        ],
+        "decision_outcomes": [
+            {
+                "id": o.id,
+                "developer_id": o.developer_id,
+                "developer_name": o.developer_profile.user.name if o.developer_profile and o.developer_profile.user else "Developer",
+                "was_assigned": o.was_assigned,
+                "selected_by_name": o.selected_by_user.name if o.selected_by_user else None,
+                "selection_reason": o.selection_reason,
+                "override_reason": o.override_reason,
+                "assigned_at": o.assigned_at,
+                "outcome_status": o.assignment_outcome_status,
+            }
+            for o in outcomes
+        ],
+    }
+

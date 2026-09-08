@@ -32,6 +32,10 @@ class TaskSkillResponse(BaseModel):
 class AssignmentCreate(BaseModel):
     task_id: Optional[uuid.UUID] = None
     developer_id: uuid.UUID
+    recommendation_id: Optional[uuid.UUID] = None
+    selection_reason: Optional[str] = None
+    override_reason: Optional[str] = None
+    force_override: bool = False
     notes: Optional[str] = None
 
 
@@ -53,8 +57,11 @@ class AssignmentResponse(BaseModel):
     completed_at: Optional[datetime] = None
     reassigned_at: Optional[datetime] = None
     notes: Optional[str] = None
+    selection_reason: Optional[str] = None
+    override_reason: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
+
 
 
 # Task Schemas

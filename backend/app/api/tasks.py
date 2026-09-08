@@ -307,13 +307,187 @@ def update_task(
         task.estimated_hours = task_in.estimated_hours
     if task_in.deadline is not None:
         task.deadline = task_in.deadline
-    if task_in.status is not None:
+    if task_in.status is not None and task_in.status != task.status:
+        # Enforce valid task status transitions
+        ALLOWED_TRANSITIONS = {
+            TaskStatus.TODO: [TaskStatus.READY, TaskStatus.IN_PROGRESS, TaskStatus.CANCELLED],
+            TaskStatus.READY: [TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED, TaskStatus.CANCELLED],
+            TaskStatus.IN_PROGRESS: [TaskStatus.IN_REVIEW, TaskStatus.COMPLETED, TaskStatus.BLOCKED, TaskStatus.CANCELLED],
+            TaskStatus.IN_REVIEW: [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED, TaskStatus.CANCELLED],
+            TaskStatus.BLOCKED: [TaskStatus.IN_PROGRESS, TaskStatus.READY, TaskStatus.CANCELLED],
+            TaskStatus.COMPLETED: [],
+            TaskStatus.CANCELLED: [],
+        }
+        if task.status in (TaskStatus.COMPLETED, TaskStatus.CANCELLED):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Task is currently {task.status.value}. Use POST /api/tasks/{id}/reopen to explicitly reopen it.",
+            )
+        allowed = ALLOWED_TRANSITIONS.get(task.status, [])
+        if task_in.status not in allowed:
+            allowed_names = [s.value for s in allowed]
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid task status transition from {task.status.value} to {task_in.status.value}. Allowed transitions: {allowed_names}.",
+            )
         task.status = task_in.status
+
+        if task_in.status == TaskStatus.COMPLETED:
+            # Handle task completion metrics & assignments
+            active_assign = next((a for a in (task.assignments or []) if a.status == AssignmentStatus.ACTIVE), None)
+            if active_assign:
+                active_assign.status = AssignmentStatus.COMPLETED
+                active_assign.completed_at = func.now()
+
+                from app.services.task_weight_service import calculate_task_weight_score
+                task_weight = calculate_task_weight_score(task)
+                task.task_weight_score = Decimal(str(task_weight))
+                db.commit()
+
+                from app.services.performance_service import (
+                    update_developer_streak_on_task_completion,
+                    evaluate_and_grant_developer_achievements,
+                    calculate_and_record_incentive_points,
+                    snapshot_developer_performance,
+                )
+                from app.services.outcome_dataset_service import update_assignment_outcome
+
+                update_developer_streak_on_task_completion(db, active_assign.developer_id, task_weight)
+                calculate_and_record_incentive_points(db, active_assign.developer_id, task.id)
+                evaluate_and_grant_developer_achievements(db, active_assign.developer_id)
+                snapshot_developer_performance(db, active_assign.developer_id)
+                update_assignment_outcome(db, active_assign)
 
     db.commit()
     db.refresh(task)
     invalidate_task_recommendations(db, id)
     return build_task_response(task)
+
+
+@router.patch("/tasks/{id}/status", response_model=TaskResponse, summary="Update task status")
+def update_task_status(
+    id: uuid.UUID,
+    status_in: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Updates task status following valid transition rules.
+    """
+    stmt = select(Task).options(*get_task_options()).where(Task.id == id)
+    task = db.execute(stmt).unique().scalar_one_or_none()
+
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Task with ID {id} not found.",
+        )
+
+    new_status_str = status_in.get("status")
+    if not new_status_str:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Field 'status' is required.",
+        )
+
+    try:
+        new_status = TaskStatus(new_status_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid task status '{new_status_str}'.",
+        )
+
+    if task.status in (TaskStatus.COMPLETED, TaskStatus.CANCELLED):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Task is currently {task.status.value}. Use POST /api/tasks/{id}/reopen to explicitly reopen it.",
+        )
+
+    ALLOWED_TRANSITIONS = {
+        TaskStatus.TODO: [TaskStatus.READY, TaskStatus.IN_PROGRESS, TaskStatus.CANCELLED],
+        TaskStatus.READY: [TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED, TaskStatus.CANCELLED],
+        TaskStatus.IN_PROGRESS: [TaskStatus.IN_REVIEW, TaskStatus.COMPLETED, TaskStatus.BLOCKED, TaskStatus.CANCELLED],
+        TaskStatus.IN_REVIEW: [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED, TaskStatus.CANCELLED],
+        TaskStatus.BLOCKED: [TaskStatus.IN_PROGRESS, TaskStatus.READY, TaskStatus.CANCELLED],
+        TaskStatus.COMPLETED: [],
+        TaskStatus.CANCELLED: [],
+    }
+
+    allowed = ALLOWED_TRANSITIONS.get(task.status, [])
+    if new_status not in allowed:
+        allowed_names = [s.value for s in allowed]
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid status transition from {task.status.value} to {new_status.value}. Allowed transitions: {allowed_names}.",
+        )
+
+    task.status = new_status
+    if status_in.get("blocker_reason"):
+        task.description = f"[BLOCKER]: {status_in.get('blocker_reason')}\n" + (task.description or "")
+
+    if new_status == TaskStatus.COMPLETED:
+        active_assign = next((a for a in (task.assignments or []) if a.status == AssignmentStatus.ACTIVE), None)
+        if active_assign:
+            active_assign.status = AssignmentStatus.COMPLETED
+            active_assign.completed_at = func.now()
+
+            from app.services.task_weight_service import calculate_task_weight_score
+            task_weight = calculate_task_weight_score(task)
+            task.task_weight_score = Decimal(str(task_weight))
+            db.commit()
+
+            from app.services.performance_service import (
+                update_developer_streak_on_task_completion,
+                evaluate_and_grant_developer_achievements,
+                calculate_and_record_incentive_points,
+                snapshot_developer_performance,
+            )
+            from app.services.outcome_dataset_service import update_assignment_outcome
+
+            update_developer_streak_on_task_completion(db, active_assign.developer_id, task_weight)
+            calculate_and_record_incentive_points(db, active_assign.developer_id, task.id)
+            evaluate_and_grant_developer_achievements(db, active_assign.developer_id)
+            snapshot_developer_performance(db, active_assign.developer_id)
+            update_assignment_outcome(db, active_assign)
+
+    db.commit()
+    db.refresh(task)
+    invalidate_task_recommendations(db, id)
+    return build_task_response(task)
+
+
+@router.post("/tasks/{id}/reopen", response_model=TaskResponse, summary="Reopen completed or cancelled task")
+def reopen_task(
+    id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+):
+    """
+    Reopens a completed or cancelled task back to TODO status.
+    Requires ADMIN or MANAGER role.
+    """
+    stmt = select(Task).options(*get_task_options()).where(Task.id == id)
+    task = db.execute(stmt).unique().scalar_one_or_none()
+
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Task with ID {id} not found.",
+        )
+
+    if task.status not in (TaskStatus.COMPLETED, TaskStatus.CANCELLED):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Task is currently in {task.status.value} status and does not need reopening.",
+        )
+
+    task.status = TaskStatus.TODO
+    db.commit()
+    db.refresh(task)
+    invalidate_task_recommendations(db, id)
+    return build_task_response(task)
+
 
 
 @router.delete("/tasks/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete task")

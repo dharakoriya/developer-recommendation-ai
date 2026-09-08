@@ -175,10 +175,81 @@ export default function DashboardPage() {
             </div>
 
             {/* Developer Stat Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard title="My Active Tasks" value={myTasks.length} subtext={`${myTasks.filter(t => t.status === 'IN_PROGRESS').length} in progress`} icon="📋" accentColor="purple" />
               <StatCard title="My Workload Capacity" value={`${Math.round(data?.my_workload_score ?? 0)}%`} subtext="Calculated from active tasks" icon="📈" accentColor="blue" />
-              <StatCard title="Availability Status" value={data?.my_availability || 'AVAILABLE'} subtext="Standard capacity" icon="✅" accentColor="emerald" />
+              <StatCard title="My Current Streak" value={`${(data as any)?.my_streak?.current_streak ?? 0} Days`} subtext={`Best: ${(data as any)?.my_streak?.longest_streak ?? 0} days`} icon="🔥" accentColor="amber" />
+              <StatCard title="My Incentive Points" value={`${(data as any)?.my_incentives ?? 0} pts`} subtext="Earned rewards ledger" icon="💎" accentColor="emerald" />
+            </div>
+
+            {/* Performance & Skills 2-Column Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* My Performance */}
+              <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
+                <h3 className="font-bold text-white text-sm flex items-center gap-2 border-b border-slate-800 pb-3">
+                  <span>🏆</span> My Performance Intelligence
+                </h3>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Performance Score</span>
+                    <span className="text-purple-400 font-extrabold text-xl font-mono">
+                      {((data as any)?.my_performance?.performance_score ?? 85.0).toFixed(1)} / 100
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Completion Rate</span>
+                    <span className="text-emerald-400 font-extrabold text-xl font-mono">
+                      {((data as any)?.my_performance?.completion_rate ?? 100.0).toFixed(0)}%
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold">On-Time Rate</span>
+                    <span className="text-blue-400 font-extrabold text-xl font-mono">
+                      {((data as any)?.my_performance?.on_time_rate ?? 100.0).toFixed(0)}%
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Weighted Productivity</span>
+                    <span className="text-cyan-400 font-extrabold text-xl font-mono">
+                      {((data as any)?.my_performance?.weighted_productivity ?? 50.0).toFixed(1)} pts
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* My Skills & Achievements */}
+              <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
+                <h3 className="font-bold text-white text-sm flex items-center gap-2 border-b border-slate-800 pb-3">
+                  <span>💪</span> My Skills & Achievements
+                </h3>
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <span className="text-slate-400 font-semibold text-[11px] uppercase block mb-1.5">My Verified Skills</span>
+                    <div className="flex flex-wrap gap-2">
+                      {(data?.my_skills || []).map((sk, idx) => (
+                        <span key={idx} className="px-3 py-1 rounded-xl bg-purple-500/10 text-purple-300 border border-purple-500/20 font-mono font-bold text-xs">
+                          {sk.skill_name}: Lvl {sk.proficiency_level}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <span className="text-slate-400 font-semibold text-[11px] uppercase block mb-1.5">Unlocked Achievements</span>
+                    <div className="flex flex-wrap gap-2">
+                      {((data as any)?.my_achievements || []).length > 0 ? (
+                        ((data as any)?.my_achievements).map((ach: any, idx: number) => (
+                          <span key={idx} className="px-3 py-1 rounded-xl bg-amber-500/10 text-amber-300 border border-amber-500/20 font-bold text-xs flex items-center gap-1">
+                            <span>🎖️</span> {ach.title}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-slate-500 text-xs italic">Complete tasks to unlock achievements!</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Developer Assigned Tasks Table */}
@@ -211,13 +282,17 @@ export default function DashboardPage() {
                     <tbody className="divide-y divide-slate-800/60 text-slate-300">
                       {myTasks.map((task) => (
                         <tr key={task.id} className="hover:bg-slate-800/40 transition">
-                          <td className="p-3 font-bold text-white max-w-xs truncate">{task.title}</td>
+                          <td className="p-3">
+                            <Link href={`/tasks/${task.id}`} className="font-bold text-white hover:text-purple-400 truncate max-w-xs block">
+                              {task.title}
+                            </Link>
+                          </td>
                           <td className="p-3 text-slate-400">{task.project_name}</td>
                           <td className="p-3"><StatusBadge status={task.priority} type="priority" /></td>
                           <td className="p-3"><StatusBadge status={task.complexity} type="complexity" /></td>
                           <td className="p-3 font-mono">{task.estimated_hours} hrs</td>
                           <td className="p-3"><StatusBadge status={task.status} type="status" /></td>
-                          <td className="p-3 text-right">
+                          <td className="p-3 text-right space-x-2">
                             {task.status !== 'COMPLETED' && (
                               <button
                                 onClick={() => handleCompleteTask(task.id)}
@@ -227,6 +302,12 @@ export default function DashboardPage() {
                                 {completingTaskId === task.id ? 'Updating...' : 'Mark Complete'}
                               </button>
                             )}
+                            <Link
+                              href={`/tasks/${task.id}`}
+                              className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold px-3 py-1.5 rounded-lg transition inline-block"
+                            >
+                              View →
+                            </Link>
                           </td>
                         </tr>
                       ))}

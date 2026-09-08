@@ -110,9 +110,13 @@ def submit_recommendation_feedback(
 def update_assignment_outcome(
     db: Session,
     assignment: Assignment,
+    selected_by_user_id: Optional[uuid.UUID] = None,
+    selection_reason: Optional[str] = None,
+    override_reason: Optional[str] = None,
 ) -> Optional[RecommendationOutcome]:
     """
     Links a new TaskAssignment to its matching recommendation outcome (if existing).
+    Updates selection/override reasons and user audit tracking.
     """
     outcome = db.scalar(
         select(RecommendationOutcome).where(
@@ -126,6 +130,12 @@ def update_assignment_outcome(
         outcome.assignment_id = assignment.id
         outcome.assignment_created_at = assignment.assigned_at
         outcome.assignment_outcome_status = OutcomeStatus.ASSIGNED
+        if selected_by_user_id:
+            outcome.selected_by_user_id = selected_by_user_id
+        if selection_reason:
+            outcome.selection_reason = selection_reason
+        if override_reason:
+            outcome.override_reason = override_reason
         if assignment.status.value == "COMPLETED":
             outcome.assignment_outcome_status = OutcomeStatus.COMPLETED
             outcome.completed_at = assignment.completed_at if assignment.completed_at else func.now()
@@ -133,6 +143,7 @@ def update_assignment_outcome(
         db.refresh(outcome)
 
     return outcome
+
 
 
 def get_observational_dataset_preview(db: Session) -> DatasetPreviewMetricsResponse:

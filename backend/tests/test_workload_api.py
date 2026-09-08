@@ -93,7 +93,7 @@ def assign_task(client, token, task_id, dev_profile_id):
     headers = {"Authorization": f"Bearer {token}"}
     res = client.post(
         f"/api/tasks/{task_id}/assign",
-        json={"developer_id": dev_profile_id},
+        json={"developer_id": dev_profile_id, "force_override": True, "override_reason": "Test override"},
         headers=headers,
     )
     return res.json()

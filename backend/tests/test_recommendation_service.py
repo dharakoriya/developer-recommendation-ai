@@ -129,7 +129,7 @@ def test_workload_influence_on_ranking(client):
 
     # Overload Dev Expert by assigning heavy tasks
     t_heavy = client.post(f"/api/projects/{proj['id']}/tasks", json={"title": "Heavy Task", "estimated_hours": 50.0, "complexity": "HIGH"}, headers=mgr_headers).json()
-    client.post(f"/api/tasks/{t_heavy['id']}/assign", json={"developer_id": p_exp["id"]}, headers=mgr_headers)
+    client.post(f"/api/tasks/{t_heavy['id']}/assign", json={"developer_id": p_exp["id"], "force_override": True, "override_reason": "Test overload"}, headers=mgr_headers)
 
     # Regenerate recommendations
     res = client.get(f"/api/recommendations/tasks/{task['id']}?regenerate=true", headers=mgr_headers)

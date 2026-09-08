@@ -97,6 +97,36 @@ def assign_task(
             detail=f"Developer profile with ID {assign_in.developer_id} not found.",
         )
 
+    # Workload Safety Validation
+    from app.services.workload_service import (
+        calculate_developer_workload_details,
+        COMPLEXITY_WEIGHTS,
+        STANDARD_CAPACITY_HOURS,
+        AVAILABILITY_FACTORS,
+    )
+
+    workload_details = calculate_developer_workload_details(db, assign_in.developer_id)
+    curr_workload = float(workload_details.workload_score)
+
+    avail_factor = float(AVAILABILITY_FACTORS.get(dev_profile.availability_status, Decimal("1.0")))
+    capacity_hours = float(STANDARD_CAPACITY_HOURS) * avail_factor
+    comp_weight = float(COMPLEXITY_WEIGHTS.get(task.complexity, Decimal("1.0")))
+    task_weighted_hours = float(task.estimated_hours) * comp_weight
+
+    task_workload_impact = (task_weighted_hours / capacity_hours * 100.0) if capacity_hours > 0 else 999.0
+    projected_workload = round(curr_workload + task_workload_impact, 1)
+
+    if projected_workload > 100.0 and not assign_in.force_override:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "message": f"Overloaded Workload Safety Warning: Assigning task ({task.estimated_hours} hrs) will increase developer workload from {curr_workload:.1f}% to {projected_workload:.1f}%, exceeding 100% capacity.",
+                "current_workload": curr_workload,
+                "projected_workload": projected_workload,
+                "requires_override": True,
+            },
+        )
+
     # Check for existing active assignment
     existing_active = db.execute(
         select(Assignment).where(
@@ -125,15 +155,21 @@ def assign_task(
     )
     db.add(new_assignment)
 
-    # Update task status to IN_PROGRESS if currently TODO
-    if task.status == TaskStatus.TODO:
+    # Update task status to IN_PROGRESS if currently TODO or READY
+    if task.status in (TaskStatus.TODO, TaskStatus.READY):
         task.status = TaskStatus.IN_PROGRESS
 
     db.commit()
 
     # Link assignment outcome tracking
     from app.services.outcome_dataset_service import update_assignment_outcome
-    update_assignment_outcome(db, new_assignment)
+    update_assignment_outcome(
+        db,
+        new_assignment,
+        selected_by_user_id=current_user.id,
+        selection_reason=assign_in.selection_reason,
+        override_reason=assign_in.override_reason,
+    )
     invalidate_all_recommendations(db)
 
     stmt = (
@@ -146,6 +182,7 @@ def assign_task(
     )
     assignment = db.execute(stmt).scalar_one()
     return build_assignment_response(assignment)
+
 
 
 @router.get("/tasks/{id}/assignments", response_model=List[AssignmentResponse], summary="List task assignment history")
