@@ -24,6 +24,7 @@ export interface AIProviderInfo {
   name: string;
   type: string;
   is_active: boolean;
+  is_selected?: boolean;
   description: string;
 }
 
@@ -412,7 +413,7 @@ export default function AIPlanningWizardPage() {
                 </div>
                 {providers.length > 0 && (
                   <span className="px-2 py-0.5 text-[10px] font-semibold bg-gray-800 text-gray-300 rounded border border-gray-700">
-                    {providers.find(p => p.is_active)?.name || 'No Active Provider'}
+                    {providers.find(p => p.is_selected && p.is_active)?.name || providers.find(p => p.is_active)?.name || 'No Active Provider'}
                   </span>
                 )}
               </div>

@@ -320,8 +320,8 @@ export default function AIPlanReviewPage() {
             {plan.ai_provider && (
               <div className="flex items-center gap-2 mt-2 pt-2">
                 <span className="text-xs text-gray-500">Planned by:</span>
-                <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full border ${plan.ai_provider === 'heuristic' ? 'bg-indigo-900/40 text-indigo-300 border-indigo-700/50' : 'bg-fuchsia-900/40 text-fuchsia-300 border-fuchsia-700/50'}`}>
-                  {plan.ai_provider === 'heuristic' ? '🧠 Rule-Based Heuristic' : '🤖 Generative AI'}
+                <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full border ${plan.ai_provider?.includes('heuristic') ? 'bg-indigo-900/40 text-indigo-300 border-indigo-700/50' : 'bg-fuchsia-900/40 text-fuchsia-300 border-fuchsia-700/50'}`}>
+                  {plan.ai_provider?.includes('fallback') ? '🧠 Rule-Based Heuristic (AI Fallback)' : plan.ai_provider?.includes('heuristic') ? '🧠 Rule-Based Heuristic' : '🤖 Generative AI'}
                 </span>
                 <span className="text-[10px] text-gray-500 font-mono bg-gray-900 px-1.5 py-0.5 rounded">
                   Model: {plan.ai_model || 'Unknown'}

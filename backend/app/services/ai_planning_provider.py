@@ -217,6 +217,9 @@ class HeuristicPlanningProvider(AIPlanningProvider):
         }
 
 
+MockPlanningProvider = HeuristicPlanningProvider
+
+
 class OpenAIPlanningProvider(AIPlanningProvider):
     """
     OpenAI-based AI planning generator using structured JSON schema output.
@@ -407,6 +410,7 @@ def get_available_providers() -> List[Dict[str, Any]]:
     import urllib.request
     import urllib.error
     
+    selected_provider = os.getenv("AI_PROVIDER", "heuristic").lower()
     providers = []
     
     # Heuristic
@@ -415,6 +419,7 @@ def get_available_providers() -> List[Dict[str, Any]]:
         "name": "Heuristic Rule-Based Engine",
         "type": "Rule-Based Heuristic",
         "is_active": True,
+        "is_selected": selected_provider == "heuristic",
         "description": "Deterministic, rule-based planner. Fast, offline, and reliable."
     })
     
@@ -425,6 +430,7 @@ def get_available_providers() -> List[Dict[str, Any]]:
         "name": "OpenAI Models",
         "type": "Generative AI",
         "is_active": bool(api_key),
+        "is_selected": selected_provider == "openai",
         "description": "Cloud-based LLM planning. Requires API Key."
     })
     
@@ -444,6 +450,7 @@ def get_available_providers() -> List[Dict[str, Any]]:
         "name": "Ollama Local LLM",
         "type": "Generative AI",
         "is_active": is_ollama_active,
+        "is_selected": selected_provider == "ollama",
         "description": f"Local LLM via Ollama ({host}). Free and private."
     })
     

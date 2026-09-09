@@ -1,6 +1,10 @@
-from typing import List, Union
+from typing import List, Union, Optional
+from dotenv import load_dotenv
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Ensure .env values are loaded into os.environ for os.getenv() calls
+load_dotenv()
 
 
 class Settings(BaseSettings):
@@ -14,6 +18,11 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
 
+    AI_PROVIDER: str = "heuristic"
+    AI_MODEL: str = "llama3"
+    OLLAMA_HOST: str = "http://localhost:11434"
+    AI_API_KEY: Optional[str] = None
+    OPENAI_API_KEY: Optional[str] = None
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
@@ -30,3 +39,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+

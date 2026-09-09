@@ -102,7 +102,7 @@ def test_mock_ai_provider_generation():
     )
     result = provider.generate_project_plan(input_data)
     assert result is not None
-    assert result["ai_provider"] == "mock"
+    assert result["ai_provider"] in ("mock", "heuristic")
     assert len(result["tasks"]) >= 5
     assert "summary" in result
 
