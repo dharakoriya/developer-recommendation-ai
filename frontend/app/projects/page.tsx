@@ -112,12 +112,20 @@ export default function ProjectsPage() {
             <h1 className="text-2xl font-extrabold text-white tracking-tight">Projects Management</h1>
             <p className="text-slate-400 text-xs mt-1">Manage development projects, teams, tasks, and allocations.</p>
           </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-lg shadow-blue-600/20"
-          >
-            + Create Project
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/ai-planning"
+              className="bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs font-semibold px-3.5 py-2 rounded-lg transition flex items-center gap-1.5"
+            >
+              <span>✨</span> Plan with AI
+            </Link>
+            <Link
+              href="/projects/new"
+              className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition shadow-lg shadow-blue-600/20"
+            >
+              + Create Project
+            </Link>
+          </div>
         </div>
 
         {/* Search & Filter Bar */}

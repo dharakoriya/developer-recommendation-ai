@@ -149,7 +149,7 @@ def get_team_capacity_analytics(db: Session) -> TeamCapacityMetrics:
             .where(WorkloadRecord.developer_id == d.id)
             .order_by(desc(WorkloadRecord.calculated_at))
         )
-        hours = float(wl.assigned_hours) if wl and wl.assigned_hours is not None else 0.0
+        hours = float(wl.estimated_hours) if wl and wl.estimated_hours is not None else 0.0
         score = float(wl.workload_score) if wl and wl.workload_score is not None else 0.0
         used_capacity += hours
         
@@ -219,7 +219,7 @@ def get_developer_comparison_matrix(db: Session, manager_user_id: Optional[uuid.
             .order_by(desc(WorkloadRecord.calculated_at))
         )
         workload_score = float(wl.workload_score) if wl and wl.workload_score is not None else 0.0
-        workload_hours = float(wl.assigned_hours) if wl and wl.assigned_hours is not None else 0.0
+        workload_hours = float(wl.estimated_hours) if wl and wl.estimated_hours is not None else 0.0
         exp_years = float(d.experience_years or 0.0)
         streak_rec = db.scalar(select(DeveloperStreak).where(DeveloperStreak.developer_id == d.id))
         streak = streak_rec.current_streak if streak_rec else 0

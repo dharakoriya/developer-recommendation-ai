@@ -89,3 +89,33 @@ class ReadinessStatus(str, enum.Enum):
     REVIEW_REQUIRED = "REVIEW_REQUIRED"
     READY_FOR_EXPERIMENT = "READY_FOR_EXPERIMENT"
 
+
+class AIPlanStatus(str, enum.Enum):
+    DRAFT = "DRAFT"
+    REVIEWED = "REVIEWED"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    APPLIED = "APPLIED"
+
+
+class AIPlanTaskStatus(str, enum.Enum):
+    PROPOSED = "PROPOSED"
+    EDITED = "EDITED"
+    APPROVED = "APPROVED"
+    EXCLUDED = "EXCLUDED"
+
+
+class AIPlanGranularity(str, enum.Enum):
+    HIGH_LEVEL = "HIGH_LEVEL"
+    BALANCED = "BALANCED"
+    DETAILED = "DETAILED"
+
+
+class AIProjectType(str, enum.Enum):
+    WEB_APP = "WEB_APP"
+    MOBILE_APP = "MOBILE_APP"
+    AI_ML_SYSTEM = "AI_ML_SYSTEM"
+    ENTERPRISE_SOFTWARE = "ENTERPRISE_SOFTWARE"
+    E_COMMERCE = "E_COMMERCE"
+    OTHER = "OTHER"
+

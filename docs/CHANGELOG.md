@@ -11,6 +11,21 @@ Each entry should contain:
 * Reason
 * Important technical decision
 
+## 2026-09-08 — Milestone 24 — AI-Assisted Project Planning, Intelligent Task Decomposition & Team Capability Analysis
+
+### Repaired & Added
+
+* **AI Project Planner System**: Implemented natural language project input wizard allowing Admins and Managers to turn high-level descriptions, functional/technical requirements, and technology preferences into structured project plans (`AIProjectPlan` and `AIProjectPlanTask`).
+* **Modular Task Decomposition & Effort Estimation**: Built structured plan generation identifying executive summaries, core value propositions, system modules, task priorities, complexities, estimated hours, required skills, and task dependencies.
+* **Provider Abstraction & Production Safety**: Created `AIPlanningProvider` base interface with default heuristic `MockPlanningProvider` and `OpenAIPlanningProvider` integration. Guaranteed provider failures or invalid outputs never break existing manual project/task creation.
+* **Team Capability Analysis Engine**: Built intelligent capability analyzer classifying plan tasks into 🟢 WELL SUPPORTED, 🟡 CAPACITY RISK, and 🔴 SKILL GAP categories while identifying missing skills in org and flagging resource bottlenecks (e.g., overloaded expertise).
+* **Task Dependency Intelligence**: Implemented `AIPlanningDependencyService` validating dependency Directed Acyclic Graphs (DAGs) to prevent self-dependencies, circular cycles, and unreferenced task titles.
+* **Human Review & Edit Interface**: Created Notion + Linear style planning workspace (`/ai-planning` & `/ai-planning/[id]`) enabling managers to edit task details, add manual tasks, exclude tasks, regenerate plans, and resolve missing skills before applying.
+* **Atomic Plan Application & Task Weight Engine**: Applied approved plans within a single atomic database transaction (`db.flush()` + `db.commit()`), creating production `Project`, `Task`, and `TaskSkill` records, and invoking `calculate_task_weight_score()` automatically.
+* **`baseline-v2` Recommendation Integration**: Connected newly applied tasks directly with active production `baseline-v2` recommendation engine for human assignment decisions (no auto-assignment).
+* **Strict RBAC Enforcement**: Allowed `ADMIN` and `MANAGER` access to AI planning APIs while returning HTTP 403 Forbidden for `DEVELOPER` role.
+* **Automated Verification Suite**: Added Pytest suite `tests/test_milestone24_ai_planning.py` (100% pass across backend suite) and verified TypeScript compilation (`npx tsc --noEmit` with 0 errors).
+
 ## 2026-09-08 — Milestone 23 — Intelligent Assignment Workflow, Recommendation Actions & End-to-End Product Integration
 
 ### Repaired & Added

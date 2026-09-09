@@ -13,6 +13,10 @@ from app.models.enums import (
     LabelStatus,
     ValidationStatus,
     ReadinessStatus,
+    AIPlanStatus,
+    AIPlanTaskStatus,
+    AIPlanGranularity,
+    AIProjectType,
 )
 from app.models.user import User
 from app.models.skill import Skill
@@ -33,6 +37,7 @@ from app.models.performance import (
     DeveloperIncentiveLedger,
     DeveloperPerformanceSnapshot,
 )
+from app.models.ai_planning import AIProjectPlan, AIProjectPlanTask
 
 __all__ = [
     "Base",
@@ -49,6 +54,10 @@ __all__ = [
     "LabelStatus",
     "ValidationStatus",
     "ReadinessStatus",
+    "AIPlanStatus",
+    "AIPlanTaskStatus",
+    "AIPlanGranularity",
+    "AIProjectType",
     "User",
     "Skill",
     "DeveloperProfile",
@@ -71,4 +80,6 @@ __all__ = [
     "DeveloperAchievement",
     "DeveloperIncentiveLedger",
     "DeveloperPerformanceSnapshot",
+    "AIProjectPlan",
+    "AIProjectPlanTask",
 ]

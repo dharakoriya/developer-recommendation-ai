@@ -15,6 +15,7 @@ from app.api.recommendations import router as recommendations_router
 from app.api.dashboard import router as dashboard_router
 from app.api.performance import router as performance_router
 from app.api.analytics import router as analytics_router
+from app.api.ai_planning import router as ai_planning_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -48,6 +49,7 @@ app.include_router(workload_router, prefix=f"{settings.API_PREFIX}/workload", ta
 app.include_router(features_router, prefix=f"{settings.API_PREFIX}/features", tags=["Feature Engineering & Dataset"])
 app.include_router(recommendations_router, prefix=f"{settings.API_PREFIX}/recommendations", tags=["Recommendation Engine"])
 app.include_router(dashboard_router, prefix=f"{settings.API_PREFIX}/dashboard", tags=["Dashboard Statistics"])
+app.include_router(ai_planning_router, prefix=f"{settings.API_PREFIX}/ai-planning", tags=["AI Project Planner"])
 
 
 
