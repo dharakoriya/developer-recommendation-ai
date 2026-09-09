@@ -1,11 +1,11 @@
 {
   "dataset_version": "realworld-v1",
   "source": "production_observations",
-  "exported_at": "2026-09-09T14:59:15.178609+00:00",
-  "total_observations": 977,
-  "labeled_observations": 108,
-  "validated_observations": 27,
-  "ambiguous_observations": 27,
+  "exported_at": "2026-09-09T18:26:51.892251+00:00",
+  "total_observations": 2070,
+  "labeled_observations": 116,
+  "validated_observations": 29,
+  "ambiguous_observations": 29,
   "readiness_status": "NOT_READY",
   "exported_files": [
     "observations.csv",
