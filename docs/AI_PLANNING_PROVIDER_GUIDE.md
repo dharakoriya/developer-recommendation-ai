@@ -42,3 +42,7 @@ OPENAI_API_KEY=sk-...
 DevAlign AI emphasizes transparency in AI generation. 
 - In the **Plan Overview**, a badge clearly labels whether the plan was generated via `Rule-Based Heuristic` or `Generative AI`.
 - The exact model name and prompt version are recorded and displayed to ensure traceability and auditability.
+
+---
+
+**For a complete beginner-friendly tutorial on running AI locally without API keys, please read the [Local AI & Ollama Beginner Guidebook](file:///d:/Custom%20Project/dhara/devalign-ai/docs/LOCAL_AI_OLLAMA_GUIDE.md).**
