@@ -117,10 +117,10 @@ export default function DevelopersPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">Developer Directory</h1>
-            <p className="text-slate-400 text-xs mt-1">Directory of engineering profiles, skills, performance scores, and availability.</p>
+            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Developer Directory</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Directory of engineering profiles, skills, performance scores, and availability.</p>
           </div>
         </div>
 
@@ -131,7 +131,7 @@ export default function DevelopersPage() {
             placeholder="Search developers by name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-lg px-3.5 py-2.5 flex-1 focus:outline-none focus:border-purple-500"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 text-xs rounded-lg px-3.5 py-2.5 flex-1 focus:outline-none focus:border-purple-500"
           />
           <div className="flex items-center gap-2">
             {['ALL', 'AVAILABLE', 'PARTIAL', 'UNAVAILABLE'].map((av) => (
@@ -141,7 +141,7 @@ export default function DevelopersPage() {
                 className={`px-3 py-2 text-xs font-semibold rounded-lg transition border ${
                   availFilter === av
                     ? 'bg-purple-600 text-white border-purple-500'
-                    : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 {av}
@@ -162,39 +162,39 @@ export default function DevelopersPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredDevs.map((dev) => (
-              <div key={dev.id} className="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-4 shadow-sm hover:border-slate-700 transition">
+              <div key={dev.id} className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm hover:border-slate-300 dark:hover:border-slate-700 transition">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="font-extrabold text-white text-base">{dev.user_name || 'Developer'}</h3>
-                    <span className="text-xs text-slate-400 font-mono block">{dev.user_email}</span>
+                    <h3 className="font-extrabold text-slate-900 dark:text-white text-base">{dev.user_name || 'Developer'}</h3>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-mono block">{dev.user_email}</span>
                   </div>
                   <StatusBadge status={dev.availability_status} type="availability_status" />
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-850">
-                    <span className="text-slate-500 block text-[10px]">Experience</span>
-                    <span className="text-slate-200 font-bold font-mono">{dev.experience_years} yrs</span>
+                  <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                    <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Experience</span>
+                    <span className="text-slate-900 dark:text-slate-200 font-bold font-mono">{dev.experience_years} yrs</span>
                   </div>
-                  <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-850">
-                    <span className="text-slate-500 block text-[10px]">Performance</span>
-                    <span className="text-emerald-400 font-bold font-mono">{dev.performance_score ?? 85}/100</span>
+                  <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                    <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Performance</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold font-mono">{dev.performance_score ?? 85}/100</span>
                   </div>
-                  <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-850">
-                    <span className="text-slate-500 block text-[10px]">Workload</span>
-                    <span className="text-purple-400 font-bold font-mono">{Math.round(dev.workload_score ?? 0)}%</span>
+                  <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                    <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Workload</span>
+                    <span className="text-purple-600 dark:text-purple-400 font-bold font-mono">{Math.round(dev.workload_score ?? 0)}%</span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400 font-medium">Skill Proficiencies</span>
+                    <span className="text-slate-600 dark:text-slate-400 font-medium">Skill Proficiencies</span>
                     <button
                       onClick={() => {
                         setSelectedDev(dev);
                         setShowSkillModal(true);
                       }}
-                      className="text-purple-400 hover:text-purple-300 font-semibold text-[11px] transition"
+                      className="text-purple-600 dark:text-purple-400 hover:text-purple-500 font-semibold text-[11px] transition"
                     >
                       + Add Skill
                     </button>
@@ -202,8 +202,8 @@ export default function DevelopersPage() {
                   {dev.skills && dev.skills.length > 0 ? (
                     <div className="flex flex-wrap gap-1.5">
                       {dev.skills.map((s, idx) => (
-                        <span key={idx} className="px-2.5 py-1 rounded-md bg-slate-950 border border-slate-800 text-[11px] font-mono text-slate-300">
-                          {s.skill_name}: <strong className="text-purple-400">{s.proficiency_level}</strong>
+                        <span key={idx} className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[11px] font-mono text-slate-700 dark:text-slate-300">
+                          {s.skill_name}: <strong className="text-purple-600 dark:text-purple-400">{s.proficiency_level}</strong>
                         </span>
                       ))}
                     </div>
@@ -220,25 +220,25 @@ export default function DevelopersPage() {
 
         {/* Add Skill Modal */}
         {showSkillModal && selectedDev && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 className="text-lg font-bold text-white">Add Skill Proficiency</h3>
-                <button onClick={() => setShowSkillModal(false)} className="text-slate-400 hover:text-white">✕</button>
+          <div className="fixed inset-0 bg-black/60 dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Add Skill Proficiency</h3>
+                <button onClick={() => setShowSkillModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white font-bold">✕</button>
               </div>
 
               <form onSubmit={handleAddSkill} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">Developer</label>
-                  <input type="text" disabled value={selectedDev.user_name || 'Developer'} className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 text-sm" />
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">Developer</label>
+                  <input type="text" disabled value={selectedDev.user_name || 'Developer'} className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-sm" />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">Select Skill</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">Select Skill</label>
                   <select
                     value={selectedSkillId}
                     onChange={(e) => setSelectedSkillId(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-purple-500"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:border-purple-500"
                   >
                     {skills.map((s) => (
                       <option key={s.id} value={s.id}>{s.name} ({s.category || 'General'})</option>
@@ -247,21 +247,23 @@ export default function DevelopersPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">Proficiency Level (0-100)</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">Proficiency Level (0-100)</label>
                   <input
                     type="number"
                     min="0"
                     max="100"
                     value={proficiency}
                     onChange={(e) => setProficiency(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm font-mono focus:border-purple-500"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-sm font-mono focus:border-purple-500"
                   />
                 </div>
 
-                <div className="flex gap-2 pt-2">
-                  <button type="button" onClick={() => setShowSkillModal(false)} className="flex-1 bg-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-semibold">Cancel</button>
-                  <button type="submit" disabled={isSubmittingSkill} className="flex-1 bg-purple-600 text-white py-2.5 rounded-xl text-xs font-semibold hover:bg-purple-500 transition">
-                    {isSubmittingSkill ? 'Saving...' : 'Add Skill'}
+                <div className="flex justify-end gap-2 pt-2">
+                  <button type="button" onClick={() => setShowSkillModal(false)} className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={isSubmittingSkill} className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-lg shadow-purple-600/20">
+                    {isSubmittingSkill ? 'Saving...' : 'Save Skill'}
                   </button>
                 </div>
               </form>

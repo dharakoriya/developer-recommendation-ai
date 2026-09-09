@@ -28,6 +28,8 @@ def validate_task_dependencies(tasks: List[Dict[str, Any]]) -> Dict[str, Any]:
     for title, task_obj in title_to_task.items():
         deps = task_obj.get("dependencies") or []
         for dep_title in deps:
+            if not dep_title:
+                continue
             if dep_title == title:
                 errors.append(f"Task '{title}' cannot depend on itself.")
                 continue

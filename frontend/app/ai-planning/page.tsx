@@ -189,48 +189,48 @@ export default function AIPlanningWizardPage() {
                 {step === 1 && (
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-300 mb-1">Project Name *</label>
+                      <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Project Name *</label>
                       <input
                         type="text"
                         required
                         value={projectName}
                         onChange={(e) => setProjectName(e.target.value)}
-                        placeholder="e.g. Real-Time Analytics Pipeline"
-                        className="w-full bg-gray-950 border border-gray-800 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                        placeholder="e.g. NextGen Microservices Platform"
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-purple-500 transition"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-300 mb-1">Project Description *</label>
+                      <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Project Description *</label>
                       <textarea
                         rows={3}
                         required
                         value={projectDescription}
                         onChange={(e) => setProjectDescription(e.target.value)}
                         placeholder="Describe the system scope, architecture, core features, or technical goals..."
-                        className="w-full bg-gray-950 border border-gray-800 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-purple-500 transition"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-300 mb-1">Business Objective (Optional)</label>
+                      <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Business Objective (Optional)</label>
                       <input
                         type="text"
                         value={businessObjective}
                         onChange={(e) => setBusinessObjective(e.target.value)}
                         placeholder="e.g. Reduce latency under 100ms for high-frequency trading data"
-                        className="w-full bg-gray-950 border border-gray-800 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-purple-500 transition"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-300 mb-1">Target Users (Optional)</label>
+                      <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Target Users (Optional)</label>
                       <input
                         type="text"
                         value={targetUsers}
                         onChange={(e) => setTargetUsers(e.target.value)}
                         placeholder="e.g. Enterprise Financial Analysts, Internal Risk Operations"
-                        className="w-full bg-gray-950 border border-gray-800 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-purple-500 transition"
                       />
                     </div>
 
@@ -250,46 +250,46 @@ export default function AIPlanningWizardPage() {
                 {step === 2 && (
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-300 mb-1">Functional Requirements</label>
+                      <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Functional Requirements</label>
                       <textarea
                         rows={3}
                         value={functionalRequirements}
                         onChange={(e) => setFunctionalRequirements(e.target.value)}
                         placeholder="e.g. User auth, WebSocket stream, CSV export, role-based dashboards..."
-                        className="w-full bg-gray-950 border border-gray-800 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-purple-500 transition"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-300 mb-1">Technical Requirements</label>
+                      <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Technical Requirements</label>
                       <textarea
                         rows={3}
                         value={technicalRequirements}
                         onChange={(e) => setTechnicalRequirements(e.target.value)}
                         placeholder="e.g. PostgreSQL DB, Redis cache, Dockerized deployment, OAuth2 JWT..."
-                        className="w-full bg-gray-950 border border-gray-800 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-purple-500 transition"
                       />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-medium text-gray-300 mb-1">Technology Stack (Comma Separated)</label>
+                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Technology Stack (Comma Separated)</label>
                         <input
                           type="text"
                           value={techStackInput}
                           onChange={(e) => setTechStackInput(e.target.value)}
                           placeholder="e.g. Python, FastAPI, Next.js, PostgreSQL"
-                          className="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                          className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-purple-500 transition"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-xs font-medium text-gray-300 mb-1">Target Deadline (Optional)</label>
+                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Target Deadline (Optional)</label>
                         <input
                           type="date"
                           value={deadline}
                           onChange={(e) => setDeadline(e.target.value)}
-                          className="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500"
+                          className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 transition"
                         />
                       </div>
                     </div>
@@ -298,7 +298,7 @@ export default function AIPlanningWizardPage() {
                       <button
                         type="button"
                         onClick={() => setStep(1)}
-                        className="px-4 py-2 text-xs font-medium text-gray-400 hover:text-white"
+                        className="px-4 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                       >
                         ← Back
                       </button>
@@ -317,7 +317,7 @@ export default function AIPlanningWizardPage() {
                 {step === 3 && (
                   <div className="space-y-5">
                     <div>
-                      <label className="block text-xs font-medium text-gray-300 mb-2">Project Type</label>
+                      <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-2">Project Type</label>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                         {[
                           { id: 'WEB_APP', label: '🌐 Web App' },
@@ -333,8 +333,8 @@ export default function AIPlanningWizardPage() {
                             onClick={() => setProjectType(pt.id as any)}
                             className={`p-2.5 text-xs font-medium rounded-lg border transition-all ${
                               projectType === pt.id
-                                ? 'bg-purple-600/30 border-purple-500 text-purple-200'
-                                : 'bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-700'
+                                ? 'bg-purple-50 dark:bg-purple-600/30 border-purple-500 text-purple-700 dark:text-purple-200 font-bold'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                             }`}
                           >
                             {pt.label}
@@ -344,7 +344,7 @@ export default function AIPlanningWizardPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-300 mb-2">Task Granularity</label>
+                      <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-2">Task Granularity</label>
                       <div className="grid grid-cols-3 gap-3">
                         {[
                           { id: 'HIGH_LEVEL', title: 'High-Level', desc: '4-6 coarse modules & epics' },
@@ -357,34 +357,34 @@ export default function AIPlanningWizardPage() {
                             onClick={() => setGranularity(g.id as any)}
                             className={`p-3 text-left rounded-lg border transition-all ${
                               granularity === g.id
-                                ? 'bg-purple-600/30 border-purple-500 text-white'
-                                : 'bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-700'
+                                ? 'bg-purple-50 dark:bg-purple-600/30 border-purple-500 text-purple-900 dark:text-white font-bold'
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                             }`}
                           >
                             <p className="text-xs font-semibold">{g.title}</p>
-                            <p className="text-[11px] text-gray-400 mt-1">{g.desc}</p>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{g.desc}</p>
                           </button>
                         ))}
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-300 mb-1">Preferred Team Size</label>
+                      <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Preferred Team Size</label>
                       <input
                         type="number"
                         min={1}
                         max={30}
                         value={preferredTeamSize}
                         onChange={(e) => setPreferredTeamSize(parseInt(e.target.value) || 5)}
-                        className="w-full bg-gray-950 border border-gray-800 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-purple-500"
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 transition"
                       />
                     </div>
 
-                    <div className="pt-3 flex items-center justify-between border-t border-gray-800">
+                    <div className="pt-3 flex items-center justify-between border-t border-slate-200 dark:border-slate-800">
                       <button
                         type="button"
                         onClick={() => setStep(2)}
-                        className="px-4 py-2 text-xs font-medium text-gray-400 hover:text-white"
+                        className="px-4 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                       >
                         ← Back
                       </button>
@@ -405,45 +405,45 @@ export default function AIPlanningWizardPage() {
           {/* Right Side: AI Planning Information & Recent Drafts (5 cols) */}
           <div className="lg:col-span-5 space-y-6">
             {/* Live AI Planning Preview Card */}
-            <div className="p-5 bg-gradient-to-br from-gray-900/90 to-purple-950/20 border border-gray-800 rounded-xl space-y-4">
+            <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl space-y-4 shadow-sm">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-purple-400">🤖</span>
-                  <h2 className="text-sm font-semibold text-white">AI Planning Preview</h2>
+                  <span className="text-purple-600 dark:text-purple-400">🤖</span>
+                  <h2 className="text-sm font-semibold text-slate-900 dark:text-white">AI Planning Assistant</h2>
                 </div>
                 {providers.length > 0 && (
-                  <span className="px-2 py-0.5 text-[10px] font-semibold bg-gray-800 text-gray-300 rounded border border-gray-700">
+                  <span className="px-2 py-0.5 text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700">
                     {providers.find(p => p.is_selected && p.is_active)?.name || providers.find(p => p.is_active)?.name || 'No Active Provider'}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-gray-400 leading-relaxed">
-                When generated, DevAlign AI will analyze your specifications and produce:
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                DevAlign AI acts as an interactive assistant. After generating a draft, engineering managers review, edit, and approve tasks before official project records are created.
               </p>
-              <ul className="text-xs space-y-2 text-gray-300">
+              <ul className="text-xs space-y-2 text-slate-700 dark:text-slate-300">
                 <li className="flex items-center gap-2">
-                  <span className="text-emerald-400">✓</span> Executive Summary & Core Value Proposition
+                  <span className="text-emerald-600 dark:text-emerald-400">✓</span> Executive Summary & Core Value Proposition
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-emerald-400">✓</span> Modular System Architecture Decomposition
+                  <span className="text-emerald-600 dark:text-emerald-400">✓</span> Modular System Architecture Decomposition
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-emerald-400">✓</span> Estimated Task Hours, Complexity & Priorities
+                  <span className="text-emerald-600 dark:text-emerald-400">✓</span> Estimated Task Hours, Complexity & Priorities
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-emerald-400">✓</span> Skill Gap & Resource Bottleneck Analysis
+                  <span className="text-emerald-600 dark:text-emerald-400">✓</span> Skill Gap & Resource Bottleneck Analysis
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-emerald-400">✓</span> Dependency Cycle Validation
+                  <span className="text-emerald-600 dark:text-emerald-400">✓</span> Dependency Cycle Validation
                 </li>
               </ul>
             </div>
 
             {/* Recent Drafts Section */}
-            <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-5 space-y-4">
+            <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
-                <h2 className="text-xs font-semibold text-gray-300 tracking-wider uppercase">Recent Plan Drafts</h2>
-                <span className="text-[11px] text-gray-500">{existingPlans.length} plans</span>
+                <h2 className="text-xs font-semibold text-slate-600 dark:text-slate-300 tracking-wider uppercase">Recent Plan Drafts</h2>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">{existingPlans.length} plans</span>
               </div>
 
               {plansLoading ? (

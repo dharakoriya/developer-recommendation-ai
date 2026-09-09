@@ -225,31 +225,31 @@ export default function RecommendationsPage() {
     <AppShell>
       <div className="space-y-6 max-w-7xl mx-auto pb-12">
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">Developer Recommendations 2.0</h1>
-            <p className="text-slate-400 text-xs mt-1">
+            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Developer Recommendations 2.0</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">
               Transparent, explainable recommendation engine combining skill match, capacity, performance & task weight compatibility.
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3 py-1.5 rounded-xl font-mono font-bold">
+            <span className="text-xs bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 px-3 py-1.5 rounded-xl font-mono font-bold">
               deterministic_baseline ({modelVersion})
             </span>
           </div>
         </div>
 
         {/* Task Selection & Intelligence Header Bar */}
-        <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
             <div className="w-full sm:w-2/3">
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
                 Select Task for Compatibility Analysis
               </label>
               <select
                 value={selectedTaskId}
                 onChange={(e) => setSelectedTaskId(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 text-white text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-purple-500"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-purple-500"
               >
                 {tasks.map((t) => (
                   <option key={t.id} value={t.id}>
@@ -263,8 +263,8 @@ export default function RecommendationsPage() {
               <span
                 className={`text-xs font-mono font-bold px-3 py-2 rounded-xl border ${
                   freshnessStatus === 'FRESH'
-                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                    : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
                 }`}
               >
                 {freshnessStatus === 'FRESH' ? '🟢 FRESH' : '⚡ STALE'}
@@ -273,7 +273,7 @@ export default function RecommendationsPage() {
               <button
                 onClick={() => selectedTaskId && generateRecommendations(selectedTaskId, true)}
                 disabled={recLoading || !selectedTaskId}
-                className="flex-1 sm:flex-initial bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-semibold text-xs px-5 py-3 rounded-xl transition shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2"
+                className="flex-1 sm:flex-initial bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-semibold text-xs px-5 py-3 rounded-xl transition shadow-md shadow-purple-600/20 flex items-center justify-center gap-2"
               >
                 {recLoading ? (
                   <>
@@ -290,31 +290,31 @@ export default function RecommendationsPage() {
           {/* Task Intelligence Metadata Header */}
           {selectedTask && (
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 text-xs pt-1">
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-850">
-                <span className="text-slate-500 block text-[10px] uppercase font-bold">Project</span>
-                <span className="text-slate-200 font-bold font-mono truncate block">{selectedTask.project_name || 'Agile Core'}</span>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-bold">Project</span>
+                <span className="text-slate-900 dark:text-slate-200 font-bold font-mono truncate block">{selectedTask.project_name || 'Agile Core'}</span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-850">
-                <span className="text-slate-500 block text-[10px] uppercase font-bold">Priority</span>
-                <span className="text-amber-400 font-bold font-mono">{selectedTask.priority || 'MEDIUM'}</span>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-bold">Priority</span>
+                <span className="text-amber-600 dark:text-amber-400 font-bold font-mono">{selectedTask.priority || 'MEDIUM'}</span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-850">
-                <span className="text-slate-500 block text-[10px] uppercase font-bold">Complexity</span>
-                <span className="text-purple-400 font-bold font-mono">{selectedTask.complexity || 'MEDIUM'}</span>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-bold">Complexity</span>
+                <span className="text-purple-600 dark:text-purple-400 font-bold font-mono">{selectedTask.complexity || 'MEDIUM'}</span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-850">
-                <span className="text-slate-500 block text-[10px] uppercase font-bold">Task Weight</span>
-                <span className="text-emerald-400 font-bold font-mono">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-bold">Task Weight</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold font-mono">
                   {selectedTask.task_weight_score ?? 50} ({selectedTask.task_weight_category || 'MODERATE'})
                 </span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-850">
-                <span className="text-slate-500 block text-[10px] uppercase font-bold">Est. Effort</span>
-                <span className="text-cyan-400 font-bold font-mono">{selectedTask.estimated_hours ?? 8} Hours</span>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-bold">Est. Effort</span>
+                <span className="text-cyan-600 dark:text-cyan-400 font-bold font-mono">{selectedTask.estimated_hours ?? 8} Hours</span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-850">
-                <span className="text-slate-500 block text-[10px] uppercase font-bold">Required Skills</span>
-                <span className="text-slate-200 font-bold font-mono">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-bold">Required Skills</span>
+                <span className="text-slate-900 dark:text-slate-200 font-bold font-mono">
                   {selectedTask.required_skills?.length ?? 0} Required
                 </span>
               </div>
@@ -323,52 +323,52 @@ export default function RecommendationsPage() {
         </div>
 
         {/* 7-Factor Model Explanation Header */}
-        <div className="p-5 rounded-2xl bg-slate-900/90 border border-purple-500/20 space-y-3 shadow-xl">
+        <div className="p-5 rounded-2xl bg-purple-50/50 dark:bg-slate-900/90 border border-purple-200 dark:border-purple-500/20 space-y-3 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-purple-400 font-bold text-sm">🤖 DevAlign AI 2.0 Compatibility Factors</span>
-              <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">baseline-v2 formula</span>
+              <span className="text-purple-700 dark:text-purple-400 font-bold text-sm">🤖 DevAlign AI 2.0 Compatibility Factors</span>
+              <span className="text-[10px] bg-purple-100 dark:bg-slate-800 text-purple-700 dark:text-slate-400 px-2 py-0.5 rounded font-mono">baseline-v2 formula</span>
             </div>
             <button
               onClick={() => setShowModelDetails(!showModelDetails)}
-              className="text-xs text-purple-400 hover:text-purple-300 font-semibold"
+              className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-500 font-semibold"
             >
               {showModelDetails ? 'Hide Model Details ▲' : 'View Model Details ▼'}
             </button>
           </div>
 
-          <p className="text-xs text-slate-300">
+          <p className="text-xs text-slate-700 dark:text-slate-300">
             Recommendations use a 7-factor transparent scoring formula (Skill Match 30%, Skill Coverage 15%, Workload & Anti-Monopoly 15%, Availability 10%, Experience 10%, Performance 10%, Task Weight Compatibility 10%). Research ML models remain strictly <strong>RESEARCH ONLY</strong>.
           </p>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-xs">
-            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-              <span className="text-purple-400 font-bold block">30%</span>
-              <span className="text-slate-300 font-medium block text-[11px]">Skill Match</span>
+            <div className="p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+              <span className="text-purple-600 dark:text-purple-400 font-bold block">30%</span>
+              <span className="text-slate-700 dark:text-slate-300 font-medium block text-[11px]">Skill Match</span>
             </div>
-            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-              <span className="text-blue-400 font-bold block">15%</span>
-              <span className="text-slate-300 font-medium block text-[11px]">Coverage</span>
+            <div className="p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+              <span className="text-blue-600 dark:text-blue-400 font-bold block">15%</span>
+              <span className="text-slate-700 dark:text-slate-300 font-medium block text-[11px]">Skill Coverage</span>
             </div>
-            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-              <span className="text-emerald-400 font-bold block">15%</span>
-              <span className="text-slate-300 font-medium block text-[11px]">Capacity & Anti-Monopoly</span>
+            <div className="p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold block">15%</span>
+              <span className="text-slate-700 dark:text-slate-300 font-medium block text-[11px]">Capacity / Anti-Monopoly</span>
             </div>
-            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-              <span className="text-amber-400 font-bold block">10%</span>
-              <span className="text-slate-300 font-medium block text-[11px]">Availability</span>
+            <div className="p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+              <span className="text-cyan-600 dark:text-cyan-400 font-bold block">10%</span>
+              <span className="text-slate-700 dark:text-slate-300 font-medium block text-[11px]">Availability</span>
             </div>
-            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-              <span className="text-indigo-400 font-bold block">10%</span>
-              <span className="text-slate-300 font-medium block text-[11px]">Experience</span>
+            <div className="p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+              <span className="text-indigo-600 dark:text-indigo-400 font-bold block">10%</span>
+              <span className="text-slate-700 dark:text-slate-300 font-medium block text-[11px]">Experience</span>
             </div>
-            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-              <span className="text-cyan-400 font-bold block">10%</span>
-              <span className="text-slate-300 font-medium block text-[11px]">Performance</span>
+            <div className="p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+              <span className="text-amber-600 dark:text-amber-400 font-bold block">10%</span>
+              <span className="text-slate-700 dark:text-slate-300 font-medium block text-[11px]">Performance</span>
             </div>
-            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-              <span className="text-rose-400 font-bold block">10%</span>
-              <span className="text-slate-300 font-medium block text-[11px]">Task Weight</span>
+            <div className="p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+              <span className="text-rose-600 dark:text-rose-400 font-bold block">10%</span>
+              <span className="text-slate-700 dark:text-slate-300 font-medium block text-[11px]">Task Weight</span>
             </div>
           </div>
         </div>

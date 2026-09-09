@@ -107,21 +107,21 @@ export default function ProjectsPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">Projects Management</h1>
-            <p className="text-slate-400 text-xs mt-1">Manage development projects, teams, tasks, and allocations.</p>
+            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Projects Management</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Manage development projects, teams, tasks, and allocations.</p>
           </div>
           <div className="flex items-center gap-2">
             <Link
               href="/ai-planning"
-              className="bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs font-semibold px-3.5 py-2 rounded-lg transition flex items-center gap-1.5"
+              className="bg-purple-100 hover:bg-purple-200 dark:bg-purple-600/20 dark:hover:bg-purple-600/30 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-500/40 text-xs font-semibold px-3.5 py-2 rounded-lg transition flex items-center gap-1.5"
             >
               <span>✨</span> Plan with AI
             </Link>
             <Link
               href="/projects/new"
-              className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition shadow-lg shadow-blue-600/20"
+              className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition shadow-md shadow-blue-600/20"
             >
               + Create Project
             </Link>
@@ -135,7 +135,7 @@ export default function ProjectsPage() {
             placeholder="Search projects..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-lg px-3.5 py-2.5 flex-1 focus:outline-none focus:border-blue-500"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 text-xs rounded-lg px-3.5 py-2.5 flex-1 focus:outline-none focus:border-blue-500"
           />
           <div className="flex items-center gap-2">
             {['ALL', 'ACTIVE', 'COMPLETED', 'ARCHIVED'].map((st) => (
@@ -145,7 +145,7 @@ export default function ProjectsPage() {
                 className={`px-3 py-2 text-xs font-semibold rounded-lg transition border ${
                   statusFilter === st
                     ? 'bg-blue-600 text-white border-blue-500'
-                    : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 {st}
@@ -168,20 +168,20 @@ export default function ProjectsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredProjects.map((p) => (
-              <div key={p.id} className="p-5 rounded-xl bg-slate-900 border border-slate-800 flex flex-col justify-between hover:border-slate-700 transition">
+              <div key={p.id} className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition shadow-sm">
                 <div className="space-y-3">
                   <div className="flex justify-between items-start">
-                    <h3 className="font-extrabold text-white text-base leading-snug">{p.name}</h3>
+                    <h3 className="font-extrabold text-slate-900 dark:text-white text-base leading-snug">{p.name}</h3>
                     <StatusBadge status={p.status} type="project_status" />
                   </div>
-                  <p className="text-slate-400 text-xs line-clamp-2">{p.description || 'No description provided.'}</p>
+                  <p className="text-slate-600 dark:text-slate-400 text-xs line-clamp-2">{p.description || 'No description provided.'}</p>
                 </div>
 
-                <div className="border-t border-slate-800 pt-4 mt-4 flex items-center justify-between text-xs">
-                  <span className="text-slate-500 font-mono">Teams: {p.teams_count ?? 0}</span>
+                <div className="border-t border-slate-200 dark:border-slate-800 pt-4 mt-4 flex items-center justify-between text-xs">
+                  <span className="text-slate-500 dark:text-slate-400 font-mono">Teams: {p.teams_count ?? 0}</span>
                   <Link
                     href={`/projects/${p.id}`}
-                    className="bg-slate-800 hover:bg-slate-700 text-blue-400 font-semibold px-3 py-1.5 rounded-md transition border border-slate-700"
+                    className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 font-semibold px-3 py-1.5 rounded-md transition border border-slate-200 dark:border-slate-700"
                   >
                     View Project Details →
                   </Link>
@@ -193,43 +193,43 @@ export default function ProjectsPage() {
 
         {/* Create Project Modal */}
         {showModal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4">
-              <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 className="font-bold text-white text-base">Create New Project</h3>
-                <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white font-bold">✕</button>
+          <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+              <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+                <h3 className="font-bold text-slate-900 dark:text-white text-base">Create New Project</h3>
+                <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white font-bold">✕</button>
               </div>
 
               <form onSubmit={handleCreateProject} className="space-y-4 text-xs">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Project Name:</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Project Name:</label>
                   <input
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Core Authentication Service"
-                    className="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded-lg p-2.5"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 rounded-lg p-2.5 focus:outline-none focus:border-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Description:</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Description:</label>
                   <textarea
                     rows={3}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Project scope and description..."
-                    className="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded-lg p-2.5"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 rounded-lg p-2.5 focus:outline-none focus:border-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Initial Status:</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Initial Status:</label>
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value as any)}
-                    className="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded-lg p-2.5"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 rounded-lg p-2.5 focus:outline-none focus:border-blue-500"
                   >
                     <option value="ACTIVE">ACTIVE</option>
                     <option value="COMPLETED">COMPLETED</option>
@@ -238,7 +238,7 @@ export default function ProjectsPage() {
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">
-                  <button type="button" onClick={() => setShowModal(false)} className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg">Cancel</button>
+                  <button type="button" onClick={() => setShowModal(false)} className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg font-medium">Cancel</button>
                   <button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2 rounded-lg">
                     {isSubmitting ? 'Creating...' : 'Create Project'}
                   </button>

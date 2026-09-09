@@ -370,10 +370,12 @@ def update_plan_task(
         new_title = task_in.title
         task.title = new_title
         # Cascade title rename to dependent tasks in the same plan
+        from sqlalchemy.orm.attributes import flag_modified
         for other in task.plan.tasks:
             if other.id != task.id and other.dependencies:
                 if old_title in other.dependencies:
-                    other.dependencies = [new_title if dep == old_title else dep for dep in other.dependencies]
+                    other.dependencies = [new_title if dep == old_title else dep for dep in other.dependencies if dep]
+                    flag_modified(other, "dependencies")
 
     if task_in.description is not None:
         task.description = task_in.description
@@ -388,7 +390,7 @@ def update_plan_task(
     if task_in.required_skills is not None:
         task.required_skills = task_in.required_skills
     if task_in.dependencies is not None:
-        task.dependencies = task_in.dependencies
+        task.dependencies = [d for d in task_in.dependencies if d]
     if task_in.acceptance_criteria is not None:
         task.acceptance_criteria = task_in.acceptance_criteria
     if task_in.status is not None:

@@ -107,31 +107,31 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 text-slate-100 selection:bg-purple-500 selection:text-white">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 text-slate-900 dark:text-slate-100 selection:bg-purple-500 selection:text-white transition-colors duration-200">
       <div className="sm:mx-auto sm:w-full sm:max-w-md space-y-3 text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-700 dark:text-purple-400 text-xs font-semibold">
           <span>⚡</span>
           <span>DevAlign AI Platform v1.0</span>
         </div>
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">
+        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
           {isRegisterMode ? 'Create Account' : 'Sign In to DevAlign AI'}
         </h1>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
           Explainable Developer Recommendation & Workload Balancing Engine
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-slate-900 border border-slate-800 py-8 px-6 shadow-2xl rounded-2xl sm:px-10 space-y-6">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 py-8 px-6 shadow-xl rounded-2xl sm:px-10 space-y-6">
           {error && (
-            <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-start gap-3">
+            <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400 text-xs flex items-start gap-3">
               <span className="text-base">⚠️</span>
               <div className="flex-1 font-medium">{error}</div>
             </div>
           )}
 
           {message && (
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-start gap-3">
+            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs flex items-start gap-3">
               <span className="text-base">✓</span>
               <div className="flex-1 font-medium">{message}</div>
             </div>
@@ -140,7 +140,7 @@ export default function LoginPage() {
           <form className="space-y-4" onSubmit={handleSubmit}>
             {isRegisterMode && (
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   Full Name
                 </label>
                 <input
@@ -149,13 +149,13 @@ export default function LoginPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Jane Manager"
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
                 />
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                 Email Address
               </label>
               <input
@@ -164,12 +164,12 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@devalign.ai"
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition font-mono"
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition font-mono"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                 Password
               </label>
               <div className="relative">
@@ -179,12 +179,12 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition font-mono pr-16"
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition font-mono pr-16"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 hover:text-white transition px-2 py-1"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition px-2 py-1"
                 >
                   {showPassword ? 'Hide' : 'Show'}
                 </button>
@@ -193,13 +193,13 @@ export default function LoginPage() {
 
             {isRegisterMode && (
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   User Role
                 </label>
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value as UserRole)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
                 >
                   <option value="MANAGER">MANAGER (Project & Team Lead)</option>
                   <option value="ADMIN">ADMIN (System Administrator)</option>
@@ -225,8 +225,8 @@ export default function LoginPage() {
           </form>
 
           {/* Preset Demo Accounts Shortcut */}
-          <div className="pt-4 border-t border-slate-800 space-y-2">
-            <span className="block text-[11px] uppercase font-mono font-semibold text-slate-500 text-center">
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
+            <span className="block text-[11px] uppercase font-mono font-semibold text-slate-500 dark:text-slate-400 text-center">
               Quick Demo Accounts
             </span>
             <div className="grid grid-cols-2 gap-2 text-xs font-mono">
@@ -237,9 +237,9 @@ export default function LoginPage() {
                   setPassword('manager123');
                   setIsRegisterMode(false);
                 }}
-                className="p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-purple-500/50 text-slate-300 transition text-left"
+                className="p-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:border-purple-500/50 text-slate-700 dark:text-slate-300 transition text-left"
               >
-                <span className="text-purple-400 block font-bold text-[10px]">MANAGER</span>
+                <span className="text-purple-600 dark:text-purple-400 block font-bold text-[10px]">MANAGER</span>
                 <span>manager@devalign.ai</span>
               </button>
               <button
@@ -249,9 +249,9 @@ export default function LoginPage() {
                   setPassword('admin123');
                   setIsRegisterMode(false);
                 }}
-                className="p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-blue-500/50 text-slate-300 transition text-left"
+                className="p-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:border-blue-500/50 text-slate-700 dark:text-slate-300 transition text-left"
               >
-                <span className="text-blue-400 block font-bold text-[10px]">ADMIN</span>
+                <span className="text-blue-600 dark:text-blue-400 block font-bold text-[10px]">ADMIN</span>
                 <span>admin@devalign.ai</span>
               </button>
             </div>
@@ -265,7 +265,7 @@ export default function LoginPage() {
                 setError(null);
                 setMessage(null);
               }}
-              className="text-xs text-slate-400 hover:text-purple-400 transition"
+              className="text-xs text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 transition"
             >
               {isRegisterMode
                 ? 'Already have an account? Sign in here'

@@ -23,32 +23,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
   };
 
   const navContent = (
-    <div className="flex flex-col h-full bg-slate-950 border-r border-slate-800 text-slate-300 w-64 p-4 space-y-6">
+    <div className="flex flex-col h-full bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 w-64 p-4 space-y-6 transition-colors duration-200">
       {/* Brand Header */}
       <div className="flex items-center gap-3 px-2 py-1">
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-extrabold text-lg shadow-lg shadow-purple-600/30">
           D
         </div>
         <div>
-          <span className="font-extrabold text-white text-base tracking-tight block">DevAlign AI</span>
-          <span className="text-[10px] text-slate-400 block font-mono">Workload & XAI Platform</span>
+          <span className="font-extrabold text-slate-900 dark:text-white text-base tracking-tight block">DevAlign AI</span>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-mono">Workload & XAI Platform</span>
         </div>
       </div>
 
       {/* User Role Badge */}
-      <div className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+      <div className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
         <div className="truncate">
-          <span className="text-xs font-bold text-white block truncate">{user?.name || 'Guest'}</span>
-          <span className="text-[10px] text-slate-400 font-mono block">{user?.email || 'Not authenticated'}</span>
+          <span className="text-xs font-bold text-slate-900 dark:text-white block truncate">{user?.name || 'Guest'}</span>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono block">{user?.email || 'Not authenticated'}</span>
         </div>
-        <span className="text-[9px] font-extrabold font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+        <span className="text-[9px] font-extrabold font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/30">
           {user?.role || 'GUEST'}
         </span>
       </div>
 
       {/* Main Navigation Section */}
       <div className="space-y-1">
-        <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+        <p className="px-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
           {user?.role === 'DEVELOPER' ? 'Developer Workspace' : 'Production Application'}
         </p>
         {mainNav.map((item) => {
@@ -60,8 +60,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
               onClick={onCloseMobile}
               className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition ${
                 active
-                  ? 'bg-purple-600/15 text-purple-400 border border-purple-500/30 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                  ? 'bg-purple-600/15 text-purple-700 dark:text-purple-400 border border-purple-500/30 shadow-sm font-bold'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900'
               }`}
             >
               <span className="text-base">{item.icon}</span>
@@ -73,12 +73,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
 
       {/* Research Navigation Section (Admins Only) */}
       {researchNav.length > 0 && (
-        <div className="space-y-1 border-t border-slate-800/80 pt-4">
+        <div className="space-y-1 border-t border-slate-200 dark:border-slate-800/80 pt-4">
           <div className="flex items-center justify-between px-3 mb-2">
-            <p className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">
+            <p className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
               Research & ML Lab
             </p>
-            <span className="text-[9px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded font-mono font-bold">
+            <span className="text-[9px] bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded font-mono font-bold">
               RESEARCH
             </span>
           </div>
@@ -91,8 +91,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
                 onClick={onCloseMobile}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition ${
                   active
-                    ? 'bg-purple-600/15 text-purple-400 border border-purple-500/30 shadow-sm'
-                    : 'text-slate-400 hover:text-purple-300 hover:bg-slate-900'
+                    ? 'bg-purple-600/15 text-purple-700 dark:text-purple-400 border border-purple-500/30 shadow-sm font-bold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-purple-700 dark:hover:text-purple-300 hover:bg-slate-100 dark:hover:bg-slate-900'
                 }`}
               >
                 <span className="text-base">{item.icon}</span>

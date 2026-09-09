@@ -109,14 +109,14 @@ export default function TeamsPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">Teams Management</h1>
-            <p className="text-slate-400 text-xs mt-1">Organize engineering team members and project assignments.</p>
+            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Teams Management</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Organize engineering team members and project assignments.</p>
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-lg shadow-blue-600/20"
+            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-md shadow-blue-600/20"
           >
             + Create Team
           </button>
@@ -136,15 +136,15 @@ export default function TeamsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {teams.map((t) => (
-              <div key={t.id} className="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-3 hover:border-slate-700 transition">
+              <div key={t.id} className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 hover:border-slate-300 dark:hover:border-slate-700 transition shadow-sm">
                 <div className="flex justify-between items-start">
-                  <h3 className="font-extrabold text-white text-base">{t.name}</h3>
-                  <span className="text-[11px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono font-semibold">
+                  <h3 className="font-extrabold text-slate-900 dark:text-white text-base">{t.name}</h3>
+                  <span className="text-[11px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded font-mono font-semibold border border-slate-200 dark:border-slate-700">
                     {t.members_count ?? (t.members?.length || 0)} Members
                   </span>
                 </div>
-                <p className="text-slate-400 text-xs">{t.description || 'No team description.'}</p>
-                <div className="pt-2 border-t border-slate-800 text-xs text-slate-500 font-mono">
+                <p className="text-slate-600 dark:text-slate-400 text-xs">{t.description || 'No team description.'}</p>
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 font-mono">
                   Project ID: {t.project_id.slice(0, 8)}...
                 </div>
               </div>
@@ -154,20 +154,20 @@ export default function TeamsPage() {
 
         {/* Create Team Modal */}
         {showModal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4">
-              <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 className="font-bold text-white text-base">Create New Team</h3>
-                <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white font-bold">✕</button>
+          <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+              <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+                <h3 className="font-bold text-slate-900 dark:text-white text-base">Create New Team</h3>
+                <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white font-bold">✕</button>
               </div>
 
               <form onSubmit={handleCreateTeam} className="space-y-4 text-xs">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Project Scope:</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Project Scope:</label>
                   <select
                     value={projectId}
                     onChange={(e) => setProjectId(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded-lg p-2.5"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 rounded-lg p-2.5 focus:outline-none focus:border-blue-500"
                   >
                     {projects.map((p) => (
                       <option key={p.id} value={p.id}>{p.name}</option>
@@ -176,30 +176,30 @@ export default function TeamsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Team Name:</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Team Name:</label>
                   <input
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Backend Platform Squad"
-                    className="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded-lg p-2.5"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 rounded-lg p-2.5 focus:outline-none focus:border-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Description:</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Description:</label>
                   <textarea
                     rows={3}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Team responsibilities..."
-                    className="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded-lg p-2.5"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 rounded-lg p-2.5 focus:outline-none focus:border-blue-500"
                   />
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">
-                  <button type="button" onClick={() => setShowModal(false)} className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg">Cancel</button>
+                  <button type="button" onClick={() => setShowModal(false)} className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg font-medium">Cancel</button>
                   <button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2 rounded-lg">
                     {isSubmitting ? 'Creating...' : 'Create Team'}
                   </button>

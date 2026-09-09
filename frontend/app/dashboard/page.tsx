@@ -114,16 +114,16 @@ export default function DashboardPage() {
     <AppShell>
       <div className="space-y-6 max-w-7xl mx-auto pb-12">
         {/* Role-Specific Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <StatusBadge status={user?.role || 'GUEST'} type="environment" />
-              <span className="text-xs text-slate-400 font-mono">Signed in as {user?.name}</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">Signed in as {user?.name}</span>
             </div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">
+            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               {isAdmin ? 'Admin Operations Command Center' : isDev ? 'Developer Workspace' : 'Manager Command Center'}
             </h1>
-            <p className="text-slate-400 text-xs mt-1">
+            <p className="text-slate-600 dark:text-slate-400 text-xs mt-1">
               {isAdmin
                 ? 'System oversight, project health scores, team analytics, and recommendation governance.'
                 : isDev
@@ -134,7 +134,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <Link
               href="/analytics"
-              className="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-semibold px-3.5 py-2 rounded-xl transition border border-indigo-500/30 flex items-center gap-1.5"
+              className="bg-indigo-50 dark:bg-indigo-600/20 hover:bg-indigo-100 dark:hover:bg-indigo-600/30 text-indigo-700 dark:text-indigo-300 text-xs font-semibold px-3.5 py-2 rounded-xl transition border border-indigo-200 dark:border-indigo-500/30 flex items-center gap-1.5"
             >
               <span>🧠</span> View Analytics Hub
             </Link>
@@ -142,7 +142,7 @@ export default function DashboardPage() {
               <>
                 <Link
                   href="/projects"
-                  className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl transition border border-slate-700"
+                  className="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl transition border border-slate-300 dark:border-slate-700 shadow-sm"
                 >
                   + New Project
                 </Link>
@@ -164,12 +164,12 @@ export default function DashboardPage() {
         ) : isDev ? (
           /* DEVELOPER ROLE DASHBOARD */
           <div className="space-y-6">
-            <div className="p-6 rounded-2xl bg-gradient-to-r from-purple-950/40 via-slate-900 to-indigo-950/30 border border-purple-500/20 shadow-xl space-y-3">
+            <div className="p-6 rounded-2xl bg-gradient-to-r from-purple-100 via-white to-indigo-100 dark:from-purple-950/40 dark:via-slate-900 dark:to-indigo-950/30 border border-purple-200 dark:border-purple-500/20 shadow-md dark:shadow-xl space-y-3">
               <div className="flex items-center gap-3">
                 <span className="text-3xl">👋</span>
                 <div>
-                  <h2 className="text-xl font-extrabold text-white">Welcome back, {user?.name}!</h2>
-                  <p className="text-xs text-slate-300">You have {myTasks.length} active tasks assigned in your personal engineering workspace.</p>
+                  <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">Welcome back, {user?.name}!</h2>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">You have {myTasks.length} active tasks assigned in your personal engineering workspace.</p>
                 </div>
               </div>
             </div>
@@ -185,32 +185,32 @@ export default function DashboardPage() {
             {/* Performance & Skills 2-Column Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* My Performance */}
-              <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
-                <h3 className="font-bold text-white text-sm flex items-center gap-2 border-b border-slate-800 pb-3">
+              <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm dark:shadow-xl">
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
                   <span>🏆</span> My Performance Intelligence
                 </h3>
                 <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
                     <span className="text-slate-500 block text-[10px] uppercase font-bold">Performance Score</span>
-                    <span className="text-purple-400 font-extrabold text-xl font-mono">
+                    <span className="text-purple-600 dark:text-purple-400 font-extrabold text-xl font-mono">
                       {((data as any)?.my_performance?.performance_score ?? 85.0).toFixed(1)} / 100
                     </span>
                   </div>
-                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
                     <span className="text-slate-500 block text-[10px] uppercase font-bold">Completion Rate</span>
-                    <span className="text-emerald-400 font-extrabold text-xl font-mono">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-extrabold text-xl font-mono">
                       {((data as any)?.my_performance?.completion_rate ?? 100.0).toFixed(0)}%
                     </span>
                   </div>
-                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
                     <span className="text-slate-500 block text-[10px] uppercase font-bold">On-Time Rate</span>
-                    <span className="text-blue-400 font-extrabold text-xl font-mono">
+                    <span className="text-blue-600 dark:text-blue-400 font-extrabold text-xl font-mono">
                       {((data as any)?.my_performance?.on_time_rate ?? 100.0).toFixed(0)}%
                     </span>
                   </div>
-                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
                     <span className="text-slate-500 block text-[10px] uppercase font-bold">Weighted Productivity</span>
-                    <span className="text-cyan-400 font-extrabold text-xl font-mono">
+                    <span className="text-cyan-600 dark:text-cyan-400 font-extrabold text-xl font-mono">
                       {((data as any)?.my_performance?.weighted_productivity ?? 50.0).toFixed(1)} pts
                     </span>
                   </div>
@@ -218,16 +218,16 @@ export default function DashboardPage() {
               </div>
 
               {/* My Skills & Achievements */}
-              <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
-                <h3 className="font-bold text-white text-sm flex items-center gap-2 border-b border-slate-800 pb-3">
+              <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm dark:shadow-xl">
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
                   <span>💪</span> My Skills & Achievements
                 </h3>
                 <div className="space-y-3 text-xs">
                   <div>
-                    <span className="text-slate-400 font-semibold text-[11px] uppercase block mb-1.5">My Verified Skills</span>
+                    <span className="text-slate-500 dark:text-slate-400 font-semibold text-[11px] uppercase block mb-1.5">My Verified Skills</span>
                     <div className="flex flex-wrap gap-2">
                       {(data?.my_skills || []).map((sk, idx) => (
-                        <span key={idx} className="px-3 py-1 rounded-xl bg-purple-500/10 text-purple-300 border border-purple-500/20 font-mono font-bold text-xs">
+                        <span key={idx} className="px-3 py-1 rounded-xl bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20 font-mono font-bold text-xs">
                           {sk.skill_name}: Lvl {sk.proficiency_level}
                         </span>
                       ))}
@@ -235,11 +235,11 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="pt-2">
-                    <span className="text-slate-400 font-semibold text-[11px] uppercase block mb-1.5">Unlocked Achievements</span>
+                    <span className="text-slate-500 dark:text-slate-400 font-semibold text-[11px] uppercase block mb-1.5">Unlocked Achievements</span>
                     <div className="flex flex-wrap gap-2">
                       {((data as any)?.my_achievements || []).length > 0 ? (
                         ((data as any)?.my_achievements).map((ach: any, idx: number) => (
-                          <span key={idx} className="px-3 py-1 rounded-xl bg-amber-500/10 text-amber-300 border border-amber-500/20 font-bold text-xs flex items-center gap-1">
+                          <span key={idx} className="px-3 py-1 rounded-xl bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/20 font-bold text-xs flex items-center gap-1">
                             <span>🎖️</span> {ach.title}
                           </span>
                         ))
@@ -253,22 +253,22 @@ export default function DashboardPage() {
             </div>
 
             {/* Developer Assigned Tasks Table */}
-            <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 className="font-bold text-white text-sm flex items-center gap-2">
+            <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm dark:shadow-xl">
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
                   <span>📌</span> My Assigned Tasks
                 </h3>
-                <span className="text-xs text-slate-400 font-mono">{myTasks.length} Active Tasks</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">{myTasks.length} Active Tasks</span>
               </div>
 
               {myTasks.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 text-xs bg-slate-950/40 rounded-xl border border-slate-800">
+                <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-xs bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-200 dark:border-slate-800">
                   You currently have no tasks assigned. Check back later or notify your project manager.
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-950 text-slate-400 uppercase font-semibold border-b border-slate-800">
+                    <thead className="bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 uppercase font-semibold border-b border-slate-200 dark:border-slate-800">
                       <tr>
                         <th className="p-3">Task Title</th>
                         <th className="p-3">Project</th>
@@ -279,15 +279,15 @@ export default function DashboardPage() {
                         <th className="p-3 text-right">Action</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
                       {myTasks.map((task) => (
-                        <tr key={task.id} className="hover:bg-slate-800/40 transition">
+                        <tr key={task.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                           <td className="p-3">
-                            <Link href={`/tasks/${task.id}`} className="font-bold text-white hover:text-purple-400 truncate max-w-xs block">
+                            <Link href={`/tasks/${task.id}`} className="font-bold text-slate-900 dark:text-white hover:text-purple-600 dark:hover:text-purple-400 truncate max-w-xs block">
                               {task.title}
                             </Link>
                           </td>
-                          <td className="p-3 text-slate-400">{task.project_name}</td>
+                          <td className="p-3 text-slate-500 dark:text-slate-400">{task.project_name}</td>
                           <td className="p-3"><StatusBadge status={task.priority} type="priority" /></td>
                           <td className="p-3"><StatusBadge status={task.complexity} type="complexity" /></td>
                           <td className="p-3 font-mono">{task.estimated_hours} hrs</td>
@@ -304,7 +304,7 @@ export default function DashboardPage() {
                             )}
                             <Link
                               href={`/tasks/${task.id}`}
-                              className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold px-3 py-1.5 rounded-lg transition inline-block"
+                              className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-semibold px-3 py-1.5 rounded-lg transition inline-block border border-slate-200 dark:border-slate-700"
                             >
                               View →
                             </Link>
@@ -329,28 +329,28 @@ export default function DashboardPage() {
             </div>
 
             {/* Quick Actions & Navigation Bar */}
-            <div className="glass-panel p-5 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-4">
+            <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 shadow-sm">
               <div className="flex items-center gap-3">
                 <span className="text-lg">⚡</span>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-100">Project Intelligence Quick Actions</h3>
-                  <p className="text-xs text-slate-400">Navigate directly to specific operational analytics views.</p>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Project Intelligence Quick Actions</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Navigate directly to specific operational analytics views.</p>
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Link href="/analytics" className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700">
+                <Link href="/analytics" className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700">
                   Project Health
                 </Link>
-                <Link href="/analytics/teams" className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700">
+                <Link href="/analytics/teams" className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700">
                   Team Capacity
                 </Link>
-                <Link href="/analytics/developers" className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700">
+                <Link href="/analytics/developers" className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700">
                   Dev Comparison
                 </Link>
-                <Link href="/analytics/tasks" className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700">
+                <Link href="/analytics/tasks" className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700">
                   Task Intelligence
                 </Link>
-                <Link href="/analytics/recommendations" className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-semibold rounded-lg border border-indigo-500/30">
+                <Link href="/analytics/recommendations" className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-600/20 hover:bg-indigo-100 dark:hover:bg-indigo-600/30 text-indigo-700 dark:text-indigo-300 text-xs font-semibold rounded-lg border border-indigo-200 dark:border-indigo-500/30">
                   Recommendation Funnel
                 </Link>
               </div>
@@ -359,30 +359,30 @@ export default function DashboardPage() {
             {/* Recent Recommendations & Assignments Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Recommendations Box */}
-              <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <h3 className="font-bold text-white text-sm flex items-center gap-2">
+              <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm dark:shadow-xl">
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                  <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
                     <span>⚡</span> Recent AI Recommendations
                   </h3>
-                  <Link href="/recommendations" className="text-xs text-purple-400 hover:underline">
+                  <Link href="/recommendations" className="text-xs text-purple-600 dark:text-purple-400 hover:underline font-semibold">
                     View Engine →
                   </Link>
                 </div>
                 {!data?.recent_recommendations || data.recent_recommendations.length === 0 ? (
-                  <div className="p-6 text-center text-xs text-slate-400 bg-slate-950/40 rounded-xl border border-slate-800">
+                  <div className="p-6 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-200 dark:border-slate-800">
                     No recent AI recommendations generated yet.
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {data.recent_recommendations.map((rec) => (
-                      <div key={rec.id} className="p-3 rounded-xl bg-slate-950/50 border border-slate-800/80 flex items-center justify-between text-xs">
+                      <div key={rec.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-xs">
                         <div>
-                          <div className="font-bold text-white">{rec.task_title}</div>
-                          <div className="text-slate-400 mt-0.5">Top Match: <span className="text-purple-300 font-semibold">{rec.developer_name}</span></div>
+                          <div className="font-bold text-slate-900 dark:text-white">{rec.task_title}</div>
+                          <div className="text-slate-500 dark:text-slate-400 mt-0.5">Top Match: <span className="text-purple-600 dark:text-purple-300 font-semibold">{rec.developer_name}</span></div>
                         </div>
                         <div className="text-right font-mono">
-                          <div className="font-bold text-emerald-400">{Math.round(rec.recommendation_score > 1 ? rec.recommendation_score : rec.recommendation_score * 100)} / 100</div>
-                          <div className="text-[10px] text-slate-500">{rec.model_version}</div>
+                          <div className="font-bold text-emerald-600 dark:text-emerald-400">{Math.round(rec.recommendation_score > 1 ? rec.recommendation_score : rec.recommendation_score * 100)} / 100</div>
+                          <div className="text-[10px] text-slate-400 dark:text-slate-500">{rec.model_version}</div>
                         </div>
                       </div>
                     ))}
@@ -391,26 +391,26 @@ export default function DashboardPage() {
               </div>
 
               {/* Assignments Box */}
-              <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <h3 className="font-bold text-white text-sm flex items-center gap-2">
+              <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm dark:shadow-xl">
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                  <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
                     <span>🎯</span> Active Assignments
                   </h3>
-                  <Link href="/assignments" className="text-xs text-purple-400 hover:underline">
+                  <Link href="/assignments" className="text-xs text-purple-600 dark:text-purple-400 hover:underline font-semibold">
                     Manage All →
                   </Link>
                 </div>
                 {!data?.recent_assignments || data.recent_assignments.length === 0 ? (
-                  <div className="p-6 text-center text-xs text-slate-400 bg-slate-950/40 rounded-xl border border-slate-800">
+                  <div className="p-6 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-200 dark:border-slate-800">
                     No active assignments recorded yet.
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {data.recent_assignments.map((asg) => (
-                      <div key={asg.id} className="p-3 rounded-xl bg-slate-950/50 border border-slate-800/80 flex items-center justify-between text-xs">
+                      <div key={asg.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-xs">
                         <div>
-                          <div className="font-bold text-white">{asg.task_title}</div>
-                          <div className="text-slate-400 mt-0.5">Assigned to: <span className="text-indigo-300 font-semibold">{asg.developer_name}</span></div>
+                          <div className="font-bold text-slate-900 dark:text-white">{asg.task_title}</div>
+                          <div className="text-slate-500 dark:text-slate-400 mt-0.5">Assigned to: <span className="text-indigo-600 dark:text-indigo-300 font-semibold">{asg.developer_name}</span></div>
                         </div>
                         <StatusBadge status={asg.status} type="status" />
                       </div>

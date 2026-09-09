@@ -133,14 +133,14 @@ export default function TasksPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">Tasks Management</h1>
-            <p className="text-slate-400 text-xs mt-1">Create, filter, and allocate tasks to optimal developers using baseline AI recommendations.</p>
+            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Tasks Management</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Create, filter, and allocate tasks to optimal developers using baseline AI recommendations.</p>
           </div>
           <button
             onClick={() => setShowTaskModal(true)}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-lg shadow-blue-600/20"
+            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-md shadow-blue-600/20"
           >
             + Create Task
           </button>
@@ -153,12 +153,12 @@ export default function TasksPage() {
             placeholder="Search tasks by title or description..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-lg px-3.5 py-2.5 flex-1 focus:outline-none focus:border-blue-500"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 text-xs rounded-lg px-3.5 py-2.5 flex-1 focus:outline-none focus:border-blue-500"
           />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-lg px-3 py-2.5"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500"
           >
             <option value="ALL">All Statuses</option>
             <option value="TODO">TODO / Unassigned</option>
@@ -168,7 +168,7 @@ export default function TasksPage() {
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
-            className="bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-lg px-3 py-2.5"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500"
           >
             <option value="ALL">All Priorities</option>
             <option value="LOW">LOW</option>
@@ -190,9 +190,9 @@ export default function TasksPage() {
             onAction={() => setShowTaskModal(true)}
           />
         ) : (
-          <div className="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden">
+          <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-950 text-slate-400 uppercase font-semibold border-b border-slate-800">
+              <thead className="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 uppercase font-semibold border-b border-slate-200 dark:border-slate-800">
                 <tr>
                   <th className="p-3.5">Task Title</th>
                   <th className="p-3.5">Priority</th>
@@ -203,25 +203,25 @@ export default function TasksPage() {
                   <th className="p-3.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-slate-300">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
                 {filteredTasks.map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-800/40 transition">
-                    <td className="p-3.5 font-bold text-white max-w-xs truncate">{t.title}</td>
+                  <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                    <td className="p-3.5 font-bold text-slate-900 dark:text-white max-w-xs truncate">{t.title}</td>
                     <td className="p-3.5"><StatusBadge status={t.priority} type="priority" /></td>
                     <td className="p-3.5"><StatusBadge status={t.complexity} type="complexity" /></td>
-                    <td className="p-3.5 font-mono text-slate-300">{t.estimated_hours} hrs</td>
+                    <td className="p-3.5 font-mono text-slate-600 dark:text-slate-300">{t.estimated_hours} hrs</td>
                     <td className="p-3.5"><StatusBadge status={t.status} type="task_status" /></td>
-                    <td className="p-3.5 text-slate-300 font-medium">{t.assigned_developer_name || 'Unassigned'}</td>
+                    <td className="p-3.5 text-slate-700 dark:text-slate-300 font-medium">{t.assigned_developer_name || 'Unassigned'}</td>
                     <td className="p-3.5 text-right">
                       {t.status === 'TODO' || !t.assigned_developer_name ? (
                         <Link
                           href={`/recommendations?task_id=${t.id}`}
-                          className="bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 font-semibold px-3 py-1.5 rounded border border-blue-500/30 text-[11px] inline-block"
+                          className="bg-blue-50 dark:bg-blue-600/20 hover:bg-blue-100 dark:hover:bg-blue-600/30 text-blue-600 dark:text-blue-400 font-semibold px-3 py-1.5 rounded border border-blue-200 dark:border-blue-500/30 text-[11px] inline-block transition"
                         >
                           Find Best Developer →
                         </Link>
                       ) : (
-                        <span className="text-slate-500 font-mono text-[11px]">Allocated</span>
+                        <span className="text-slate-400 dark:text-slate-500 font-mono text-[11px]">Allocated</span>
                       )}
                     </td>
                   </tr>
@@ -233,20 +233,20 @@ export default function TasksPage() {
 
         {/* Create Task Modal */}
         {showTaskModal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4">
-              <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 className="font-bold text-white text-base">Create New Task</h3>
-                <button onClick={() => setShowTaskModal(false)} className="text-slate-400 hover:text-white font-bold">✕</button>
+          <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+              <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+                <h3 className="font-bold text-slate-900 dark:text-white text-base">Create New Task</h3>
+                <button onClick={() => setShowTaskModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white font-bold">✕</button>
               </div>
 
               <form onSubmit={handleCreateTask} className="space-y-4 text-xs">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Target Project:</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Target Project:</label>
                   <select
                     value={projectId}
                     onChange={(e) => setProjectId(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded-lg p-2.5"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 rounded-lg p-2.5 focus:outline-none focus:border-blue-500"
                   >
                     {projects.map((p) => (
                       <option key={p.id} value={p.id}>{p.name}</option>
@@ -255,45 +255,45 @@ export default function TasksPage() {
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Task Title:</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Task Title:</label>
                   <input
                     type="text"
                     required
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="e.g. Implement OAuth2 Refresh Strategy"
-                    className="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded-lg p-2.5"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 rounded-lg p-2.5 focus:outline-none focus:border-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Description:</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Description:</label>
                   <textarea
                     rows={3}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Technical task specs and requirements..."
-                    className="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded-lg p-2.5"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 rounded-lg p-2.5 focus:outline-none focus:border-blue-500"
                   />
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-slate-300 font-semibold mb-1">Est. Hours:</label>
+                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Est. Hours:</label>
                     <input
                       type="number"
                       step="0.5"
                       value={hours}
                       onChange={(e) => setHours(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded-lg p-2 font-mono"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 rounded-lg p-2 font-mono focus:outline-none focus:border-blue-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-300 font-semibold mb-1">Complexity:</label>
+                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Complexity:</label>
                     <select
                       value={complexity}
                       onChange={(e) => setComplexity(e.target.value as any)}
-                      className="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded-lg p-2"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 rounded-lg p-2 focus:outline-none focus:border-blue-500"
                     >
                       <option value="LOW">LOW</option>
                       <option value="MEDIUM">MEDIUM</option>
@@ -301,11 +301,11 @@ export default function TasksPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-slate-300 font-semibold mb-1">Priority:</label>
+                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Priority:</label>
                     <select
                       value={priority}
                       onChange={(e) => setPriority(e.target.value as any)}
-                      className="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded-lg p-2"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 rounded-lg p-2 focus:outline-none focus:border-blue-500"
                     >
                       <option value="LOW">LOW</option>
                       <option value="MEDIUM">MEDIUM</option>
@@ -316,7 +316,7 @@ export default function TasksPage() {
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">
-                  <button type="button" onClick={() => setShowTaskModal(false)} className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg">Cancel</button>
+                  <button type="button" onClick={() => setShowTaskModal(false)} className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg font-medium">Cancel</button>
                   <button type="submit" disabled={creatingTask} className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2 rounded-lg">
                     {creatingTask ? 'Creating...' : 'Create Task'}
                   </button>

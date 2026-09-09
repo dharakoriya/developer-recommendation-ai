@@ -21,23 +21,23 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const isAllowed = loading || !user ? true : hasPermission(user.role, pathname);
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-100 overflow-hidden font-sans">
+    <div className="flex h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden font-sans transition-colors duration-200">
       <Sidebar mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Header onToggleMobileNav={() => setMobileOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-950">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
           {!isAllowed ? (
             <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-6 space-y-6">
               <div className="w-20 h-20 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-4xl shadow-xl">
                 🚫
               </div>
               <div className="space-y-2 max-w-md">
-                <span className="text-xs font-mono font-bold text-rose-400 bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/20">
+                <span className="text-xs font-mono font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/20">
                   HTTP 403 FORBIDDEN
                 </span>
-                <h2 className="text-2xl font-extrabold text-white tracking-tight">Access Denied</h2>
-                <p className="text-slate-400 text-xs leading-relaxed">
-                  Your account role (<strong className="text-purple-400 font-mono">{user?.role}</strong>) does not have authorization to access <code className="text-slate-200 bg-slate-900 px-2 py-0.5 rounded font-mono">{pathname}</code>.
+                <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Access Denied</h2>
+                <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed">
+                  Your account role (<strong className="text-purple-600 dark:text-purple-400 font-mono">{user?.role}</strong>) does not have authorization to access <code className="text-slate-800 dark:text-slate-200 bg-slate-200 dark:bg-slate-900 px-2 py-0.5 rounded font-mono">{pathname}</code>.
                 </p>
               </div>
               <Link
