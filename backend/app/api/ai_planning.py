@@ -18,9 +18,10 @@ from app.schemas.ai_planning import (
     TeamCapabilityAnalysisResponse,
     PlanApplyRequest,
     PlanApplyResponse,
+    AIProviderInfo,
 )
 from app.api.deps import get_current_user, require_roles
-from app.services.ai_planning_provider import get_ai_planning_provider, AIPlanningError
+from app.services.ai_planning_provider import get_ai_planning_provider, get_available_providers, AIPlanningError
 from app.services.ai_planning_capability_service import analyze_team_capability_for_plan
 from app.services.ai_planning_apply_service import apply_ai_project_plan_atomically
 from app.services.ai_planning_dependency_service import validate_task_dependencies
@@ -478,3 +479,13 @@ def apply_ai_project_plan(
         return res
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+@router.get("/providers", response_model=List[AIProviderInfo], summary="Get available AI planning providers")
+def list_available_providers(
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+):
+    """
+    Returns a list of available AI planning providers (Heuristic, OpenAI, Ollama) and their active status.
+    Requires ADMIN or MANAGER role.
+    """
+    return get_available_providers()

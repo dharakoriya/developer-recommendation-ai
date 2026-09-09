@@ -19,6 +19,14 @@ export interface AIPlanDraft {
   creator_name?: string;
 }
 
+export interface AIProviderInfo {
+  id: string;
+  name: string;
+  type: string;
+  is_active: boolean;
+  description: string;
+}
+
 export default function AIPlanningWizardPage() {
   const router = useRouter();
   const { showToast } = useToast();
@@ -28,6 +36,7 @@ export default function AIPlanningWizardPage() {
   const [loadingStep, setLoadingStep] = useState('');
   const [existingPlans, setExistingPlans] = useState<AIPlanDraft[]>([]);
   const [plansLoading, setPlansLoading] = useState(true);
+  const [providers, setProviders] = useState<AIProviderInfo[]>([]);
 
   // Form state
   const [projectName, setProjectName] = useState('');
@@ -46,7 +55,17 @@ export default function AIPlanningWizardPage() {
 
   useEffect(() => {
     fetchExistingPlans();
+    fetchProviders();
   }, []);
+
+  const fetchProviders = async () => {
+    try {
+      const data = await apiClient.get<AIProviderInfo[]>('/ai-planning/providers');
+      setProviders(data || []);
+    } catch (err: any) {
+      console.error('Failed to fetch AI providers:', err);
+    }
+  };
 
   const fetchExistingPlans = async () => {
     setPlansLoading(true);
@@ -386,9 +405,16 @@ export default function AIPlanningWizardPage() {
           <div className="lg:col-span-5 space-y-6">
             {/* Live AI Planning Preview Card */}
             <div className="p-5 bg-gradient-to-br from-gray-900/90 to-purple-950/20 border border-gray-800 rounded-xl space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="text-purple-400">🤖</span>
-                <h2 className="text-sm font-semibold text-white">AI Planning Preview</h2>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-purple-400">🤖</span>
+                  <h2 className="text-sm font-semibold text-white">AI Planning Preview</h2>
+                </div>
+                {providers.length > 0 && (
+                  <span className="px-2 py-0.5 text-[10px] font-semibold bg-gray-800 text-gray-300 rounded border border-gray-700">
+                    {providers.find(p => p.is_active)?.name || 'No Active Provider'}
+                  </span>
+                )}
               </div>
               <p className="text-xs text-gray-400 leading-relaxed">
                 When generated, DevAlign AI will analyze your specifications and produce:

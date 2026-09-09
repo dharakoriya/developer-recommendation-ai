@@ -140,3 +140,12 @@ class PlanApplyResponse(BaseModel):
     created_tasks_count: int
     created_task_ids: List[uuid.UUID]
     applied_at: datetime
+
+
+class AIProviderInfo(BaseModel):
+    id: str
+    name: str
+    type: str  # "Generative AI" or "Rule-Based Heuristic"
+    is_active: bool
+    description: str
+

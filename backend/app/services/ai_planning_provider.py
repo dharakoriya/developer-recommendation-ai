@@ -21,7 +21,7 @@ class AIPlanningProvider(ABC):
         pass
 
 
-class MockPlanningProvider(AIPlanningProvider):
+class HeuristicPlanningProvider(AIPlanningProvider):
     """
     Deterministic, heuristic-based AI planning generator.
     Produces high-quality, realistic structured project plans based on project description and options.
@@ -182,7 +182,7 @@ class MockPlanningProvider(AIPlanningProvider):
         return {
             "summary": summary,
             "tasks": final_tasks,
-            "ai_provider": "mock",
+            "ai_provider": "heuristic",
             "ai_model": "heuristic-v1",
             "prompt_version": "v1.0",
         }
@@ -220,7 +220,7 @@ class MockPlanningProvider(AIPlanningProvider):
 class OpenAIPlanningProvider(AIPlanningProvider):
     """
     OpenAI-based AI planning generator using structured JSON schema output.
-    Falls back to MockPlanningProvider if API key is invalid or request fails.
+    Falls back to HeuristicPlanningProvider if API key is invalid or request fails.
     """
 
     def __init__(self, api_key: str | None = None, model_name: str = "gpt-4o"):
@@ -229,8 +229,8 @@ class OpenAIPlanningProvider(AIPlanningProvider):
 
     def generate_project_plan(self, input_data: AIPlanningInput) -> Dict[str, Any]:
         if not self.api_key:
-            logger.warning("No OpenAI API key configured. Falling back to MockPlanningProvider.")
-            return MockPlanningProvider().generate_project_plan(input_data)
+            logger.warning("No OpenAI API key configured. Falling back to HeuristicPlanningProvider.")
+            return HeuristicPlanningProvider().generate_project_plan(input_data)
 
         try:
             import urllib.request
@@ -302,15 +302,149 @@ class OpenAIPlanningProvider(AIPlanningProvider):
                 return parsed
 
         except Exception as e:
-            logger.error(f"OpenAI API planning call failed: {str(e)}. Falling back to MockPlanningProvider.")
-            mock_res = MockPlanningProvider().generate_project_plan(input_data)
-            mock_res["ai_provider"] = "openai-fallback-mock"
+            logger.error(f"OpenAI API planning call failed: {str(e)}. Falling back to HeuristicPlanningProvider.")
+            mock_res = HeuristicPlanningProvider().generate_project_plan(input_data)
+            mock_res["ai_provider"] = "openai-fallback-heuristic"
             return mock_res
 
 
+
+class OllamaPlanningProvider(AIPlanningProvider):
+    """
+    Ollama-based AI planning generator using local models.
+    Falls back to HeuristicPlanningProvider if connection fails.
+    """
+
+    def __init__(self, host: str | None = None, model_name: str = "llama3"):
+        self.host = host or os.getenv("OLLAMA_HOST", "http://localhost:11434")
+        self.model_name = model_name or os.getenv("AI_MODEL", "llama3")
+
+    def generate_project_plan(self, input_data: AIPlanningInput) -> Dict[str, Any]:
+        try:
+            import urllib.request
+            import json
+            headers = {
+                "Content-Type": "application/json",
+            }
+            prompt_content = f"""
+            Analyze the following software project and decompose it into a structured engineering delivery plan.
+            Project Name: {input_data.project_name}
+            Project Type: {input_data.project_type.value}
+            Granularity: {input_data.granularity.value}
+            Description: {input_data.project_description}
+            Business Objective: {input_data.business_objective or 'N/A'}
+            Functional Requirements: {input_data.functional_requirements or 'N/A'}
+            Technical Requirements: {input_data.technical_requirements or 'N/A'}
+            Tech Stack: {input_data.technology_stack or 'N/A'}
+
+            Respond ONLY with a valid JSON object matching this schema:
+            {{
+              "summary": {{
+                "project_name": "...",
+                "business_objective": "...",
+                "primary_users": "...",
+                "core_value_proposition": "...",
+                "identified_modules": ["Module 1", "Module 2"]
+              }},
+              "tasks": [
+                {{
+                  "title": "Task Title",
+                  "description": "Detailed explanation",
+                  "module": "Module Name",
+                  "priority": "HIGH",
+                  "complexity": "MEDIUM",
+                  "estimated_hours": 16.0,
+                  "required_skills": [{{"skill_name": "Python", "required_level": 80}}],
+                  "dependencies": ["Preceding Task Title"],
+                  "acceptance_criteria": ["Criteria 1"]
+                }}
+              ]
+            }}
+            """
+
+            payload = {
+                "model": self.model_name,
+                "prompt": prompt_content,
+                "format": "json",
+                "stream": False,
+                "options": {
+                    "temperature": 0.2
+                }
+            }
+
+            req = urllib.request.Request(
+                f"{self.host}/api/generate",
+                data=json.dumps(payload).encode("utf-8"),
+                headers=headers,
+                method="POST",
+            )
+
+            with urllib.request.urlopen(req, timeout=60) as response:
+                res_body = json.loads(response.read().decode("utf-8"))
+                content_str = res_body["response"]
+                parsed = json.loads(content_str)
+                parsed["ai_provider"] = "ollama"
+                parsed["ai_model"] = self.model_name
+                parsed["prompt_version"] = "v1.0-ollama"
+                return parsed
+
+        except Exception as e:
+            logger.error(f"Ollama API planning call failed: {str(e)}. Falling back to HeuristicPlanningProvider.")
+            mock_res = HeuristicPlanningProvider().generate_project_plan(input_data)
+            mock_res["ai_provider"] = "ollama-fallback-heuristic"
+            return mock_res
+
 def get_ai_planning_provider() -> AIPlanningProvider:
     """Factory returning configured AI planning provider."""
-    provider_type = os.getenv("AI_PROVIDER", "mock").lower()
+    provider_type = os.getenv("AI_PROVIDER", "heuristic").lower()
     if provider_type == "openai":
         return OpenAIPlanningProvider()
-    return MockPlanningProvider()
+    if provider_type == "ollama":
+        return OllamaPlanningProvider()
+    return HeuristicPlanningProvider()
+
+def get_available_providers() -> List[Dict[str, Any]]:
+    import urllib.request
+    import urllib.error
+    
+    providers = []
+    
+    # Heuristic
+    providers.append({
+        "id": "heuristic",
+        "name": "Heuristic Rule-Based Engine",
+        "type": "Rule-Based Heuristic",
+        "is_active": True,
+        "description": "Deterministic, rule-based planner. Fast, offline, and reliable."
+    })
+    
+    # OpenAI
+    api_key = os.getenv("AI_API_KEY") or os.getenv("OPENAI_API_KEY")
+    providers.append({
+        "id": "openai",
+        "name": "OpenAI Models",
+        "type": "Generative AI",
+        "is_active": bool(api_key),
+        "description": "Cloud-based LLM planning. Requires API Key."
+    })
+    
+    # Ollama
+    host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+    is_ollama_active = False
+    try:
+        req = urllib.request.Request(f"{host}/api/tags", method="GET")
+        with urllib.request.urlopen(req, timeout=2) as response:
+            if response.status == 200:
+                is_ollama_active = True
+    except Exception:
+        pass
+        
+    providers.append({
+        "id": "ollama",
+        "name": "Ollama Local LLM",
+        "type": "Generative AI",
+        "is_active": is_ollama_active,
+        "description": f"Local LLM via Ollama ({host}). Free and private."
+    })
+    
+    return providers
