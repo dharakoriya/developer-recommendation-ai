@@ -110,16 +110,19 @@ def get_task_options():
 @router.get("/tasks", response_model=List[TaskResponse], summary="List all tasks")
 def list_all_tasks(
     status_filter: Optional[TaskStatus] = Query(None, alias="status"),
+    project_id: Optional[uuid.UUID] = Query(None, alias="project_id"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """
-    Lists all tasks across projects.
+    Lists all tasks across projects, optionally filtered by status or project_id.
     Accessible to all authenticated users.
     """
     query = select(Task).options(*get_task_options())
     if status_filter:
         query = query.where(Task.status == status_filter)
+    if project_id:
+        query = query.where(Task.project_id == project_id)
 
     query = query.order_by(Task.created_at.desc())
     tasks = db.execute(query).unique().scalars().all()
