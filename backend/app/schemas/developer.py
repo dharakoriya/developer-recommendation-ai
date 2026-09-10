@@ -28,6 +28,12 @@ class DeveloperResponse(BaseModel):
     experience_years: Decimal
     availability_status: AvailabilityStatus
     performance_score: Optional[Decimal] = None
+    workload_score: Optional[Decimal] = None
+    workload_status: Optional[str] = None
+    completion_rate: Optional[float] = None
+    productivity_score: Optional[float] = None
+    active_task_count: Optional[int] = None
+    delivery_risk_level: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     skills: List[DeveloperSkillResponse] = []

@@ -7,6 +7,7 @@ import { AppShell } from '../../../components/AppShell';
 import { StatusBadge } from '../../../components/StatusBadge';
 import { LoadingState } from '../../../components/LoadingState';
 import { ErrorState } from '../../../components/ErrorState';
+import { RiskCard, RiskData } from '../../../components/RiskCard';
 
 export interface ProjectDetail {
   id: string;
@@ -36,6 +37,7 @@ export default function ProjectDetailsPage() {
 
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
+  const [projectRisk, setProjectRisk] = useState<RiskData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,6 +69,15 @@ export default function ProjectDetailsPage() {
       const tRes = await fetch(`http://localhost:8000/api/tasks/project/${projectId}`, { headers });
       if (tRes.ok) {
         setTasks(await tRes.json());
+      }
+
+      try {
+        const rRes = await fetch(`http://localhost:8000/api/risk/projects/${projectId}`, { headers });
+        if (rRes.ok) {
+          setProjectRisk(await rRes.json());
+        }
+      } catch {
+        // Non-blocking fallback
       }
     } catch (err: any) {
       setError(err.message);
@@ -147,6 +158,11 @@ export default function ProjectDetailsPage() {
                 + Create Task
               </button>
             </div>
+
+            {/* Risk Card */}
+            {projectRisk && (
+              <RiskCard data={projectRisk} title={`Risk & Delivery Intelligence — ${project.name}`} />
+            )}
 
             {/* Task Status Columns */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

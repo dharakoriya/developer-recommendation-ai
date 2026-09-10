@@ -17,9 +17,35 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
 
   const { main: mainNav, research: researchNav } = getFilteredNavigation(user?.role);
 
+  const allItems = [...mainNav, ...researchNav];
+
+  const getActiveHref = (): string | null => {
+    let bestMatch: string | null = null;
+    let maxLength = -1;
+
+    for (const item of allItems) {
+      if (item.href === '/dashboard' && pathname === '/') {
+        return item.href;
+      }
+      if (pathname === item.href) {
+        if (item.href.length > maxLength) {
+          maxLength = item.href.length;
+          bestMatch = item.href;
+        }
+      } else if (pathname.startsWith(item.href + '/')) {
+        if (item.href.length > maxLength) {
+          maxLength = item.href.length;
+          bestMatch = item.href;
+        }
+      }
+    }
+    return bestMatch;
+  };
+
+  const activeHref = getActiveHref();
+
   const isActive = (href: string) => {
-    if (href === '/dashboard' && pathname === '/') return true;
-    return pathname === href || pathname.startsWith(href + '/');
+    return activeHref === href;
   };
 
   const navContent = (

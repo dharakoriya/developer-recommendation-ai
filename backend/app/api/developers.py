@@ -15,13 +15,14 @@ from app.api.deps import get_current_user, require_roles
 from app.services.performance_service import calculate_developer_performance_metrics
 from app.services.workload_service import calculate_developer_workload_details
 from app.services.recommendation_service import invalidate_all_recommendations
+from app.services.risk_assessment_service import assess_developer_delivery_risk
 
 
 router = APIRouter()
 
 
-def _format_developer_response(dev: DeveloperProfile) -> DeveloperResponse:
-    """Helper to convert DeveloperProfile ORM model into DeveloperResponse schema."""
+def _format_developer_response(dev: DeveloperProfile, db: Optional[Session] = None) -> DeveloperResponse:
+    """Helper to convert DeveloperProfile ORM model into DeveloperResponse schema with calculated metrics."""
     skills_list = []
     for ds in dev.developer_skills:
         skills_list.append(
@@ -37,6 +38,29 @@ def _format_developer_response(dev: DeveloperProfile) -> DeveloperResponse:
             )
         )
 
+    wl_score = None
+    wl_status = None
+    c_rate = None
+    prod_score = None
+    active_count = None
+    risk_lvl = None
+
+    if db:
+        try:
+            wl = calculate_developer_workload_details(db, dev.id)
+            wl_score = wl.workload_score
+            wl_status = wl.workload_status
+            active_count = wl.active_task_count
+
+            perf = calculate_developer_performance_metrics(db, dev.id)
+            c_rate = perf.get("completion_rate")
+            prod_score = perf.get("productivity_score")
+
+            risk = assess_developer_delivery_risk(db, dev.id)
+            risk_lvl = risk.get("delivery_risk_level")
+        except Exception:
+            pass
+
     return DeveloperResponse(
         id=dev.id,
         user_id=dev.user_id,
@@ -45,42 +69,70 @@ def _format_developer_response(dev: DeveloperProfile) -> DeveloperResponse:
         experience_years=dev.experience_years,
         availability_status=dev.availability_status,
         performance_score=dev.performance_score,
+        workload_score=wl_score,
+        workload_status=wl_status,
+        completion_rate=c_rate,
+        productivity_score=prod_score,
+        active_task_count=active_count,
+        delivery_risk_level=risk_lvl,
         created_at=dev.created_at,
         updated_at=dev.updated_at,
         skills=skills_list,
     )
 
 
-@router.get("", response_model=List[DeveloperResponse], summary="List developer profiles with filters")
+ALLOWED_SORT_FIELDS = {
+    "name": "user_name",
+    "experience": "experience_years",
+    "performance": "performance_score",
+    "workload": "workload_score",
+    "availability": "availability_status",
+    "task_completion": "completion_rate",
+    "completion_rate": "completion_rate",
+    "productivity": "productivity_score",
+    "productivity_score": "productivity_score",
+}
+
+
+@router.get("", response_model=List[DeveloperResponse], summary="List developer profiles with sorting and filters")
 def list_developers(
     performance_tier: Optional[str] = Query(None, description="top_performers, high_performers, average, needs_improvement"),
     min_completion_rate: Optional[float] = Query(None, description="Minimum completion rate percentage (e.g. 50, 75, 90)"),
     availability_status: Optional[AvailabilityStatus] = Query(None, description="AVAILABLE, PARTIAL, UNAVAILABLE"),
     skills: Optional[str] = Query(None, description="Comma-separated skill names"),
     experience_range: Optional[str] = Query(None, description="0-1, 1-3, 3-5, 5+"),
-    workload_status: Optional[str] = Query(None, description="underutilized, balanced, high_workload, overloaded"),
+    workload_status: Optional[str] = Query(None, description="available, balanced, high, overloaded"),
+    sort_by: Optional[str] = Query("name", description="Sort field: name, experience, performance, workload, availability, task_completion, productivity"),
+    sort_order: Optional[str] = Query("asc", description="Sort order: asc or desc"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """
-    Returns filtered developer profiles with user info and skills.
+    Returns sorted and filtered developer profiles with user info, workload, performance, and risk intelligence.
+    Supported sort fields: name, experience, performance, workload, availability, task_completion, productivity.
     Supported filters: performance_tier, min_completion_rate, availability_status, skills, experience_range, workload_status.
-    Accessible to all authenticated users.
     """
+    if sort_by and sort_by.lower() not in ALLOWED_SORT_FIELDS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid sort field '{sort_by}'. Allowed fields: {list(ALLOWED_SORT_FIELDS.keys())}",
+        )
+
+    order_direction = sort_order.lower() if sort_order and sort_order.lower() in ["asc", "desc"] else "asc"
+
     query = (
         select(DeveloperProfile)
         .options(
             joinedload(DeveloperProfile.user),
             joinedload(DeveloperProfile.developer_skills).joinedload(DeveloperSkill.skill),
         )
-        .order_by(DeveloperProfile.created_at.desc())
     )
 
     if availability_status:
         query = query.where(DeveloperProfile.availability_status == availability_status)
 
     developers = db.execute(query).unique().scalars().all()
-    filtered_devs = []
+    formatted_list: List[DeveloperResponse] = []
 
     for dev in developers:
         # Experience range check
@@ -101,12 +153,11 @@ def list_developers(
             if not all(s_req in dev_skill_names for s_req in req_skill_names):
                 continue
 
-        # Calculate metrics if performance or workload filter specified
-        if performance_tier or min_completion_rate is not None or workload_status:
-            metrics = calculate_developer_performance_metrics(db, dev.id)
-            score = metrics["performance_score"]
-            c_rate = metrics["completion_rate"]
+        resp = _format_developer_response(dev, db=db)
 
+        # Performance Tier filter
+        if performance_tier:
+            score = float(resp.performance_score or 50.0)
             if performance_tier == "top_performers" and score < 85.0:
                 continue
             elif performance_tier == "high_performers" and not (70.0 <= score < 85.0):
@@ -116,18 +167,35 @@ def list_developers(
             elif performance_tier == "needs_improvement" and score >= 50.0:
                 continue
 
-            if min_completion_rate is not None and c_rate < min_completion_rate:
+        # Completion rate filter
+        if min_completion_rate is not None:
+            c_rate = resp.completion_rate or 0.0
+            if c_rate < min_completion_rate:
                 continue
 
-            if workload_status:
-                wl = calculate_developer_workload_details(db, dev.id)
-                status_key = str(wl.capacity_status).lower()
-                if workload_status.lower() not in status_key:
-                    continue
+        # Workload status filter
+        if workload_status:
+            w_stat = (resp.workload_status or "").lower()
+            if workload_status.lower() not in w_stat:
+                continue
 
-        filtered_devs.append(dev)
+        formatted_list.append(resp)
 
-    return [_format_developer_response(dev) for dev in filtered_devs]
+    # Apply sorting safely in memory on formatted responses using validated field key
+    sort_key = ALLOWED_SORT_FIELDS.get((sort_by or "name").lower(), "user_name")
+    reverse = (order_direction == "desc")
+
+    def extract_sort_val(item: DeveloperResponse):
+        val = getattr(item, sort_key, None)
+        if val is None:
+            return "" if isinstance(val, str) else -999999.0
+        if isinstance(val, AvailabilityStatus):
+            return val.value
+        return val
+
+    formatted_list.sort(key=extract_sort_val, reverse=reverse)
+
+    return formatted_list
 
 
 @router.post("", response_model=DeveloperResponse, status_code=status.HTTP_201_CREATED, summary="Create developer profile")

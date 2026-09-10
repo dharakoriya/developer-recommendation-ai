@@ -61,6 +61,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [data, setData] = useState<DashboardSummary | null>(null);
+  const [riskSummary, setRiskSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
@@ -75,6 +76,15 @@ export default function DashboardPage() {
     try {
       const summary = await apiClient.get<DashboardSummary>('/dashboard/summary');
       setData(summary);
+
+      if (user?.role === 'ADMIN' || user?.role === 'MANAGER') {
+        try {
+          const rSummary = await apiClient.get('/risk/summary');
+          setRiskSummary(rSummary);
+        } catch {
+          // Non-blocking fallback
+        }
+      }
     } catch (err: any) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -327,6 +337,53 @@ export default function DashboardPage() {
               <StatCard title="Unassigned Tasks" value={data?.unassigned_tasks || 0} subtext={`${data?.active_tasks || 0} Active Tasks`} icon="📋" accentColor="amber" />
               <StatCard title="High Workload Devs" value={data?.high_workload_developers || 0} subtext="Capacity > 75%" icon="📈" accentColor="amber" />
             </div>
+
+            {/* Risk Assessment Summary Section */}
+            {riskSummary && (
+              <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🛡️</span>
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 dark:text-white text-sm">Platform Delivery Risk Intelligence</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Real-time schedule, capacity, and skill gap assessment across operations.</p>
+                    </div>
+                  </div>
+                  <Link
+                    href="/analytics"
+                    className="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-500"
+                  >
+                    Explore Risk Analytics →
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800">
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase block">High/Critical Risk Projects</span>
+                    <span className="text-lg font-extrabold text-rose-600 dark:text-rose-400 font-mono">
+                      {(riskSummary.high_risk_projects_count || 0) + (riskSummary.critical_risk_projects_count || 0)} / {riskSummary.total_projects || 0}
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800">
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase block">High/Critical Risk Tasks</span>
+                    <span className="text-lg font-extrabold text-amber-600 dark:text-amber-400 font-mono">
+                      {(riskSummary.high_risk_tasks_count || 0) + (riskSummary.critical_risk_tasks_count || 0)} / {riskSummary.active_tasks_count || 0}
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800">
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase block">High Delivery Risk Devs</span>
+                    <span className="text-lg font-extrabold text-purple-600 dark:text-purple-400 font-mono">
+                      {riskSummary.high_delivery_risk_developers_count || 0} / {riskSummary.total_developers || 0}
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 flex items-center justify-center">
+                    <span className="px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 text-xs font-bold font-mono border border-emerald-500/30">
+                      Rule-Based Engine Active
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Quick Actions & Navigation Bar */}
             <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 shadow-sm">
