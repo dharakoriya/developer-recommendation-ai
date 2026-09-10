@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 
 export interface FeatureMetadataItem {
@@ -65,6 +66,12 @@ export interface TaskOption {
 
 export default function FeaturesPage() {
   const { token, user, logout, apiUrl } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
   const [metadata, setMetadata] = useState<FeatureMetadataItem[]>([]);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [tasks, setTasks] = useState<TaskOption[]>([]);
@@ -218,7 +225,7 @@ export default function FeaturesPage() {
               <Link href="/developers" className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem', background: 'transparent', border: '1px solid var(--border-color)' }}>
                 Developers
               </Link>
-              <button onClick={logout} className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem', background: 'rgba(244,63,94,0.15)', color: 'var(--accent-rose)', border: '1px solid rgba(244,63,94,0.3)' }}>
+              <button onClick={handleLogout} className="btn" style={{ padding: '0.4rem 0.85rem', fontSize: '0.8rem', background: 'rgba(244,63,94,0.15)', color: 'var(--accent-rose)', border: '1px solid rgba(244,63,94,0.3)' }}>
                 Sign Out
               </button>
             </nav>

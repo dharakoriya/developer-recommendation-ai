@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../app/context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
@@ -14,10 +15,12 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileNav }) => {
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const { showToast } = useToast();
+  const router = useRouter();
 
   const handleLogout = () => {
     logout();
     showToast('Signed out successfully', 'info');
+    router.push('/login');
   };
 
   return (

@@ -2,11 +2,18 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 
 export default function ProtectedPage() {
   const { user, token, logout, loading, apiUrl } = useAuth();
+  const router = useRouter();
   const [roleTestResult, setRoleTestResult] = useState<string | null>(null);
+
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
   const [roleTestError, setRoleTestError] = useState<string | null>(null);
   const [testLoading, setTestLoading] = useState<boolean>(false);
 
@@ -72,7 +79,7 @@ export default function ProtectedPage() {
         <section className="card">
           <div className="card-title" style={{ justifyContent: 'space-between' }}>
             <span>👤 User Profile</span>
-            <button className="btn" onClick={logout} style={{ background: 'rgba(244, 63, 94, 0.15)', color: 'var(--accent-rose)', border: '1px solid rgba(244, 63, 94, 0.3)' }}>
+            <button className="btn" onClick={handleLogout} style={{ background: 'rgba(244, 63, 94, 0.15)', color: 'var(--accent-rose)', border: '1px solid rgba(244, 63, 94, 0.3)' }}>
               Sign Out
             </button>
           </div>
