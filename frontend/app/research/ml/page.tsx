@@ -78,14 +78,14 @@ export default function ResearchMLPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <StatusBadge status="RESEARCH" type="environment" />
-              <span className="text-xs text-purple-400 font-mono font-bold">EXPERIMENTAL MODEL BENCHMARKS</span>
+              <span className="text-xs text-purple-600 dark:text-purple-400 font-mono font-bold">EXPERIMENTAL MODEL BENCHMARKS</span>
             </div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">ML Model Evaluation & SHAP Feature Attributions</h1>
-            <p className="text-slate-400 text-xs mt-0.5">Offline research performance metrics for Random Forest and XGBoost experimental models.</p>
+            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">ML Model Evaluation & SHAP Feature Attributions</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Offline research performance metrics for Random Forest and XGBoost experimental models.</p>
           </div>
         </div>
 
@@ -103,14 +103,14 @@ export default function ResearchMLPage() {
             </div>
 
             {/* Global SHAP Feature Importance Table */}
-            <div className="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden">
-              <div className="p-4 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
-                <h3 className="font-bold text-white text-sm">Global SHAP Feature Importance Attribution</h3>
-                <span className="text-xs text-purple-400 font-mono font-bold">{shapData.length} Features Analyzed</span>
+            <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm dark:shadow-xl">
+              <div className="p-4 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm">Global SHAP Feature Importance Attribution</h3>
+                <span className="text-xs text-purple-600 dark:text-purple-400 font-mono font-bold">{shapData.length} Features Analyzed</span>
               </div>
 
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-950 text-slate-400 uppercase font-semibold border-b border-slate-800">
+                <thead className="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 uppercase font-semibold border-b border-slate-200 dark:border-slate-800">
                   <tr>
                     <th className="p-3.5">Rank</th>
                     <th className="p-3.5">Feature Name</th>
@@ -118,23 +118,23 @@ export default function ResearchMLPage() {
                     <th className="p-3.5">Importance Share</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
                   {shapData.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="p-6 text-center text-slate-500">No SHAP importance data available.</td>
+                      <td colSpan={4} className="p-6 text-center text-slate-500 dark:text-slate-400">No SHAP importance data available.</td>
                     </tr>
                   ) : (
                     shapData.map((item) => (
-                      <tr key={item.feature_name} className="hover:bg-slate-800/40 transition">
-                        <td className="p-3.5 font-mono font-bold text-purple-400">#{item.rank}</td>
-                        <td className="p-3.5 font-bold text-white">{item.feature_name}</td>
-                        <td className="p-3.5 font-mono text-slate-200">{item.mean_abs_shap.toFixed(4)}</td>
+                      <tr key={item.feature_name} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                        <td className="p-3.5 font-mono font-bold text-purple-600 dark:text-purple-400">#{item.rank}</td>
+                        <td className="p-3.5 font-bold text-slate-900 dark:text-white">{item.feature_name}</td>
+                        <td className="p-3.5 font-mono text-slate-700 dark:text-slate-200">{item.mean_abs_shap.toFixed(4)}</td>
                         <td className="p-3.5 min-w-[160px]">
                           <div className="flex items-center gap-3">
-                            <div className="flex-1 bg-slate-800 h-2 rounded-full overflow-hidden">
+                            <div className="flex-1 bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
                               <div className="bg-purple-500 h-full" style={{ width: `${Math.min(100, item.percentage)}%` }}></div>
                             </div>
-                            <span className="font-mono text-purple-300 text-[11px]">{item.percentage.toFixed(1)}%</span>
+                            <span className="font-mono text-purple-700 dark:text-purple-300 text-[11px] font-bold">{item.percentage.toFixed(1)}%</span>
                           </div>
                         </td>
                       </tr>

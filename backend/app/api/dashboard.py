@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -243,7 +244,8 @@ def get_dashboard_workload(
             .order_by(desc(WorkloadRecord.calculated_at))
         )
         score = float(latest_wl.workload_score) if latest_wl else 0.0
-        status_str = latest_wl.status_classification.value if latest_wl else "HEALTHY"
+        from app.services.workload_service import classify_workload_status
+        status_str = classify_workload_status(Decimal(str(score))) if latest_wl else "HEALTHY"
 
         if score < 50.0:
             healthy += 1

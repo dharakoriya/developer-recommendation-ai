@@ -62,14 +62,14 @@ export default function ResearchDatasetMonitoringPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <StatusBadge status="RESEARCH" type="environment" />
-              <span className="text-xs text-purple-400 font-mono font-bold">REAL-WORLD DATA COLLECTION LAB</span>
+              <span className="text-xs text-purple-600 dark:text-purple-400 font-mono font-bold">REAL-WORLD DATA COLLECTION LAB</span>
             </div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">Real-World Data Collection & Research Monitoring</h1>
-            <p className="text-slate-400 text-xs mt-0.5">Track observation accumulation rates, outcome conversion funnels, and dataset diversity.</p>
+            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Real-World Data Collection & Research Monitoring</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Track observation accumulation rates, outcome conversion funnels, and dataset diversity.</p>
           </div>
         </div>
 
@@ -87,24 +87,24 @@ export default function ResearchDatasetMonitoringPage() {
             </div>
 
             {/* Conversion Funnel Breakdown */}
-            <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6 space-y-4">
-              <h3 className="font-bold text-white text-sm">Outcome Lifecycle Conversion Funnel</h3>
+            <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-4 shadow-sm">
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm">Outcome Lifecycle Conversion Funnel</h3>
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-center">
-                  <span className="text-slate-400 block font-semibold">1. RECOMMENDED</span>
-                  <span className="text-2xl font-extrabold text-blue-400 font-mono mt-1 block">{funnel?.total_recommended ?? 0}</span>
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-center">
+                  <span className="text-slate-500 dark:text-slate-400 block font-semibold">1. RECOMMENDED</span>
+                  <span className="text-2xl font-extrabold text-blue-600 dark:text-blue-400 font-mono mt-1 block">{funnel?.total_recommended ?? 0}</span>
                 </div>
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-center">
-                  <span className="text-slate-400 block font-semibold">2. ACCEPTED</span>
-                  <span className="text-2xl font-extrabold text-purple-400 font-mono mt-1 block">{funnel?.accepted_count ?? 0}</span>
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-center">
+                  <span className="text-slate-500 dark:text-slate-400 block font-semibold">2. ACCEPTED</span>
+                  <span className="text-2xl font-extrabold text-purple-600 dark:text-purple-400 font-mono mt-1 block">{funnel?.accepted_count ?? 0}</span>
                 </div>
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-center">
-                  <span className="text-slate-400 block font-semibold">3. ASSIGNED</span>
-                  <span className="text-2xl font-extrabold text-amber-400 font-mono mt-1 block">{funnel?.assigned_count ?? 0}</span>
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-center">
+                  <span className="text-slate-500 dark:text-slate-400 block font-semibold">3. ASSIGNED</span>
+                  <span className="text-2xl font-extrabold text-amber-600 dark:text-amber-400 font-mono mt-1 block">{funnel?.assigned_count ?? 0}</span>
                 </div>
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-center">
-                  <span className="text-slate-400 block font-semibold">4. COMPLETED</span>
-                  <span className="text-2xl font-extrabold text-emerald-400 font-mono mt-1 block">{funnel?.completed_count ?? 0}</span>
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-center">
+                  <span className="text-slate-500 dark:text-slate-400 block font-semibold">4. COMPLETED</span>
+                  <span className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono mt-1 block">{funnel?.completed_count ?? 0}</span>
                 </div>
               </div>
             </div>

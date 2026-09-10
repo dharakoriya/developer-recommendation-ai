@@ -83,14 +83,14 @@ export default function ResearchDatasetPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <StatusBadge status="RESEARCH" type="environment" />
-              <span className="text-xs text-purple-400 font-mono font-bold">REAL-WORLD DATASET & GROUND-TRUTH PIPELINE</span>
+              <span className="text-xs text-purple-600 dark:text-purple-400 font-mono font-bold">REAL-WORLD DATASET & GROUND-TRUTH PIPELINE</span>
             </div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">Research Dataset & Label Validation</h1>
-            <p className="text-slate-400 text-xs mt-0.5">Observational feature snapshots, ground-truth label validation, and data quality audits.</p>
+            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Research Dataset & Label Validation</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Observational feature snapshots, ground-truth label validation, and data quality audits.</p>
           </div>
         </div>
 
@@ -108,19 +108,19 @@ export default function ResearchDatasetPage() {
             </div>
 
             {/* Readiness Reasons / Multi-Criteria Checks */}
-            <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+            <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 shadow-sm">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-white text-sm">Multi-Criteria Training Readiness Assessment</h3>
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm">Multi-Criteria Training Readiness Assessment</h3>
                 {readiness?.readiness_summary && (
-                  <span className="text-xs text-slate-400">{readiness.readiness_summary}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">{readiness.readiness_summary}</span>
                 )}
               </div>
               <div className="space-y-2 text-xs">
                 {(readiness?.readiness_checks || []).map((check, i) => (
-                  <div key={i} className="p-3 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between gap-4">
+                  <div key={i} className="p-3 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4">
                     <div>
-                      <span className="text-slate-200 font-bold block">{check.criterion}</span>
-                      <span className="text-slate-400 text-[11px]">{check.required_condition} (Actual: {check.actual_value})</span>
+                      <span className="text-slate-900 dark:text-slate-200 font-bold block">{check.criterion}</span>
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px]">{check.required_condition} (Actual: {check.actual_value})</span>
                     </div>
                     <StatusBadge status={check.is_passed ? 'PASSED' : 'NOT_READY'} type="workload_status" />
                   </div>

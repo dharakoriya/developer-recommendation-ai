@@ -364,8 +364,14 @@ def assess_project_risk(db: Session, project_id: uuid.UUID) -> Dict[str, Any]:
 
     now = datetime.now(timezone.utc)
     proj_schedule_risk = 0.0
-    if project.end_date:
-        end_dt = project.end_date.replace(tzinfo=timezone.utc) if project.end_date.tzinfo is None else project.end_date
+    project_end_date = getattr(project, "end_date", None)
+    if not project_end_date and tasks:
+        task_deadlines = [t.deadline for t in tasks if t.deadline]
+        if task_deadlines:
+            project_end_date = max(task_deadlines)
+
+    if project_end_date:
+        end_dt = project_end_date.replace(tzinfo=timezone.utc) if project_end_date.tzinfo is None else project_end_date
         days_left = (end_dt - now).total_seconds() / 86400.0
 
         if days_left < 0 and progress_pct < 100.0:
@@ -373,7 +379,7 @@ def assess_project_risk(db: Session, project_id: uuid.UUID) -> Dict[str, Any]:
             project_drivers.append({
                 "task_title": "Project Schedule",
                 "category": "DEADLINE",
-                "reason": f"Project end date exceeded by {abs(int(days_left))} days with {100 - progress_pct:.0f}% remaining.",
+                "reason": f"Project target end date was exceeded by {abs(int(days_left))} days with {100 - progress_pct:.0f}% remaining.",
                 "severity": "CRITICAL",
             })
         elif days_left <= 7.0 and progress_pct < 75.0:
