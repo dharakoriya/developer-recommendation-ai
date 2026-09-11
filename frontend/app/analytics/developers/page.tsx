@@ -94,8 +94,8 @@ export default function DeveloperComparisonAnalyticsPage() {
       <div className="space-y-6 max-w-7xl mx-auto pb-12">
         <div className="space-y-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-slate-100 tracking-tight">Developer Intelligence & Comparison Matrix</h1>
-            <p className="text-sm text-slate-400 mt-1">Side-by-side performance score, productivity streaks, workload, and skill comparison across team developers.</p>
+            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">Developer Intelligence & Comparison Matrix</h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Side-by-side performance score, productivity streaks, workload, and skill comparison across team developers.</p>
           </div>
           <AnalyticsNav />
         </div>
@@ -107,13 +107,13 @@ export default function DeveloperComparisonAnalyticsPage() {
         ) : !data ? null : (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-200">All Developers ({data.total_developers})</h2>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-200">All Developers ({data.total_developers})</h2>
             </div>
 
-            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+            <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-950 text-slate-400 uppercase font-semibold border-b border-slate-800">
+                  <thead className="bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 uppercase font-semibold border-b border-slate-200 dark:border-slate-800">
                     <tr>
                       <th className="p-3.5">Developer</th>
                       <th className="p-3.5">Performance</th>
@@ -126,31 +126,31 @@ export default function DeveloperComparisonAnalyticsPage() {
                       <th className="p-3.5">Top Skills</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-300">
                     {data.developers.map((d) => (
-                      <tr key={d.developer_id} className="hover:bg-slate-800/40 transition">
+                      <tr key={d.developer_id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                         <td className="p-3.5">
-                          <div className="font-bold text-slate-100">{d.user_name}</div>
-                          <div className="text-slate-400 text-[11px] font-mono">{d.email}</div>
+                          <div className="font-bold text-slate-900 dark:text-slate-100">{d.user_name}</div>
+                          <div className="text-slate-500 dark:text-slate-400 text-[11px] font-mono">{d.email}</div>
                         </td>
                         <td className="p-3.5">
                           <PerformanceBadge score={d.performance_score} size="sm" />
                         </td>
-                        <td className="p-3.5 font-mono font-semibold text-emerald-400">
+                        <td className="p-3.5 font-mono font-semibold text-emerald-600 dark:text-emerald-400">
                           {d.completion_rate}%
                         </td>
                         <td className="p-3.5">
                           <StreakBadge streakCount={d.current_streak} size="sm" />
                         </td>
-                        <td className="p-3.5 font-mono font-bold text-amber-400">
+                        <td className="p-3.5 font-mono font-bold text-amber-600 dark:text-amber-400">
                           {d.incentive_points} pts
                         </td>
                         <td className="p-3.5 font-mono">
-                          <span className={d.current_workload_score > 75 ? 'text-rose-400 font-bold' : 'text-slate-300'}>
+                          <span className={d.current_workload_score > 75 ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-700 dark:text-slate-300'}>
                             {d.current_workload_hours}h ({d.current_workload_score}%)
                           </span>
                         </td>
-                        <td className="p-3.5 font-mono text-slate-300">
+                        <td className="p-3.5 font-mono text-slate-700 dark:text-slate-300">
                           {d.experience_years} yrs
                         </td>
                         <td className="p-3.5">
@@ -159,7 +159,7 @@ export default function DeveloperComparisonAnalyticsPage() {
                         <td className="p-3.5">
                           <div className="flex flex-wrap gap-1">
                             {d.top_skills.map((s, idx) => (
-                              <span key={idx} className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px]">
+                              <span key={idx} className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-[10px]">
                                 {s}
                               </span>
                             ))}

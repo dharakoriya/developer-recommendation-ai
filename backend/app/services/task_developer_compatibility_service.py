@@ -2,6 +2,7 @@ import uuid
 from typing import Dict, Any, List, Tuple, Optional
 from decimal import Decimal
 
+from app.config import settings
 from app.schemas.feature import CandidateFeatureVector
 from app.models.enums import ShapDirection, AvailabilityStatus
 from app.services.task_weight_service import get_task_weight_category
@@ -13,32 +14,32 @@ def evaluate_task_developer_compatibility(
     """
     Computes 7-factor transparent compatibility score (0..100), eligibility status,
     exclusion reasons, and explainable feature contributions for baseline-v2 engine:
-    1. Skill Proficiency Match (30%)
-    2. Skill Coverage (15%)
-    3. Workload Capacity & Anti-Monopoly Protection (15%)
-    4. Availability (10%)
-    5. Relevant Experience (10%)
-    6. Developer Performance (10%)
-    7. Task Weight Compatibility (10%)
+    1. Skill Proficiency Match (settings.REC_WEIGHT_SKILL_MATCH)
+    2. Skill Coverage (settings.REC_WEIGHT_SKILL_COVERAGE)
+    3. Workload Capacity & Anti-Monopoly Protection (settings.REC_WEIGHT_WORKLOAD)
+    4. Availability (settings.REC_WEIGHT_AVAILABILITY)
+    5. Relevant Experience (settings.REC_WEIGHT_EXPERIENCE)
+    6. Developer Performance (settings.REC_WEIGHT_PERFORMANCE)
+    7. Task Weight Compatibility (settings.REC_WEIGHT_TASK_COMPAT)
     """
     task_category = get_task_weight_category(task_weight_score)
 
-    # 1. Skill Match Contribution (30%)
+    # 1. Skill Match Contribution
     s_skill = min(100.0, max(0.0, vec.weighted_skill_match_score)) / 100.0
-    c_skill = round(s_skill * 30.0, 2)
+    c_skill = round(s_skill * settings.REC_WEIGHT_SKILL_MATCH, 2)
 
-    # 2. Skill Coverage Contribution (15%)
+    # 2. Skill Coverage Contribution
     s_coverage = min(1.0, max(0.0, vec.skill_coverage_ratio))
-    c_coverage = round(s_coverage * 15.0, 2)
+    c_coverage = round(s_coverage * settings.REC_WEIGHT_SKILL_COVERAGE, 2)
 
-    # 3. Workload Capacity & Anti-Monopoly Penalty (15%)
+    # 3. Workload Capacity & Anti-Monopoly Penalty
     if vec.dev_workload_score <= 100.0:
         s_workload = 1.0 - (vec.dev_workload_score / 100.0)
     else:
         s_workload = 0.0
 
     # Base workload contribution
-    c_workload_base = s_workload * 15.0
+    c_workload_base = s_workload * settings.REC_WEIGHT_WORKLOAD
 
     # Anti-monopoly capacity penalty for heavily assigned / overloaded developers
     anti_monopoly_penalty = 0.0
@@ -49,25 +50,25 @@ def evaluate_task_developer_compatibility(
 
     c_workload = round(max(0.0, c_workload_base - anti_monopoly_penalty), 2)
 
-    # 4. Availability Contribution (10%)
+    # 4. Availability Contribution
     avail_str = str(vec.dev_availability_status).upper()
     if avail_str == "AVAILABLE":
-        c_avail = 10.0
+        c_avail = settings.REC_WEIGHT_AVAILABILITY
     elif avail_str == "PARTIAL":
-        c_avail = 5.0
+        c_avail = settings.REC_WEIGHT_AVAILABILITY * 0.5
     else:
         c_avail = 0.0
 
-    # 5. Relevant Experience Contribution (10%)
+    # 5. Relevant Experience Contribution
     s_exp = min(5.0, max(0.0, vec.dev_experience_years)) / 5.0
-    c_exp = round(s_exp * 10.0, 2)
+    c_exp = round(s_exp * settings.REC_WEIGHT_EXPERIENCE, 2)
 
-    # 6. Developer Performance Contribution (10%)
+    # 6. Developer Performance Contribution
     s_perf = min(100.0, max(0.0, vec.dev_performance_score)) / 100.0
-    c_perf = round(s_perf * 10.0, 2)
+    c_perf = round(s_perf * settings.REC_WEIGHT_PERFORMANCE, 2)
 
-    # 7. Task Weight Compatibility Contribution (10%)
-    c_task_compat = 10.0
+    # 7. Task Weight Compatibility Contribution
+    c_task_compat = settings.REC_WEIGHT_TASK_COMPAT
     task_compat_reason = "High alignment with task weight demands"
 
     if task_category == "CRITICAL":

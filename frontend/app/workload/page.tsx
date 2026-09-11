@@ -54,11 +54,11 @@ export default function WorkloadPage() {
 
   return (
     <AppShell>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+      <div className="space-y-6 max-w-7xl mx-auto pb-12">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">Workload Balancing Engine</h1>
-            <p className="text-slate-400 text-xs mt-1">Deterministic capacity & workload distribution calculations across team developers.</p>
+            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Workload Balancing Engine</h1>
+            <p className="text-slate-600 dark:text-slate-400 text-xs mt-1">Deterministic capacity & workload distribution calculations across team developers.</p>
           </div>
         </div>
 
@@ -75,24 +75,24 @@ export default function WorkloadPage() {
               <StatCard title="Overloaded" value={data.overloaded_count} subtext="> 100% capacity score" icon="🔴" accentColor="purple" />
             </div>
 
-            <div className="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden">
-              <div className="p-4 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
-                <h3 className="font-bold text-white text-sm">Developer Workload Distribution</h3>
-                <span className="text-xs text-slate-400 font-mono">{data.developer_workloads.length} Developers</span>
+            <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+              <div className="p-4 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm">Developer Workload Distribution</h3>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">{data.developer_workloads.length} Developers</span>
               </div>
 
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-950 text-slate-400 uppercase font-semibold border-b border-slate-800">
+                <thead className="bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 uppercase font-semibold border-b border-slate-200 dark:border-slate-800">
                   <tr>
                     <th className="p-3.5">Developer Name</th>
                     <th className="p-3.5">Workload Capacity</th>
                     <th className="p-3.5 text-right">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-800 dark:text-slate-300">
                   {data.developer_workloads.map((dw) => (
-                    <tr key={dw.developer_id} className="hover:bg-slate-800/40 transition">
-                      <td className="p-3.5 font-bold text-white">{dw.name || dw.user_name || 'Developer'}</td>
+                    <tr key={dw.developer_id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                      <td className="p-3.5 font-bold text-slate-900 dark:text-white">{dw.name || dw.user_name || 'Developer'}</td>
                       <td className="p-3.5 min-w-[200px]">
                         <WorkloadIndicator score={dw.workload_score} status={dw.status} />
                       </td>
