@@ -281,7 +281,7 @@ export default function RecommendationsPage() {
                     <span>Calculating Compatibility...</span>
                   </>
                 ) : (
-                  <span>⚡ Force Regenerate baseline-v2</span>
+                  <span>⚡ Find Best Developer</span>
                 )}
               </button>
             </div>
