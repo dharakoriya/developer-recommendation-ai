@@ -80,6 +80,10 @@ def build_task_response(task: Task) -> TaskResponse:
         else None
     )
 
+    # completed_by resolution
+    completer = getattr(task, 'completer', None)
+    completed_by_name = completer.name if completer else None
+
     actual_mins = getattr(task, "total_actual_minutes", 0) or 0
     actual_hrs = round(actual_mins / 60.0, 2)
     est_hrs = float(task.estimated_hours) if task.estimated_hours else 0.0
@@ -103,6 +107,8 @@ def build_task_response(task: Task) -> TaskResponse:
         assigned_developer_name=assigned_dev_name,
         started_at=getattr(task, "started_at", None),
         completed_at=getattr(task, "completed_at", None),
+        completed_by=getattr(task, "completed_by", None),
+        completed_by_name=completed_by_name,
         total_actual_minutes=actual_mins,
         is_timer_running=getattr(task, "is_timer_running", False) or False,
         timer_started_at=getattr(task, "timer_started_at", None),
@@ -123,6 +129,7 @@ def get_task_options():
         joinedload(Task.project),
         joinedload(Task.team),
         joinedload(Task.creator),
+        joinedload(Task.completer),
         joinedload(Task.task_skills).joinedload(TaskSkill.skill),
         joinedload(Task.assignments).joinedload(Assignment.developer_profile).joinedload(DeveloperProfile.user),
         joinedload(Task.assignments).joinedload(Assignment.assigner),
@@ -139,13 +146,26 @@ def list_all_tasks(
 ):
     """
     Lists all tasks across projects, optionally filtered by status or project_id.
-    Accessible to all authenticated users.
+    For DEVELOPER role: only tasks where they have an ACTIVE assignment are returned.
     """
     query = select(Task).options(*get_task_options())
     if status_filter:
         query = query.where(Task.status == status_filter)
     if project_id:
         query = query.where(Task.project_id == project_id)
+
+    # Bug 6 fix: developers only see their own assigned tasks
+    if current_user.role == UserRole.DEVELOPER:
+        dev_profile = db.execute(
+            select(DeveloperProfile).where(DeveloperProfile.user_id == current_user.id)
+        ).scalar_one_or_none()
+        if dev_profile:
+            query = query.join(Assignment, Assignment.task_id == Task.id).where(
+                Assignment.developer_id == dev_profile.id,
+                Assignment.status == AssignmentStatus.ACTIVE,
+            )
+        else:
+            return []  # Developer with no profile sees no tasks
 
     query = query.order_by(Task.created_at.desc())
     tasks = db.execute(query).unique().scalars().all()
@@ -361,10 +381,13 @@ def update_task(
 
         if task_in.status == TaskStatus.COMPLETED:
             # Handle task completion metrics & assignments
+            _now = datetime.now(timezone.utc)
+            task.completed_at = _now
+            task.completed_by = current_user.id  # Bug 3 fix: record completing user
             active_assign = next((a for a in (task.assignments or []) if a.status == AssignmentStatus.ACTIVE), None)
             if active_assign:
                 active_assign.status = AssignmentStatus.COMPLETED
-                active_assign.completed_at = func.now()
+                active_assign.completed_at = _now  # Bug 10-16 fix: was func.now()
 
                 from app.services.task_weight_service import calculate_task_weight_score
                 task_weight = calculate_task_weight_score(task)
@@ -400,6 +423,7 @@ def update_task_status(
 ):
     """
     Updates task status following valid transition rules.
+    DEVELOPER role: can only update status on their own assigned tasks.
     """
     stmt = select(Task).options(*get_task_options()).where(Task.id == id)
     task = db.execute(stmt).unique().scalar_one_or_none()
@@ -409,6 +433,15 @@ def update_task_status(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Task with ID {id} not found.",
         )
+
+    # Bug 2/8 fix: enforce developer ownership for status changes
+    if current_user.role == UserRole.DEVELOPER:
+        active_assign = next((a for a in (task.assignments or []) if a.status == AssignmentStatus.ACTIVE), None)
+        if not active_assign or active_assign.developer_profile.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access forbidden. You can only update the status of tasks assigned to you.",
+            )
 
     new_status_str = status_in.get("status")
     if not new_status_str:
@@ -455,10 +488,13 @@ def update_task_status(
         task.description = f"[BLOCKER]: {status_in.get('blocker_reason')}\n" + (task.description or "")
 
     if new_status == TaskStatus.COMPLETED:
+        now = datetime.now(timezone.utc)
+        task.completed_at = now
+        task.completed_by = current_user.id  # Bug 3 fix: record who completed the task
         active_assign = next((a for a in (task.assignments or []) if a.status == AssignmentStatus.ACTIVE), None)
         if active_assign:
             active_assign.status = AssignmentStatus.COMPLETED
-            active_assign.completed_at = func.now()
+            active_assign.completed_at = now  # Bug 10-16 fix: was func.now() (SQL expr), now Python datetime
 
             from app.services.task_weight_service import calculate_task_weight_score
             task_weight = calculate_task_weight_score(task)
@@ -618,11 +654,12 @@ def stop_task_timer(
 
     task.status = TaskStatus.COMPLETED
     task.completed_at = now
+    task.completed_by = current_user.id  # Bug 3 fix: record completing user
 
     active_assign = next((a for a in (task.assignments or []) if a.status == AssignmentStatus.ACTIVE), None)
     if active_assign:
         active_assign.status = AssignmentStatus.COMPLETED
-        active_assign.completed_at = now
+        active_assign.completed_at = now  # Bug 10-16 fix: was func.now()
 
         from app.services.task_weight_service import calculate_task_weight_score
         task_weight = calculate_task_weight_score(task)

@@ -108,6 +108,8 @@ class TaskResponse(BaseModel):
     assigned_developer_name: Optional[str] = None
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
+    completed_by: Optional[uuid.UUID] = None
+    completed_by_name: Optional[str] = None
     total_actual_minutes: int = 0
     is_timer_running: bool = False
     timer_started_at: Optional[datetime] = None

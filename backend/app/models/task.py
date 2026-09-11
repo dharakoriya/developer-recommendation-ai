@@ -65,6 +65,11 @@ class Task(Base):
     completed_at: Mapped[DateTime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    completed_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     total_actual_minutes: Mapped[int] = mapped_column(
         nullable=False, default=0
     )
@@ -92,7 +97,8 @@ class Task(Base):
     # Relationships
     project = relationship("Project", back_populates="tasks")
     team = relationship("Team", back_populates="tasks")
-    creator = relationship("User", back_populates="created_tasks")
+    creator = relationship("User", foreign_keys=[created_by], back_populates="created_tasks")
+    completer = relationship("User", foreign_keys=[completed_by])
     task_skills = relationship(
         "TaskSkill", back_populates="task", cascade="all, delete-orphan"
     )

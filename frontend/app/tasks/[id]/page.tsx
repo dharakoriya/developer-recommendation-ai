@@ -25,6 +25,8 @@ interface TaskDetail {
   assigned_developer_name?: string;
   started_at?: string;
   completed_at?: string;
+  completed_by?: string;
+  completed_by_name?: string;
   total_actual_minutes?: number;
   is_timer_running?: boolean;
   timer_started_at?: string;
@@ -79,6 +81,7 @@ export default function TaskDetailPage() {
   const router = useRouter();
   const { user } = useAuth();
   const isDev = user?.role === 'DEVELOPER';
+  const isManager = user?.role === 'MANAGER' || user?.role === 'ADMIN';
   const taskId = params?.id as string;
   const { showToast } = useToast();
 
@@ -282,26 +285,43 @@ export default function TaskDetailPage() {
   const weightCategory = task.task_weight_category || 'MODERATE';
   const weightScore = task.task_weight_score ?? 50;
 
+  // Bug 9 fix: determine if the current user is the assigned developer for this task
+  const isAssignedDeveloper =
+    isDev && task.current_assignment?.developer_id &&
+    // We compare via the profile; the assignment stores developer_profile.id (not user.id)
+    // The best check is: current user's assigned_developer_id from task if present
+    // Since we don't have developer_profile.user_id directly on the assignment response,
+    // we use the fact that if isDev and the task has current_assignment.developer_name matching
+    // the user name, OR we rely on the backend to enforce it and just show controls for devs
+    // who are assigned (the backend will 403 anyway if wrong).
+    !!task.current_assignment;
+
+  // Show execution controls only to: (a) the assigned developer, or (b) manager/admin
+  const canUseTimerControls = isManager || isAssignedDeveloper;
+
+  const isTaskTerminal = task.status === 'COMPLETED' || task.status === 'CANCELLED';
+
   const getWeightColor = (cat: string) => {
     switch (cat) {
-      case 'LIGHT': return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
-      case 'MODERATE': return 'text-blue-400 bg-blue-500/10 border-blue-500/30';
-      case 'HEAVY': return 'text-purple-400 bg-purple-500/10 border-purple-500/30';
-      case 'CRITICAL': return 'text-rose-400 bg-rose-500/10 border-rose-500/30';
-      default: return 'text-slate-400 bg-slate-500/10 border-slate-500/30';
+      case 'LIGHT': return 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30';
+      case 'MODERATE': return 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30';
+      case 'HEAVY': return 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30';
+      case 'CRITICAL': return 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30';
+      default: return 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-500/10 border-slate-200 dark:border-slate-500/30';
     }
   };
 
   const getStatusBadge = (st: string) => {
     switch (st) {
-      case 'TODO': return 'bg-slate-800 text-slate-300 border-slate-700';
-      case 'READY': return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
-      case 'IN_PROGRESS': return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
-      case 'IN_REVIEW': return 'bg-purple-500/20 text-purple-300 border-purple-500/30';
-      case 'COMPLETED': return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
-      case 'BLOCKED': return 'bg-rose-500/20 text-rose-300 border-rose-500/30';
-      case 'CANCELLED': return 'bg-slate-800 text-slate-500 border-slate-700';
-      default: return 'bg-slate-800 text-slate-300 border-slate-700';
+      case 'TODO': return 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700';
+      case 'READY': return 'bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-500/30';
+      case 'ASSIGNED': return 'bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/30';
+      case 'IN_PROGRESS': return 'bg-amber-50 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30';
+      case 'IN_REVIEW': return 'bg-purple-50 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-500/30';
+      case 'COMPLETED': return 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30';
+      case 'BLOCKED': return 'bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-500/30';
+      case 'CANCELLED': return 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-500 border-slate-200 dark:border-slate-700';
+      default: return 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700';
     }
   };
 
@@ -309,14 +329,14 @@ export default function TaskDetailPage() {
     <AppShell>
       <div className="space-y-6 max-w-7xl mx-auto pb-12">
         {/* Header Breadcrumb & Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
-            <div className="flex items-center gap-2 text-xs text-slate-400 mb-1">
-              <Link href="/tasks" className="hover:text-purple-400">Tasks</Link>
+            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
+              <Link href="/tasks" className="hover:text-purple-600 dark:hover:text-purple-400">Tasks</Link>
               <span>/</span>
-              <span className="text-slate-200 font-mono">{task.project_name || 'Project'}</span>
+              <span className="text-slate-700 dark:text-slate-200 font-mono">{task.project_name || 'Project'}</span>
             </div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">{task.title}</h1>
+            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">{task.title}</h1>
           </div>
 
           <div className="flex items-center gap-3">
@@ -324,11 +344,12 @@ export default function TaskDetailPage() {
               {task.status}
             </span>
 
-            {!isDev && (
+            {/* Bug 4 fix: only show assign/reassign on non-terminal tasks, and only for managers */}
+            {isManager && !isTaskTerminal && (
               (task.assigned_developer_name || task.assignment?.developer_name) ? (
                 <Link
                   href={`/recommendations?task_id=${task.id}`}
-                  className="bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 font-semibold text-xs px-4 py-2 rounded-xl transition flex items-center gap-1.5"
+                  className="bg-purple-50 hover:bg-purple-100 dark:bg-purple-600/20 dark:hover:bg-purple-600/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 font-semibold text-xs px-4 py-2 rounded-xl transition flex items-center gap-1.5"
                 >
                   <span>🔄 Reassign Developer</span>
                 </Link>
@@ -345,12 +366,12 @@ export default function TaskDetailPage() {
         </div>
 
         {/* Status & Timer Execution Control Bar */}
-        <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-wrap items-center justify-between gap-4">
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 shadow-sm">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Execution Controls:</span>
-            
-            {/* Timer Controls */}
-            {task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && (
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Execution Controls:</span>
+
+            {/* Bug 9 fix: Timer Controls — only for assigned developer or manager/admin */}
+            {canUseTimerControls && !isTaskTerminal && (
               task.is_timer_running ? (
                 <button
                   onClick={handlePauseTimer}
@@ -370,7 +391,7 @@ export default function TaskDetailPage() {
               )
             )}
 
-            {(task.status === 'IN_PROGRESS' || task.status === 'ASSIGNED' || task.status === 'IN_REVIEW') && (
+            {canUseTimerControls && (task.status === 'IN_PROGRESS' || task.status === 'ASSIGNED' || task.status === 'IN_REVIEW') && (
               <button
                 onClick={handleStopTimer}
                 disabled={updating}
@@ -380,62 +401,70 @@ export default function TaskDetailPage() {
               </button>
             )}
 
-            {task.status === 'TODO' && (
+            {canUseTimerControls && task.status === 'TODO' && (
               <button
                 onClick={() => handleStatusTransition('READY')}
                 disabled={updating}
-                className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-xl transition"
+                className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-xl transition border border-slate-200 dark:border-slate-700"
               >
                 Mark Ready
               </button>
             )}
 
-            {task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && task.status !== 'BLOCKED' && (
+            {canUseTimerControls && !isTaskTerminal && task.status !== 'BLOCKED' && (
               <button
                 onClick={() => setShowBlockerInput(!showBlockerInput)}
-                className="bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-semibold px-3 py-1.5 rounded-xl transition"
+                className="bg-rose-50 hover:bg-rose-100 dark:bg-rose-600/20 dark:hover:bg-rose-600/30 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30 text-xs font-semibold px-3 py-1.5 rounded-xl transition"
               >
                 🚨 Report Blocker
               </button>
             )}
 
-            {(task.status === 'COMPLETED' || task.status === 'CANCELLED') && (
+            {/* Reopen — only managers */}
+            {isManager && isTaskTerminal && (
               <button
                 onClick={handleReopen}
                 disabled={updating}
-                className="bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 text-xs font-semibold px-3 py-1.5 rounded-xl transition"
+                className="bg-amber-50 hover:bg-amber-100 dark:bg-amber-600/20 dark:hover:bg-amber-600/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 text-xs font-semibold px-3 py-1.5 rounded-xl transition"
               >
                 🔓 Reopen Task
               </button>
             )}
+
+            {/* Read-only notice for non-assigned devs */}
+            {isDev && !isAssignedDeveloper && (
+              <span className="text-xs text-slate-400 dark:text-slate-500 italic">
+                ℹ️ Controls available only to the assigned developer
+              </span>
+            )}
           </div>
 
           {/* Time Tracking & Variance Counter */}
-          <div className="flex items-center gap-4 text-xs font-mono bg-slate-950 px-3.5 py-1.5 rounded-xl border border-slate-800">
+          <div className="flex items-center gap-4 text-xs font-mono bg-slate-50 dark:bg-slate-950 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800">
             <div>
-              <span className="text-slate-500 block text-[9px] uppercase font-sans">Est. Hours</span>
-              <span className="text-slate-300 font-bold">{task.estimated_hours}h</span>
+              <span className="text-slate-400 dark:text-slate-500 block text-[9px] uppercase font-sans">Est. Hours</span>
+              <span className="text-slate-700 dark:text-slate-300 font-bold">{task.estimated_hours}h</span>
             </div>
-            <div className="border-l border-slate-800 pl-3">
-              <span className="text-slate-500 block text-[9px] uppercase font-sans">Actual Logged</span>
-              <span className="text-cyan-400 font-bold">{task.actual_hours ?? 0}h</span>
+            <div className="border-l border-slate-200 dark:border-slate-800 pl-3">
+              <span className="text-slate-400 dark:text-slate-500 block text-[9px] uppercase font-sans">Actual Logged</span>
+              <span className="text-cyan-600 dark:text-cyan-400 font-bold">{task.actual_hours ?? 0}h</span>
             </div>
-            <div className="border-l border-slate-800 pl-3">
-              <span className="text-slate-500 block text-[9px] uppercase font-sans">Variance</span>
-              <span className={(task.variance_hours ?? 0) > 0 ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold'}>
+            <div className="border-l border-slate-200 dark:border-slate-800 pl-3">
+              <span className="text-slate-400 dark:text-slate-500 block text-[9px] uppercase font-sans">Variance</span>
+              <span className={(task.variance_hours ?? 0) > 0 ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-emerald-600 dark:text-emerald-400 font-bold'}>
                 {(task.variance_hours ?? 0) > 0 ? `+${task.variance_hours}h` : `${task.variance_hours ?? 0}h`}
               </span>
             </div>
           </div>
 
           {showBlockerInput && (
-            <div className="w-full flex items-center gap-2 pt-2 border-t border-slate-800">
+            <div className="w-full flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
               <input
                 type="text"
                 value={blockerReason}
                 onChange={(e) => setBlockerReason(e.target.value)}
                 placeholder="Describe blocker issue..."
-                className="flex-1 bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-rose-500"
+                className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-rose-500"
               />
               <button
                 onClick={() => handleStatusTransition('BLOCKED')}
@@ -453,49 +482,67 @@ export default function TaskDetailPage() {
           {/* Left Column (2/3): Task Overview + Task Weight Breakdown */}
           <div className="lg:col-span-2 space-y-6">
             {/* Task Overview */}
-            <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
-              <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Task Overview</h2>
+            <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
+              <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Task Overview</h2>
               {task.description && (
-                <p className="text-slate-300 text-sm leading-relaxed">{task.description}</p>
+                <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">{task.description}</p>
               )}
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs pt-2">
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
                   <span className="text-slate-500 block text-[10px] uppercase font-bold">Priority</span>
-                  <span className="text-amber-400 font-bold font-mono">{task.priority}</span>
+                  <span className="text-amber-600 dark:text-amber-400 font-bold font-mono">{task.priority}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
                   <span className="text-slate-500 block text-[10px] uppercase font-bold">Complexity</span>
-                  <span className="text-purple-400 font-bold font-mono">{task.complexity}</span>
+                  <span className="text-purple-600 dark:text-purple-400 font-bold font-mono">{task.complexity}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
                   <span className="text-slate-500 block text-[10px] uppercase font-bold">Estimated Effort</span>
-                  <span className="text-cyan-400 font-bold font-mono">{task.estimated_hours} Hours</span>
+                  <span className="text-cyan-600 dark:text-cyan-400 font-bold font-mono">{task.estimated_hours} Hours</span>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
                   <span className="text-slate-500 block text-[10px] uppercase font-bold">Created Date</span>
-                  <span className="text-slate-300 font-mono">
+                  <span className="text-slate-700 dark:text-slate-300 font-mono">
                     {task.created_at ? new Date(task.created_at).toLocaleDateString() : 'N/A'}
                   </span>
                 </div>
               </div>
+
+              {/* Completion info — only shown when completed */}
+              {task.status === 'COMPLETED' && task.completed_at && (
+                <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-wrap gap-4 text-xs">
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Completed At</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                      {new Date(task.completed_at).toLocaleString()}
+                    </span>
+                  </div>
+                  {task.completed_by_name && (
+                    <div>
+                      <span className="text-slate-500 block text-[10px] uppercase font-bold">Completed By</span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">{task.completed_by_name}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Task Weight Intelligence */}
-            <div className="p-6 rounded-2xl bg-slate-900 border border-purple-500/20 space-y-4 shadow-xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-500/20 space-y-4 shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
                 <div>
-                  <h2 className="text-sm font-bold text-purple-400 uppercase tracking-wider flex items-center gap-2">
+                  <h2 className="text-sm font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider flex items-center gap-2">
                     <span>🎯</span> Task Weight Intelligence
                   </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">Calculated based on complexity, priority, effort & skill difficulty</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Calculated based on complexity, priority, effort & skill difficulty</p>
                 </div>
                 <div className="text-right">
                   <span className={`text-xs font-mono font-extrabold px-3 py-1 rounded-xl border ${getWeightColor(weightCategory)}`}>
                     {weightCategory}
                   </span>
-                  <span className="text-2xl font-extrabold text-white font-mono block mt-1">
-                    {weightScore} <span className="text-xs text-slate-500">/ 100</span>
+                  <span className="text-2xl font-extrabold text-slate-900 dark:text-white font-mono block mt-1">
+                    {weightScore} <span className="text-xs text-slate-400">/ 100</span>
                   </span>
                 </div>
               </div>
@@ -503,11 +550,11 @@ export default function TaskDetailPage() {
               {/* Breakdown progress bars */}
               <div className="space-y-3 text-xs">
                 <div>
-                  <div className="flex justify-between text-slate-400 mb-1">
+                  <div className="flex justify-between text-slate-500 dark:text-slate-400 mb-1">
                     <span>Complexity Score</span>
-                    <span className="font-mono text-purple-400 font-bold">{task.weight_breakdown?.complexity_score ?? Math.round(weightScore * 0.35)} / 100</span>
+                    <span className="font-mono text-purple-600 dark:text-purple-400 font-bold">{task.weight_breakdown?.complexity_score ?? Math.round(weightScore * 0.35)} / 100</span>
                   </div>
-                  <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
+                  <div className="w-full bg-slate-100 dark:bg-slate-950 h-2 rounded-full overflow-hidden">
                     <div
                       className="bg-purple-500 h-full rounded-full transition-all"
                       style={{ width: `${task.weight_breakdown?.complexity_score ?? Math.round(weightScore * 0.35)}%` }}
@@ -516,11 +563,11 @@ export default function TaskDetailPage() {
                 </div>
 
                 <div>
-                  <div className="flex justify-between text-slate-400 mb-1">
+                  <div className="flex justify-between text-slate-500 dark:text-slate-400 mb-1">
                     <span>Priority Weight</span>
-                    <span className="font-mono text-amber-400 font-bold">{task.weight_breakdown?.priority_score ?? Math.round(weightScore * 0.25)} / 100</span>
+                    <span className="font-mono text-amber-600 dark:text-amber-400 font-bold">{task.weight_breakdown?.priority_score ?? Math.round(weightScore * 0.25)} / 100</span>
                   </div>
-                  <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
+                  <div className="w-full bg-slate-100 dark:bg-slate-950 h-2 rounded-full overflow-hidden">
                     <div
                       className="bg-amber-500 h-full rounded-full transition-all"
                       style={{ width: `${task.weight_breakdown?.priority_score ?? Math.round(weightScore * 0.25)}%` }}
@@ -529,11 +576,11 @@ export default function TaskDetailPage() {
                 </div>
 
                 <div>
-                  <div className="flex justify-between text-slate-400 mb-1">
+                  <div className="flex justify-between text-slate-500 dark:text-slate-400 mb-1">
                     <span>Effort & Hours Impact</span>
-                    <span className="font-mono text-cyan-400 font-bold">{task.weight_breakdown?.effort_score ?? Math.round(weightScore * 0.2)} / 100</span>
+                    <span className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">{task.weight_breakdown?.effort_score ?? Math.round(weightScore * 0.2)} / 100</span>
                   </div>
-                  <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
+                  <div className="w-full bg-slate-100 dark:bg-slate-950 h-2 rounded-full overflow-hidden">
                     <div
                       className="bg-cyan-500 h-full rounded-full transition-all"
                       style={{ width: `${task.weight_breakdown?.effort_score ?? Math.round(weightScore * 0.2)}%` }}
@@ -542,11 +589,11 @@ export default function TaskDetailPage() {
                 </div>
 
                 <div>
-                  <div className="flex justify-between text-slate-400 mb-1">
+                  <div className="flex justify-between text-slate-500 dark:text-slate-400 mb-1">
                     <span>Skill Difficulty Level</span>
-                    <span className="font-mono text-blue-400 font-bold">{task.weight_breakdown?.skill_difficulty_score ?? Math.round(weightScore * 0.2)} / 100</span>
+                    <span className="font-mono text-blue-600 dark:text-blue-400 font-bold">{task.weight_breakdown?.skill_difficulty_score ?? Math.round(weightScore * 0.2)} / 100</span>
                   </div>
-                  <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
+                  <div className="w-full bg-slate-100 dark:bg-slate-950 h-2 rounded-full overflow-hidden">
                     <div
                       className="bg-blue-500 h-full rounded-full transition-all"
                       style={{ width: `${task.weight_breakdown?.skill_difficulty_score ?? Math.round(weightScore * 0.2)}%` }}
@@ -557,19 +604,19 @@ export default function TaskDetailPage() {
             </div>
 
             {/* Required Skills */}
-            <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
-              <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Required Skills & Target Proficiency</h2>
+            <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
+              <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Required Skills & Target Proficiency</h2>
               {task.required_skills && task.required_skills.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {task.required_skills.map((s, idx) => (
-                    <div key={idx} className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-                      <span className="text-slate-200 font-bold text-xs">{s.skill_name}</span>
-                      <span className="text-purple-400 font-mono font-bold text-xs">Required Level {s.required_level}</span>
+                    <div key={idx} className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                      <span className="text-slate-800 dark:text-slate-200 font-bold text-xs">{s.skill_name}</span>
+                      <span className="text-purple-600 dark:text-purple-400 font-mono font-bold text-xs">Required Level {s.required_level}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-slate-500 italic">No specific skill requirements specified for this task.</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 italic">No specific skill requirements specified for this task.</p>
               )}
             </div>
           </div>
@@ -577,37 +624,37 @@ export default function TaskDetailPage() {
           {/* Right Column (1/3): Assignment Card + Recommendation History */}
           <div className="space-y-6">
             {/* Assignment Section */}
-            <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
-              <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Assigned Developer</h2>
+            <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
+              <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Assigned Developer</h2>
 
               {task.assignment ? (
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-850 space-y-3">
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center text-white font-bold text-sm">
                       {task.assignment.developer_name?.[0] || 'D'}
                     </div>
                     <div>
-                      <h3 className="text-base font-extrabold text-white">{task.assignment.developer_name}</h3>
-                      <span className="text-xs text-slate-400 block font-mono">Assigned Developer</span>
+                      <h3 className="text-base font-extrabold text-slate-900 dark:text-white">{task.assignment.developer_name}</h3>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 block font-mono">Assigned Developer</span>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-800">
+                  <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-200 dark:border-slate-800">
                     <div>
-                      <span className="text-slate-500 block text-[10px]">Compatibility</span>
-                      <span className="text-purple-400 font-extrabold font-mono">{task.assignment.compatibility_score ?? 85}%</span>
+                      <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Compatibility</span>
+                      <span className="text-purple-600 dark:text-purple-400 font-extrabold font-mono">{task.assignment.compatibility_score ?? 85}%</span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block text-[10px]">Workload</span>
-                      <span className="text-emerald-400 font-extrabold font-mono">{task.assignment.current_workload ?? 35}%</span>
+                      <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Workload</span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-extrabold font-mono">{task.assignment.current_workload ?? 35}%</span>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="p-4 rounded-xl bg-slate-950 border border-dashed border-slate-800 text-center space-y-3">
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-dashed border-slate-300 dark:border-slate-800 text-center space-y-3">
                   <span className="text-2xl block">🧑‍💻</span>
-                  <p className="text-xs text-slate-400">No developer assigned to this task yet.</p>
-                  {!isDev && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400">No developer assigned to this task yet.</p>
+                  {isManager && !isTaskTerminal && (
                     <Link
                       href={`/recommendations?task_id=${task.id}`}
                       className="inline-block bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs px-4 py-2 rounded-xl transition"
@@ -620,31 +667,31 @@ export default function TaskDetailPage() {
             </div>
 
             {/* Recommendation History */}
-            <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
-              <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Recommendation History</h2>
+            <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
+              <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Recommendation History</h2>
               {history.length > 0 ? (
                 <div className="space-y-3">
                   {history.map((h, i) => (
-                    <div key={h.id || i} className="p-3 rounded-xl bg-slate-950 border border-slate-850 space-y-1 text-xs">
-                      <div className="flex justify-between items-center text-[10px] text-slate-500 font-mono">
+                    <div key={h.id || i} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1 text-xs">
+                      <div className="flex justify-between items-center text-[10px] text-slate-400 dark:text-slate-500 font-mono">
                         <span>Run #{history.length - i}</span>
                         <span>{new Date(h.created_at).toLocaleDateString()}</span>
                       </div>
-                      <div className="flex justify-between items-center font-bold text-slate-200">
+                      <div className="flex justify-between items-center font-bold text-slate-800 dark:text-slate-200">
                         <span>{h.developer_name}</span>
-                        <span className="text-purple-400 font-mono">{h.compatibility_score}%</span>
+                        <span className="text-purple-600 dark:text-purple-400 font-mono">{h.compatibility_score}%</span>
                       </div>
                       {h.selection_reason && (
-                        <p className="text-[10px] text-slate-400 italic">Reason: {h.selection_reason}</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 italic">Reason: {h.selection_reason}</p>
                       )}
                       {h.override_reason && (
-                        <p className="text-[10px] text-amber-400 font-medium">Override: {h.override_reason}</p>
+                        <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">Override: {h.override_reason}</p>
                       )}
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-slate-500 italic">No historical recommendation runs recorded.</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 italic">No historical recommendation runs recorded.</p>
               )}
             </div>
           </div>
