@@ -62,9 +62,10 @@ def reset_and_seed_database():
 
     engine = create_engine(db_url)
     
-    print("Step 1: Ensuring all ORM Database Tables exist...")
+    print("Step 1: Dropping and recreating all ORM Database Tables...")
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
-    print(" [OK] All ORM models verified/created.")
+    print(" [OK] All ORM models created cleanly.")
 
     Session = sessionmaker(bind=engine)
     session = Session()

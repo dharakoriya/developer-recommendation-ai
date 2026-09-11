@@ -59,6 +59,21 @@ class Task(Base):
     status: Mapped[TaskStatus] = mapped_column(
         SQLEnum(TaskStatus, name="task_status_enum"), nullable=False, index=True
     )
+    started_at: Mapped[DateTime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    completed_at: Mapped[DateTime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    total_actual_minutes: Mapped[int] = mapped_column(
+        nullable=False, default=0
+    )
+    is_timer_running: Mapped[bool] = mapped_column(
+        nullable=False, default=False
+    )
+    timer_started_at: Mapped[DateTime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_by: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),

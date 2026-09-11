@@ -155,9 +155,9 @@ def assign_task(
     )
     db.add(new_assignment)
 
-    # Update task status to IN_PROGRESS if currently TODO or READY
+    # Update task status to ASSIGNED if currently TODO or READY
     if task.status in (TaskStatus.TODO, TaskStatus.READY):
-        task.status = TaskStatus.IN_PROGRESS
+        task.status = TaskStatus.ASSIGNED
 
     db.commit()
 

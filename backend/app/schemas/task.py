@@ -104,6 +104,15 @@ class TaskResponse(BaseModel):
     estimated_hours: Decimal
     deadline: Optional[datetime] = None
     status: TaskStatus
+    assigned_developer_id: Optional[uuid.UUID] = None
+    assigned_developer_name: Optional[str] = None
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    total_actual_minutes: int = 0
+    is_timer_running: bool = False
+    timer_started_at: Optional[datetime] = None
+    actual_hours: float = 0.0
+    variance_hours: float = 0.0
     created_by: uuid.UUID
     creator_name: Optional[str] = None
     created_at: datetime

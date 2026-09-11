@@ -7,6 +7,7 @@ import { AppShell } from '../../../components/AppShell';
 import { LoadingState } from '../../../components/LoadingState';
 import { ErrorState } from '../../../components/ErrorState';
 import { useToast } from '../../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 
 interface TaskDetail {
   id: string;
@@ -20,6 +21,15 @@ interface TaskDetail {
   priority: string;
   complexity: string;
   estimated_hours: number;
+  assigned_developer_id?: string;
+  assigned_developer_name?: string;
+  started_at?: string;
+  completed_at?: string;
+  total_actual_minutes?: number;
+  is_timer_running?: boolean;
+  timer_started_at?: string;
+  actual_hours?: number;
+  variance_hours?: number;
   created_at?: string;
   due_date?: string;
   task_weight_score?: number;
@@ -31,6 +41,15 @@ interface TaskDetail {
     skill_difficulty_score?: number;
   };
   required_skills?: { skill_name: string; required_level: number }[];
+  current_assignment?: {
+    id: string;
+    developer_id: string;
+    developer_name?: string;
+    compatibility_score?: number;
+    current_workload?: number;
+    assigned_at?: string;
+    status?: string;
+  };
   assignment?: {
     id: string;
     developer_id: string;
@@ -58,6 +77,8 @@ interface RecHistoryItem {
 export default function TaskDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
+  const isDev = user?.role === 'DEVELOPER';
   const taskId = params?.id as string;
   const { showToast } = useToast();
 
@@ -88,11 +109,83 @@ export default function TaskDetailPage() {
         throw new Error('Failed to load task details');
       }
       const data = await res.json();
+      if (data && data.current_assignment && !data.assignment) {
+        data.assignment = data.current_assignment;
+      }
       setTask(data);
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleStartTimer = async () => {
+    if (!task) return;
+    setUpdating(true);
+    try {
+      const token = localStorage.getItem('devalign_token');
+      const res = await fetch(`http://localhost:8000/api/tasks/${taskId}/start`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to start timer');
+      if (data && data.current_assignment && !data.assignment) {
+        data.assignment = data.current_assignment;
+      }
+      setTask(data);
+      showToast('Task timer started! Task set to IN_PROGRESS.', 'success');
+    } catch (err: any) {
+      showToast(err.message, 'error');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handlePauseTimer = async () => {
+    if (!task) return;
+    setUpdating(true);
+    try {
+      const token = localStorage.getItem('devalign_token');
+      const res = await fetch(`http://localhost:8000/api/tasks/${taskId}/pause`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to pause timer');
+      if (data && data.current_assignment && !data.assignment) {
+        data.assignment = data.current_assignment;
+      }
+      setTask(data);
+      showToast('Task timer paused.', 'info');
+    } catch (err: any) {
+      showToast(err.message, 'error');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleStopTimer = async () => {
+    if (!task) return;
+    setUpdating(true);
+    try {
+      const token = localStorage.getItem('devalign_token');
+      const res = await fetch(`http://localhost:8000/api/tasks/${taskId}/stop`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to stop timer');
+      if (data && data.current_assignment && !data.assignment) {
+        data.assignment = data.current_assignment;
+      }
+      setTask(data);
+      showToast('Task completed! Time and metrics recorded.', 'success');
+    } catch (err: any) {
+      showToast(err.message, 'error');
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -231,55 +324,72 @@ export default function TaskDetailPage() {
               {task.status}
             </span>
 
-            <Link
-              href={`/recommendations?task_id=${task.id}`}
-              className="bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs px-4 py-2 rounded-xl transition shadow-lg shadow-purple-600/20 flex items-center gap-1.5"
-            >
-              <span>⚡ Find Best Developer</span>
-            </Link>
+            {!isDev && (
+              (task.assigned_developer_name || task.assignment?.developer_name) ? (
+                <Link
+                  href={`/recommendations?task_id=${task.id}`}
+                  className="bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 font-semibold text-xs px-4 py-2 rounded-xl transition flex items-center gap-1.5"
+                >
+                  <span>🔄 Reassign Developer</span>
+                </Link>
+              ) : (
+                <Link
+                  href={`/recommendations?task_id=${task.id}`}
+                  className="bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs px-4 py-2 rounded-xl transition shadow-lg shadow-purple-600/20 flex items-center gap-1.5"
+                >
+                  <span>⚡ Find Best Developer</span>
+                </Link>
+              )
+            )}
           </div>
         </div>
 
-        {/* Status Transition Control Bar */}
+        {/* Status & Timer Execution Control Bar */}
         <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Workflow Action:</span>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Execution Controls:</span>
+            
+            {/* Timer Controls */}
+            {task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && (
+              task.is_timer_running ? (
+                <button
+                  onClick={handlePauseTimer}
+                  disabled={updating}
+                  className="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-amber-600/20"
+                >
+                  <span>⏸</span> Pause Work
+                </button>
+              ) : (
+                <button
+                  onClick={handleStartTimer}
+                  disabled={updating}
+                  className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-blue-600/20"
+                >
+                  <span>▶</span> {task.status === 'IN_PROGRESS' ? 'Resume Work' : 'Start Work (In Progress)'}
+                </button>
+              )
+            )}
+
+            {(task.status === 'IN_PROGRESS' || task.status === 'ASSIGNED' || task.status === 'IN_REVIEW') && (
+              <button
+                onClick={handleStopTimer}
+                disabled={updating}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
+              >
+                <span>■</span> Complete Task
+              </button>
+            )}
+
             {task.status === 'TODO' && (
               <button
                 onClick={() => handleStatusTransition('READY')}
                 disabled={updating}
-                className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition"
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-xl transition"
               >
                 Mark Ready
               </button>
             )}
-            {(task.status === 'TODO' || task.status === 'READY' || task.status === 'BLOCKED') && (
-              <button
-                onClick={() => handleStatusTransition('IN_PROGRESS')}
-                disabled={updating}
-                className="bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition"
-              >
-                Start Task (In Progress)
-              </button>
-            )}
-            {task.status === 'IN_PROGRESS' && (
-              <button
-                onClick={() => handleStatusTransition('IN_REVIEW')}
-                disabled={updating}
-                className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition"
-              >
-                Mark Ready for Review
-              </button>
-            )}
-            {(task.status === 'IN_PROGRESS' || task.status === 'IN_REVIEW') && (
-              <button
-                onClick={() => handleStatusTransition('COMPLETED')}
-                disabled={updating}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition"
-              >
-                ✓ Complete Task
-              </button>
-            )}
+
             {task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && task.status !== 'BLOCKED' && (
               <button
                 onClick={() => setShowBlockerInput(!showBlockerInput)}
@@ -288,6 +398,7 @@ export default function TaskDetailPage() {
                 🚨 Report Blocker
               </button>
             )}
+
             {(task.status === 'COMPLETED' || task.status === 'CANCELLED') && (
               <button
                 onClick={handleReopen}
@@ -297,6 +408,24 @@ export default function TaskDetailPage() {
                 🔓 Reopen Task
               </button>
             )}
+          </div>
+
+          {/* Time Tracking & Variance Counter */}
+          <div className="flex items-center gap-4 text-xs font-mono bg-slate-950 px-3.5 py-1.5 rounded-xl border border-slate-800">
+            <div>
+              <span className="text-slate-500 block text-[9px] uppercase font-sans">Est. Hours</span>
+              <span className="text-slate-300 font-bold">{task.estimated_hours}h</span>
+            </div>
+            <div className="border-l border-slate-800 pl-3">
+              <span className="text-slate-500 block text-[9px] uppercase font-sans">Actual Logged</span>
+              <span className="text-cyan-400 font-bold">{task.actual_hours ?? 0}h</span>
+            </div>
+            <div className="border-l border-slate-800 pl-3">
+              <span className="text-slate-500 block text-[9px] uppercase font-sans">Variance</span>
+              <span className={(task.variance_hours ?? 0) > 0 ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold'}>
+                {(task.variance_hours ?? 0) > 0 ? `+${task.variance_hours}h` : `${task.variance_hours ?? 0}h`}
+              </span>
+            </div>
           </div>
 
           {showBlockerInput && (
@@ -478,12 +607,14 @@ export default function TaskDetailPage() {
                 <div className="p-4 rounded-xl bg-slate-950 border border-dashed border-slate-800 text-center space-y-3">
                   <span className="text-2xl block">🧑‍💻</span>
                   <p className="text-xs text-slate-400">No developer assigned to this task yet.</p>
-                  <Link
-                    href={`/recommendations?task_id=${task.id}`}
-                    className="inline-block bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs px-4 py-2 rounded-xl transition"
-                  >
-                    Find & Assign Developer →
-                  </Link>
+                  {!isDev && (
+                    <Link
+                      href={`/recommendations?task_id=${task.id}`}
+                      className="inline-block bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs px-4 py-2 rounded-xl transition"
+                    >
+                      Find & Assign Developer →
+                    </Link>
+                  )}
                 </div>
               )}
             </div>

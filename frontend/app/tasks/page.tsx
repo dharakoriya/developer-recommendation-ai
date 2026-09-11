@@ -8,6 +8,7 @@ import { LoadingState } from '../../components/LoadingState';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 
 export interface ProjectOption {
   id: string;
@@ -22,14 +23,22 @@ export interface TaskItem {
   description?: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   complexity: 'LOW' | 'MEDIUM' | 'HIGH';
-  status: 'TODO' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  status: 'TODO' | 'READY' | 'ASSIGNED' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | 'BLOCKED' | 'CANCELLED';
   estimated_hours: number;
   assigned_developer_id?: string;
   assigned_developer_name?: string;
+  current_assignment?: {
+    id: string;
+    developer_id: string;
+    developer_name: string;
+    status: string;
+  };
 }
 
 export default function TasksPage() {
+  const { user } = useAuth();
   const { showToast } = useToast();
+  const isDev = user?.role === 'DEVELOPER';
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -316,45 +325,70 @@ export default function TasksPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
-                {filteredTasks.map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                    <td className="p-3.5 font-bold text-slate-900 dark:text-white max-w-xs truncate">{t.title}</td>
-                    <td className="p-3.5">
-                      <Link
-                        href={`/projects/${t.project_id}`}
-                        className="inline-flex items-center gap-1 bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20 px-2.5 py-1 rounded-md text-[11px] font-semibold hover:bg-purple-500/20 transition"
-                      >
-                        <span>📁</span>
-                        <span>{t.project_name || 'Project'}</span>
-                      </Link>
-                    </td>
-                    <td className="p-3.5">
-                      <StatusBadge status={t.priority} type="priority" />
-                    </td>
-                    <td className="p-3.5">
-                      <StatusBadge status={t.complexity} type="complexity" />
-                    </td>
-                    <td className="p-3.5 font-mono text-slate-600 dark:text-slate-300">{t.estimated_hours} hrs</td>
-                    <td className="p-3.5">
-                      <StatusBadge status={t.status} type="task_status" />
-                    </td>
-                    <td className="p-3.5 text-slate-700 dark:text-slate-300 font-medium">
-                      {t.assigned_developer_name || 'Unassigned'}
-                    </td>
-                    <td className="p-3.5 text-right">
-                      {t.status === 'TODO' || !t.assigned_developer_name ? (
-                        <Link
-                          href={`/recommendations?task_id=${t.id}`}
-                          className="bg-blue-50 dark:bg-blue-600/20 hover:bg-blue-100 dark:hover:bg-blue-600/30 text-blue-600 dark:text-blue-400 font-semibold px-3 py-1.5 rounded border border-blue-200 dark:border-blue-500/30 text-[11px] inline-block transition"
-                        >
-                          Find Best Developer →
+                {filteredTasks.map((t) => {
+                  const devName = t.assigned_developer_name || t.current_assignment?.developer_name;
+                  return (
+                    <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                      <td className="p-3.5 font-bold text-slate-900 dark:text-white max-w-xs truncate">
+                        <Link href={`/tasks/${t.id}`} className="hover:text-purple-600 dark:hover:text-purple-400">
+                          {t.title}
                         </Link>
-                      ) : (
-                        <span className="text-slate-400 dark:text-slate-500 font-mono text-[11px]">Allocated</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="p-3.5">
+                        <Link
+                          href={`/projects/${t.project_id}`}
+                          className="inline-flex items-center gap-1 bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20 px-2.5 py-1 rounded-md text-[11px] font-semibold hover:bg-purple-500/20 transition"
+                        >
+                          <span>📁</span>
+                          <span>{t.project_name || 'Project'}</span>
+                        </Link>
+                      </td>
+                      <td className="p-3.5">
+                        <StatusBadge status={t.priority} type="priority" />
+                      </td>
+                      <td className="p-3.5">
+                        <StatusBadge status={t.complexity} type="complexity" />
+                      </td>
+                      <td className="p-3.5 font-mono text-slate-600 dark:text-slate-300">{t.estimated_hours} hrs</td>
+                      <td className="p-3.5">
+                        <StatusBadge status={t.status} type="task_status" />
+                      </td>
+                      <td className="p-3.5 text-slate-700 dark:text-slate-300 font-medium">
+                        {devName ? (
+                          <span className="inline-flex items-center gap-1.5 font-semibold text-purple-700 dark:text-purple-300 bg-purple-500/10 border border-purple-500/20 px-2.5 py-1 rounded-md text-[11px]">
+                            <span>🧑‍💻</span> {devName}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 dark:text-slate-500 font-mono text-[11px]">Unassigned</span>
+                        )}
+                      </td>
+                      <td className="p-3.5 text-right space-x-2">
+                        {isDev ? (
+                          <Link
+                            href={`/tasks/${t.id}`}
+                            className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold px-3 py-1.5 rounded border border-slate-200 dark:border-slate-700 text-[11px] inline-block transition"
+                          >
+                            View Task →
+                          </Link>
+                        ) : !devName ? (
+                          <Link
+                            href={`/recommendations?task_id=${t.id}`}
+                            className="bg-blue-50 dark:bg-blue-600/20 hover:bg-blue-100 dark:hover:bg-blue-600/30 text-blue-600 dark:text-blue-400 font-semibold px-3 py-1.5 rounded border border-blue-200 dark:border-blue-500/30 text-[11px] inline-block transition"
+                          >
+                            Find Best Developer →
+                          </Link>
+                        ) : (
+                          <Link
+                            href={`/recommendations?task_id=${t.id}`}
+                            className="bg-purple-50 dark:bg-purple-600/20 hover:bg-purple-100 dark:hover:bg-purple-600/30 text-purple-600 dark:text-purple-400 font-semibold px-3 py-1.5 rounded border border-purple-200 dark:border-purple-500/30 text-[11px] inline-block transition"
+                          >
+                            Reassign / View →
+                          </Link>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

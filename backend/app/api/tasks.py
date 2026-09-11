@@ -1,4 +1,6 @@
 import uuid
+from datetime import datetime, timezone
+from decimal import Decimal
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
@@ -71,6 +73,18 @@ def build_task_response(task: Task) -> TaskResponse:
     active_assign = next((a for a in all_assigns if a.status == AssignmentStatus.ACTIVE), None)
     curr_resp = build_assignment_response(active_assign) if active_assign else None
 
+    assigned_dev_id = active_assign.developer_id if active_assign else None
+    assigned_dev_name = (
+        active_assign.developer_profile.user.name
+        if active_assign and active_assign.developer_profile and active_assign.developer_profile.user
+        else None
+    )
+
+    actual_mins = getattr(task, "total_actual_minutes", 0) or 0
+    actual_hrs = round(actual_mins / 60.0, 2)
+    est_hrs = float(task.estimated_hours) if task.estimated_hours else 0.0
+    variance_hrs = round(actual_hrs - est_hrs, 2)
+
     return TaskResponse(
         id=task.id,
         project_id=task.project_id,
@@ -85,6 +99,15 @@ def build_task_response(task: Task) -> TaskResponse:
         estimated_hours=task.estimated_hours,
         deadline=task.deadline,
         status=task.status,
+        assigned_developer_id=assigned_dev_id,
+        assigned_developer_name=assigned_dev_name,
+        started_at=getattr(task, "started_at", None),
+        completed_at=getattr(task, "completed_at", None),
+        total_actual_minutes=actual_mins,
+        is_timer_running=getattr(task, "is_timer_running", False) or False,
+        timer_started_at=getattr(task, "timer_started_at", None),
+        actual_hours=actual_hrs,
+        variance_hours=variance_hrs,
         created_by=task.created_by,
         creator_name=creator.name if creator else "Unknown",
         created_at=task.created_at,
@@ -313,11 +336,12 @@ def update_task(
     if task_in.status is not None and task_in.status != task.status:
         # Enforce valid task status transitions
         ALLOWED_TRANSITIONS = {
-            TaskStatus.TODO: [TaskStatus.READY, TaskStatus.IN_PROGRESS, TaskStatus.CANCELLED],
-            TaskStatus.READY: [TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED, TaskStatus.CANCELLED],
+            TaskStatus.TODO: [TaskStatus.READY, TaskStatus.ASSIGNED, TaskStatus.IN_PROGRESS, TaskStatus.CANCELLED],
+            TaskStatus.READY: [TaskStatus.ASSIGNED, TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED, TaskStatus.CANCELLED],
+            TaskStatus.ASSIGNED: [TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED, TaskStatus.CANCELLED, TaskStatus.TODO],
             TaskStatus.IN_PROGRESS: [TaskStatus.IN_REVIEW, TaskStatus.COMPLETED, TaskStatus.BLOCKED, TaskStatus.CANCELLED],
             TaskStatus.IN_REVIEW: [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED, TaskStatus.CANCELLED],
-            TaskStatus.BLOCKED: [TaskStatus.IN_PROGRESS, TaskStatus.READY, TaskStatus.CANCELLED],
+            TaskStatus.BLOCKED: [TaskStatus.IN_PROGRESS, TaskStatus.ASSIGNED, TaskStatus.READY, TaskStatus.CANCELLED],
             TaskStatus.COMPLETED: [],
             TaskStatus.CANCELLED: [],
         }
@@ -408,11 +432,12 @@ def update_task_status(
         )
 
     ALLOWED_TRANSITIONS = {
-        TaskStatus.TODO: [TaskStatus.READY, TaskStatus.IN_PROGRESS, TaskStatus.CANCELLED],
-        TaskStatus.READY: [TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED, TaskStatus.CANCELLED],
+        TaskStatus.TODO: [TaskStatus.READY, TaskStatus.ASSIGNED, TaskStatus.IN_PROGRESS, TaskStatus.CANCELLED],
+        TaskStatus.READY: [TaskStatus.ASSIGNED, TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED, TaskStatus.CANCELLED],
+        TaskStatus.ASSIGNED: [TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED, TaskStatus.CANCELLED, TaskStatus.TODO],
         TaskStatus.IN_PROGRESS: [TaskStatus.IN_REVIEW, TaskStatus.COMPLETED, TaskStatus.BLOCKED, TaskStatus.CANCELLED],
         TaskStatus.IN_REVIEW: [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED, TaskStatus.CANCELLED],
-        TaskStatus.BLOCKED: [TaskStatus.IN_PROGRESS, TaskStatus.READY, TaskStatus.CANCELLED],
+        TaskStatus.BLOCKED: [TaskStatus.IN_PROGRESS, TaskStatus.ASSIGNED, TaskStatus.READY, TaskStatus.CANCELLED],
         TaskStatus.COMPLETED: [],
         TaskStatus.CANCELLED: [],
     }
@@ -486,6 +511,138 @@ def reopen_task(
         )
 
     task.status = TaskStatus.TODO
+    db.commit()
+    db.refresh(task)
+    invalidate_task_recommendations(db, id)
+    return build_task_response(task)
+
+
+@router.post("/tasks/{id}/start", response_model=TaskResponse, summary="Start execution timer on task")
+def start_task_timer(
+    id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Starts work on a task. Sets status to IN_PROGRESS, started_at timestamp, and activates the execution timer.
+    """
+    stmt = select(Task).options(*get_task_options()).where(Task.id == id)
+    task = db.execute(stmt).unique().scalar_one_or_none()
+
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Task with ID {id} not found.")
+
+    if current_user.role == UserRole.DEVELOPER:
+        active_assign = next((a for a in (task.assignments or []) if a.status == AssignmentStatus.ACTIVE), None)
+        if not active_assign or active_assign.developer_profile.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden. You can only start tasks assigned to you.")
+
+    if task.status in (TaskStatus.COMPLETED, TaskStatus.CANCELLED):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Cannot start task in {task.status.value} state. Reopen first.")
+
+    now = datetime.now(timezone.utc)
+    task.status = TaskStatus.IN_PROGRESS
+    if not task.started_at:
+        task.started_at = now
+    task.is_timer_running = True
+    task.timer_started_at = now
+
+    db.commit()
+    db.refresh(task)
+    invalidate_task_recommendations(db, id)
+    return build_task_response(task)
+
+
+@router.post("/tasks/{id}/pause", response_model=TaskResponse, summary="Pause execution timer on task")
+def pause_task_timer(
+    id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Pauses execution timer on a task and accumulates elapsed duration.
+    """
+    stmt = select(Task).options(*get_task_options()).where(Task.id == id)
+    task = db.execute(stmt).unique().scalar_one_or_none()
+
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Task with ID {id} not found.")
+
+    if current_user.role == UserRole.DEVELOPER:
+        active_assign = next((a for a in (task.assignments or []) if a.status == AssignmentStatus.ACTIVE), None)
+        if not active_assign or active_assign.developer_profile.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden. You can only pause tasks assigned to you.")
+
+    if task.is_timer_running and task.timer_started_at:
+        now = datetime.now(timezone.utc)
+        timer_start = task.timer_started_at.replace(tzinfo=timezone.utc) if task.timer_started_at.tzinfo is None else task.timer_started_at
+        elapsed_seconds = (now - timer_start).total_seconds()
+        elapsed_minutes = max(1, int(elapsed_seconds // 60))
+        task.total_actual_minutes = (task.total_actual_minutes or 0) + elapsed_minutes
+        task.is_timer_running = False
+        task.timer_started_at = None
+
+    db.commit()
+    db.refresh(task)
+    return build_task_response(task)
+
+
+@router.post("/tasks/{id}/stop", response_model=TaskResponse, summary="Stop timer and complete task")
+def stop_task_timer(
+    id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Stops timer, accumulates elapsed time, and marks task as COMPLETED.
+    """
+    stmt = select(Task).options(*get_task_options()).where(Task.id == id)
+    task = db.execute(stmt).unique().scalar_one_or_none()
+
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Task with ID {id} not found.")
+
+    if current_user.role == UserRole.DEVELOPER:
+        active_assign = next((a for a in (task.assignments or []) if a.status == AssignmentStatus.ACTIVE), None)
+        if not active_assign or active_assign.developer_profile.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden. You can only complete tasks assigned to you.")
+
+    now = datetime.now(timezone.utc)
+    if task.is_timer_running and task.timer_started_at:
+        timer_start = task.timer_started_at.replace(tzinfo=timezone.utc) if task.timer_started_at.tzinfo is None else task.timer_started_at
+        elapsed_seconds = (now - timer_start).total_seconds()
+        elapsed_minutes = max(1, int(elapsed_seconds // 60))
+        task.total_actual_minutes = (task.total_actual_minutes or 0) + elapsed_minutes
+        task.is_timer_running = False
+        task.timer_started_at = None
+
+    task.status = TaskStatus.COMPLETED
+    task.completed_at = now
+
+    active_assign = next((a for a in (task.assignments or []) if a.status == AssignmentStatus.ACTIVE), None)
+    if active_assign:
+        active_assign.status = AssignmentStatus.COMPLETED
+        active_assign.completed_at = now
+
+        from app.services.task_weight_service import calculate_task_weight_score
+        task_weight = calculate_task_weight_score(task)
+        task.task_weight_score = Decimal(str(task_weight))
+        db.commit()
+
+        from app.services.performance_service import (
+            update_developer_streak_on_task_completion,
+            evaluate_and_grant_developer_achievements,
+            calculate_and_record_incentive_points,
+            snapshot_developer_performance,
+        )
+        from app.services.outcome_dataset_service import update_assignment_outcome
+
+        update_developer_streak_on_task_completion(db, active_assign.developer_id, task_weight)
+        calculate_and_record_incentive_points(db, active_assign.developer_id, task.id)
+        evaluate_and_grant_developer_achievements(db, active_assign.developer_id)
+        snapshot_developer_performance(db, active_assign.developer_id)
+        update_assignment_outcome(db, active_assign)
+
     db.commit()
     db.refresh(task)
     invalidate_task_recommendations(db, id)

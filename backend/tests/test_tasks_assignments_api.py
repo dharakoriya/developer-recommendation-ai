@@ -304,9 +304,9 @@ def test_developer_assignment_and_history_preservation(client):
     assert a_alice["developer_name"] == "Dev Alice"
     assert a_alice["status"] == "ACTIVE"
 
-    # Task status should automatically transition to IN_PROGRESS
+    # Task status should automatically transition to ASSIGNED
     task_check = client.get(f"/api/tasks/{t_id}", headers=mgr_headers).json()
-    assert task_check["status"] == "IN_PROGRESS"
+    assert task_check["status"] == "ASSIGNED"
 
     # Attempting to assign Alice again -> 400 Bad Request
     dup_assign = client.post(
