@@ -57,7 +57,7 @@ def get_project_health_analytics(db: Session) -> ProjectHealthOverviewResponse:
         if dev_ids:
             workload_stmt = select(WorkloadRecord).where(WorkloadRecord.developer_id.in_(dev_ids))
             workloads = db.execute(workload_stmt).scalars().all()
-            high_risk_count = sum(1 for w in workloads if float(w.workload_score) > 75.0 or w.is_overloaded)
+            high_risk_count = sum(1 for w in workloads if float(w.workload_score) > 75.0)
 
         # Calculate Project Health Score (0 - 100)
         # Factor 1: Completion Rate (30%)
