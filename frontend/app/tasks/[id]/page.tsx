@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AppShell } from '../../../components/AppShell';
@@ -9,10 +9,28 @@ import { ErrorState } from '../../../components/ErrorState';
 import { useToast } from '../../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+interface RequiredSkill {
+  skill_name: string;
+  required_level: number;
+}
+
+interface AssignmentInfo {
+  id: string;
+  developer_id: string;
+  developer_name?: string;
+  compatibility_score?: number;
+  current_workload?: number;
+  assigned_at?: string;
+  status?: string;
+}
+
 interface TaskDetail {
   id: string;
   title: string;
   description?: string;
+  category?: string;
   project_id?: string;
   project_name?: string;
   team_id?: string;
@@ -21,681 +39,624 @@ interface TaskDetail {
   priority: string;
   complexity: string;
   estimated_hours: number;
+  deadline?: string;
   assigned_developer_id?: string;
   assigned_developer_name?: string;
   started_at?: string;
   completed_at?: string;
   completed_by?: string;
   completed_by_name?: string;
-  total_actual_minutes?: number;
-  is_timer_running?: boolean;
+  total_actual_minutes: number;
+  total_actual_seconds: number;
+  is_timer_running: boolean;
   timer_started_at?: string;
-  actual_hours?: number;
-  variance_hours?: number;
+  actual_hours: number;
+  variance_hours: number;
   created_at?: string;
-  due_date?: string;
+  updated_at?: string;
   task_weight_score?: number;
-  task_weight_category?: string;
-  weight_breakdown?: {
-    complexity_score?: number;
-    priority_score?: number;
-    effort_score?: number;
-    skill_difficulty_score?: number;
-  };
-  required_skills?: { skill_name: string; required_level: number }[];
-  current_assignment?: {
-    id: string;
-    developer_id: string;
-    developer_name?: string;
-    compatibility_score?: number;
-    current_workload?: number;
-    assigned_at?: string;
-    status?: string;
-  };
-  assignment?: {
-    id: string;
-    developer_id: string;
-    developer_name?: string;
-    compatibility_score?: number;
-    current_workload?: number;
-    assigned_at?: string;
-    status?: string;
-  };
+  required_skills?: RequiredSkill[];
+  current_assignment?: AssignmentInfo;
+  assignment_history?: AssignmentInfo[];
+  creator_name?: string;
 }
 
-interface RecHistoryItem {
-  id: string;
-  created_at: string;
-  developer_name: string;
-  rank: number;
-  compatibility_score: number;
-  eligibility_status: string;
-  selected_by_user_id?: string;
-  selection_reason?: string;
-  override_reason?: string;
-  assigned_at?: string;
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function fmtSecs(totalSecs: number): string {
+  const h = Math.floor(totalSecs / 3600);
+  const m = Math.floor((totalSecs % 3600) / 60);
+  const s = totalSecs % 60;
+  return [h, m, s].map((v) => String(v).padStart(2, '0')).join(':');
 }
 
-export default function TaskDetailPage() {
-  const params = useParams();
-  const router = useRouter();
-  const { user } = useAuth();
-  const isDev = user?.role === 'DEVELOPER';
-  const isManager = user?.role === 'MANAGER' || user?.role === 'ADMIN';
-  const taskId = params?.id as string;
-  const { showToast } = useToast();
+function fmtDate(iso?: string): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
 
-  const [task, setTask] = useState<TaskDetail | null>(null);
-  const [history, setHistory] = useState<RecHistoryItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [updating, setUpdating] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [blockerReason, setBlockerReason] = useState<string>('');
-  const [showBlockerInput, setShowBlockerInput] = useState<boolean>(false);
+function fmtDateShort(iso?: string): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  TODO: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700',
+  IN_PROGRESS: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30',
+  COMPLETED: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+  CANCELLED: 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20',
+  BLOCKED: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30',
+};
+
+const PRIORITY_COLORS: Record<string, string> = {
+  LOW: 'text-slate-500',
+  MEDIUM: 'text-blue-600 dark:text-blue-400',
+  HIGH: 'text-amber-600 dark:text-amber-400',
+  CRITICAL: 'text-rose-600 dark:text-rose-400',
+};
+
+const COMPLEXITY_BADGE: Record<string, string> = {
+  LOW: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+  MEDIUM: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
+  HIGH: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
+  VERY_HIGH: 'bg-rose-500/10 text-rose-700 dark:text-rose-400',
+};
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function InfoRow({ label, value, mono = false }: { label: string; value: React.ReactNode; mono?: boolean }) {
+  return (
+    <div className="flex items-start justify-between gap-4 py-2 border-b border-slate-100 dark:border-slate-800/60 last:border-0">
+      <span className="text-xs text-slate-500 dark:text-slate-400 shrink-0 w-36">{label}</span>
+      <span className={`text-xs font-semibold text-slate-800 dark:text-slate-200 text-right ${mono ? 'font-mono' : ''}`}>{value}</span>
+    </div>
+  );
+}
+
+function SectionCard({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="flex items-center gap-2 px-5 py-3 bg-slate-50 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800">
+        <span className="text-base">{icon}</span>
+        <h2 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">{title}</h2>
+      </div>
+      <div className="p-5">{children}</div>
+    </div>
+  );
+}
+
+// ─── Live Timer Display ───────────────────────────────────────────────────────
+
+function LiveTimerDisplay({ task }: { task: TaskDetail }) {
+  const [liveSecs, setLiveSecs] = useState<number>(task.total_actual_seconds || 0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (taskId) {
-      fetchTaskDetail();
-      fetchRecommendationHistory();
-    }
-  }, [taskId]);
+    const base = task.total_actual_seconds || 0;
 
-  const fetchTaskDetail = async () => {
-    setLoading(true);
+    if (task.is_timer_running && task.timer_started_at) {
+      const startMs = new Date(task.timer_started_at).getTime();
+      const computeLive = () => {
+        const elapsed = Math.floor((Date.now() - startMs) / 1000);
+        setLiveSecs(base + elapsed);
+      };
+      computeLive();
+      intervalRef.current = setInterval(computeLive, 1000);
+    } else {
+      setLiveSecs(base);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    }
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [task.is_timer_running, task.timer_started_at, task.total_actual_seconds]);
+
+  const estimatedSecs = Math.round((task.estimated_hours || 0) * 3600);
+  const overBudget = liveSecs > estimatedSecs && estimatedSecs > 0;
+  const pct = estimatedSecs > 0 ? Math.min(100, Math.round((liveSecs / estimatedSecs) * 100)) : 0;
+
+  return (
+    <div className="space-y-4">
+      {/* Big timer display */}
+      <div className="flex items-center gap-4">
+        <div className={`text-5xl font-black font-mono tracking-wider ${task.is_timer_running ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>
+          {fmtSecs(liveSecs)}
+        </div>
+        <div className="space-y-1">
+          {task.is_timer_running ? (
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">RECORDING</span>
+            </div>
+          ) : (
+            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              {task.status === 'COMPLETED' ? 'TOTAL TIME' : 'PAUSED'}
+            </div>
+          )}
+          <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+            Est: {fmtSecs(estimatedSecs)}
+          </div>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      {estimatedSecs > 0 && (
+        <div className="space-y-1">
+          <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+            <span>{overBudget ? '⚠ Over Estimated Time' : 'Time vs Estimate'}</span>
+            <span>{pct}%</span>
+          </div>
+          <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-1000 ${overBudget ? 'bg-rose-500' : pct > 75 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Variance */}
+      <div className="flex gap-4 text-xs font-mono">
+        <div>
+          <span className="text-slate-500 dark:text-slate-400">Actual: </span>
+          <span className="font-bold text-slate-800 dark:text-slate-200">{(liveSecs / 3600).toFixed(2)} h</span>
+        </div>
+        <div>
+          <span className="text-slate-500 dark:text-slate-400">Est: </span>
+          <span className="font-bold text-slate-800 dark:text-slate-200">{task.estimated_hours} h</span>
+        </div>
+        <div>
+          <span className="text-slate-500 dark:text-slate-400">Δ </span>
+          <span className={`font-bold ${overBudget ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+            {overBudget ? '+' : ''}{((liveSecs / 3600) - (task.estimated_hours || 0)).toFixed(2)} h
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
+export default function TaskDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const { showToast } = useToast();
+  const router = useRouter();
+
+  const [task, setTask] = useState<TaskDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [showRecommendModal, setShowRecommendModal] = useState(false);
+
+  const token = typeof window !== 'undefined' ? localStorage.getItem('devalign_token') : null;
+  const authHeaders = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+
+  const fetchTask = useCallback(async () => {
+    if (!id) return;
     setError(null);
     try {
-      const token = localStorage.getItem('devalign_token');
-      const res = await fetch(`http://localhost:8000/api/tasks/${taskId}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!res.ok) {
-        throw new Error('Failed to load task details');
-      }
-      const data = await res.json();
-      if (data && data.current_assignment && !data.assignment) {
-        data.assignment = data.current_assignment;
-      }
-      setTask(data);
-    } catch (err: any) {
-      setError(err.message);
+      const res = await fetch(`http://localhost:8000/api/tasks/${id}`, { headers: authHeaders });
+      if (!res.ok) throw new Error((await res.json()).detail || 'Task not found');
+      setTask(await res.json());
+    } catch (e: any) {
+      setError(e.message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
-  const handleStartTimer = async () => {
-    if (!task) return;
-    setUpdating(true);
+  useEffect(() => { fetchTask(); }, [fetchTask]);
+
+  // ── Derived role state ────────────────────────────────────────────────────
+  const isAdmin = user?.role === 'ADMIN';
+  const isManager = user?.role === 'MANAGER';
+  const isDeveloper = user?.role === 'DEVELOPER';
+  const isManagerOrAdmin = isAdmin || isManager;
+
+  const isAssignedToMe = isDeveloper && !!task?.current_assignment && task.current_assignment.developer_id === task.assigned_developer_id;
+  // (API returns assigned_developer_id from active assignment; we compare via user name matching from context)
+  // More reliable: check assigned_developer_name vs user name
+  const isMyTask = isDeveloper && !!task?.assigned_developer_name &&
+    task.assigned_developer_name.toLowerCase().trim() === (user?.name || '').toLowerCase().trim();
+
+  const canStartTimer = isMyTask && task?.status === 'IN_PROGRESS' && !task?.is_timer_running;
+  const canPauseTimer = isMyTask && task?.is_timer_running;
+  const canCompleteTask = isMyTask && (task?.status === 'IN_PROGRESS' || task?.status === 'TODO');
+  const canReopenTask = isManagerOrAdmin && task?.status === 'CANCELLED';
+  const canReassign = isManagerOrAdmin && task?.status !== 'COMPLETED' && task?.status !== 'CANCELLED';
+
+  // ── API action helper ─────────────────────────────────────────────────────
+  const doAction = async (endpoint: string, method = 'POST', body?: object) => {
+    setActionLoading(endpoint);
     try {
-      const token = localStorage.getItem('devalign_token');
-      const res = await fetch(`http://localhost:8000/api/tasks/${taskId}/start`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      const res = await fetch(`http://localhost:8000/api/tasks/${id}/${endpoint}`, {
+        method,
+        headers: authHeaders,
+        body: body ? JSON.stringify(body) : undefined,
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Failed to start timer');
-      if (data && data.current_assignment && !data.assignment) {
-        data.assignment = data.current_assignment;
-      }
+      if (!res.ok) throw new Error(data.detail || 'Action failed');
       setTask(data);
-      showToast('Task timer started! Task set to IN_PROGRESS.', 'success');
-    } catch (err: any) {
-      showToast(err.message, 'error');
+      showToast(`${endpoint.charAt(0).toUpperCase() + endpoint.slice(1)} successful`, 'success');
+    } catch (e: any) {
+      showToast(e.message, 'error');
     } finally {
-      setUpdating(false);
+      setActionLoading(null);
     }
   };
 
-  const handlePauseTimer = async () => {
-    if (!task) return;
-    setUpdating(true);
+  const handleStatusChange = async (newStatus: string) => {
+    setActionLoading('status');
     try {
-      const token = localStorage.getItem('devalign_token');
-      const res = await fetch(`http://localhost:8000/api/tasks/${taskId}/pause`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Failed to pause timer');
-      if (data && data.current_assignment && !data.assignment) {
-        data.assignment = data.current_assignment;
-      }
-      setTask(data);
-      showToast('Task timer paused.', 'info');
-    } catch (err: any) {
-      showToast(err.message, 'error');
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const handleStopTimer = async () => {
-    if (!task) return;
-    setUpdating(true);
-    try {
-      const token = localStorage.getItem('devalign_token');
-      const res = await fetch(`http://localhost:8000/api/tasks/${taskId}/stop`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Failed to stop timer');
-      if (data && data.current_assignment && !data.assignment) {
-        data.assignment = data.current_assignment;
-      }
-      setTask(data);
-      showToast('Task completed! Time and metrics recorded.', 'success');
-    } catch (err: any) {
-      showToast(err.message, 'error');
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const fetchRecommendationHistory = async () => {
-    try {
-      const token = localStorage.getItem('devalign_token');
-      const res = await fetch(`http://localhost:8000/api/recommendations/tasks/${taskId}/history`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setHistory(data.history || []);
-      }
-    } catch (err) {
-      // optional history load
-    }
-  };
-
-  const handleStatusTransition = async (newStatus: string) => {
-    if (!task) return;
-    setUpdating(true);
-    try {
-      const token = localStorage.getItem('devalign_token');
-      const payload: any = { status: newStatus };
-      if (newStatus === 'BLOCKED' && blockerReason) {
-        payload.blocker_reason = blockerReason;
-      }
-
-      const res = await fetch(`http://localhost:8000/api/tasks/${taskId}/status`, {
+      const res = await fetch(`http://localhost:8000/api/tasks/${id}/status`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(payload),
+        headers: authHeaders,
+        body: JSON.stringify({ status: newStatus }),
       });
-
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.detail || 'Failed to update task status');
-      }
-
-      setTask((prev) => (prev ? { ...prev, status: data.status } : null));
-      showToast(`Task status updated to ${data.status}`, 'success');
-      setShowBlockerInput(false);
-      setBlockerReason('');
-    } catch (err: any) {
-      showToast(err.message, 'error');
+      if (!res.ok) throw new Error(data.detail || 'Status update failed');
+      setTask(data);
+      showToast(`Status changed to ${newStatus}`, 'success');
+    } catch (e: any) {
+      showToast(e.message, 'error');
     } finally {
-      setUpdating(false);
+      setActionLoading(null);
     }
   };
 
-  const handleReopen = async () => {
-    if (!task) return;
-    setUpdating(true);
-    try {
-      const token = localStorage.getItem('devalign_token');
-      const res = await fetch(`http://localhost:8000/api/tasks/${taskId}/reopen`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+  if (loading) return <AppShell><LoadingState message="Loading task details..." /></AppShell>;
+  if (error || !task) return <AppShell><ErrorState message={error || 'Task not found'} onRetry={fetchTask} /></AppShell>;
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.detail || 'Failed to reopen task');
-      }
-
-      setTask((prev) => (prev ? { ...prev, status: data.status } : null));
-      showToast('Task successfully reopened to READY status', 'success');
-    } catch (err: any) {
-      showToast(err.message, 'error');
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <AppShell>
-        <LoadingState message="Loading central task intelligence..." />
-      </AppShell>
-    );
-  }
-
-  if (error || !task) {
-    return (
-      <AppShell>
-        <ErrorState message={error || 'Task not found'} onRetry={fetchTaskDetail} />
-      </AppShell>
-    );
-  }
-
-  const weightCategory = task.task_weight_category || 'MODERATE';
-  const weightScore = task.task_weight_score ?? 50;
-
-  // Bug 9 fix: determine if the current user is the assigned developer for this task
-  const isAssignedDeveloper =
-    isDev && task.current_assignment?.developer_id &&
-    // We compare via the profile; the assignment stores developer_profile.id (not user.id)
-    // The best check is: current user's assigned_developer_id from task if present
-    // Since we don't have developer_profile.user_id directly on the assignment response,
-    // we use the fact that if isDev and the task has current_assignment.developer_name matching
-    // the user name, OR we rely on the backend to enforce it and just show controls for devs
-    // who are assigned (the backend will 403 anyway if wrong).
-    !!task.current_assignment;
-
-  // Show execution controls only to: (a) the assigned developer, or (b) manager/admin
-  const canUseTimerControls = isManager || isAssignedDeveloper;
-
-  const isTaskTerminal = task.status === 'COMPLETED' || task.status === 'CANCELLED';
-
-  const getWeightColor = (cat: string) => {
-    switch (cat) {
-      case 'LIGHT': return 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30';
-      case 'MODERATE': return 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30';
-      case 'HEAVY': return 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30';
-      case 'CRITICAL': return 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30';
-      default: return 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-500/10 border-slate-200 dark:border-slate-500/30';
-    }
-  };
-
-  const getStatusBadge = (st: string) => {
-    switch (st) {
-      case 'TODO': return 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700';
-      case 'READY': return 'bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-500/30';
-      case 'ASSIGNED': return 'bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/30';
-      case 'IN_PROGRESS': return 'bg-amber-50 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30';
-      case 'IN_REVIEW': return 'bg-purple-50 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-500/30';
-      case 'COMPLETED': return 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30';
-      case 'BLOCKED': return 'bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-500/30';
-      case 'CANCELLED': return 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-500 border-slate-200 dark:border-slate-700';
-      default: return 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700';
-    }
-  };
+  const statusCls = STATUS_COLORS[task.status] || STATUS_COLORS['TODO'];
+  const weightScore = task.task_weight_score ? Math.round(Number(task.task_weight_score)) : null;
 
   return (
     <AppShell>
-      <div className="space-y-6 max-w-7xl mx-auto pb-12">
-        {/* Header Breadcrumb & Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
-          <div>
-            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
-              <Link href="/tasks" className="hover:text-purple-600 dark:hover:text-purple-400">Tasks</Link>
-              <span>/</span>
-              <span className="text-slate-700 dark:text-slate-200 font-mono">{task.project_name || 'Project'}</span>
-            </div>
-            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">{task.title}</h1>
+      <div className="max-w-5xl mx-auto space-y-5 pb-12">
+
+        {/* ── Breadcrumb & Header ──────────────────────────────────────────── */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <Link href="/tasks" className="hover:text-purple-600 dark:hover:text-purple-400 font-medium">Tasks</Link>
+            <span>›</span>
+            {task.project_name && (
+              <>
+                <span className="text-slate-400 dark:text-slate-500">{task.project_name}</span>
+                <span>›</span>
+              </>
+            )}
+            <span className="text-slate-800 dark:text-slate-200 font-semibold truncate max-w-xs">{task.title}</span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className={`text-xs font-bold px-3 py-1.5 rounded-xl border font-mono ${getStatusBadge(task.status)}`}>
-              {task.status}
-            </span>
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div className="space-y-2 flex-1 min-w-0">
+              {isMyTask && (
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold font-mono px-2.5 py-1 rounded-full bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30">
+                  🎯 MY TASK
+                </span>
+              )}
+              <h1 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-snug">
+                {task.title}
+              </h1>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${statusCls}`}>
+                  {task.status.replace('_', ' ')}
+                </span>
+                <span className={`text-xs font-bold ${PRIORITY_COLORS[task.priority]}`}>
+                  ▲ {task.priority}
+                </span>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono ${COMPLEXITY_BADGE[task.complexity] || ''}`}>
+                  {task.complexity}
+                </span>
+                {weightScore !== null && (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-purple-500/10 text-purple-700 dark:text-purple-300">
+                    WEIGHT {weightScore}
+                  </span>
+                )}
+              </div>
+            </div>
 
-            {/* Bug 4 fix: only show assign/reassign on non-terminal tasks, and only for managers */}
-            {isManager && !isTaskTerminal && (
-              (task.assigned_developer_name || task.assignment?.developer_name) ? (
+            {/* Action buttons */}
+            <div className="flex flex-wrap gap-2 shrink-0">
+              {/* Developer controls */}
+              {canStartTimer && (
+                <button
+                  onClick={() => doAction('start')}
+                  disabled={!!actionLoading}
+                  className="btn-primary bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow-md shadow-emerald-600/20 disabled:opacity-50"
+                >
+                  {actionLoading === 'start' ? '…' : '▶ Resume Timer'}
+                </button>
+              )}
+              {canPauseTimer && (
+                <button
+                  onClick={() => doAction('pause')}
+                  disabled={!!actionLoading}
+                  className="text-xs font-bold px-4 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 transition disabled:opacity-50"
+                >
+                  {actionLoading === 'pause' ? '…' : '⏸ Pause'}
+                </button>
+              )}
+              {canCompleteTask && (
+                <button
+                  onClick={() => doAction('stop')}
+                  disabled={!!actionLoading}
+                  className="text-xs font-bold px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-md disabled:opacity-50"
+                >
+                  {actionLoading === 'stop' ? '…' : '✓ Mark Complete'}
+                </button>
+              )}
+
+              {/* Developer: start work (start timer + set IN_PROGRESS) */}
+              {isMyTask && task.status === 'TODO' && !task.is_timer_running && (
+                <button
+                  onClick={() => doAction('start')}
+                  disabled={!!actionLoading}
+                  className="text-xs font-bold px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white transition shadow-md disabled:opacity-50"
+                >
+                  {actionLoading === 'start' ? '…' : '▶ Start Work'}
+                </button>
+              )}
+
+              {/* Manager/Admin controls */}
+              {canReopenTask && (
+                <button
+                  onClick={() => handleStatusChange('TODO')}
+                  disabled={!!actionLoading}
+                  className="text-xs font-bold px-4 py-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-500/30 transition disabled:opacity-50"
+                >
+                  ↩ Reopen
+                </button>
+              )}
+              {isManagerOrAdmin && task.status === 'TODO' && !task.assigned_developer_id && (
                 <Link
                   href={`/recommendations?task_id=${task.id}`}
-                  className="bg-purple-50 hover:bg-purple-100 dark:bg-purple-600/20 dark:hover:bg-purple-600/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 font-semibold text-xs px-4 py-2 rounded-xl transition flex items-center gap-1.5"
+                  className="text-xs font-bold px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white transition shadow-md"
                 >
-                  <span>🔄 Reassign Developer</span>
+                  🤖 Find Best Developer
                 </Link>
-              ) : (
+              )}
+              {canReassign && task.assigned_developer_id && (
                 <Link
                   href={`/recommendations?task_id=${task.id}`}
-                  className="bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs px-4 py-2 rounded-xl transition shadow-lg shadow-purple-600/20 flex items-center gap-1.5"
+                  className="text-xs font-bold px-4 py-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30 transition"
                 >
-                  <span>⚡ Find Best Developer</span>
+                  ⇄ Reassign
                 </Link>
-              )
-            )}
+              )}
+
+              <button
+                onClick={fetchTask}
+                className="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 transition"
+              >
+                ↻
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Status & Timer Execution Control Bar */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 shadow-sm">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Execution Controls:</span>
+        {/* ── DEVELOPER VIEW ──────────────────────────────────────────────── */}
+        {isDeveloper && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            {/* Timer Panel (prominent for developer) */}
+            <div className="lg:col-span-2">
+              <SectionCard title="Execution Timer" icon="⏱">
+                <LiveTimerDisplay task={task} />
+                {task.status === 'COMPLETED' && (
+                  <div className="mt-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-700 dark:text-emerald-300">
+                    ✓ Completed {fmtDate(task.completed_at)}{task.completed_by_name ? ` by ${task.completed_by_name}` : ''}
+                  </div>
+                )}
+                {!isMyTask && task.status !== 'COMPLETED' && (
+                  <p className="mt-3 text-xs text-slate-400 dark:text-slate-500 italic">
+                    Timer controls are only available to the assigned developer.
+                  </p>
+                )}
+              </SectionCard>
+            </div>
 
-            {/* Bug 9 fix: Timer Controls — only for assigned developer or manager/admin */}
-            {canUseTimerControls && !isTaskTerminal && (
-              task.is_timer_running ? (
-                <button
-                  onClick={handlePauseTimer}
-                  disabled={updating}
-                  className="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-amber-600/20"
-                >
-                  <span>⏸</span> Pause Work
-                </button>
-              ) : (
-                <button
-                  onClick={handleStartTimer}
-                  disabled={updating}
-                  className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-blue-600/20"
-                >
-                  <span>▶</span> {task.status === 'IN_PROGRESS' ? 'Resume Work' : 'Start Work (In Progress)'}
-                </button>
-              )
-            )}
-
-            {canUseTimerControls && (task.status === 'IN_PROGRESS' || task.status === 'ASSIGNED' || task.status === 'IN_REVIEW') && (
-              <button
-                onClick={handleStopTimer}
-                disabled={updating}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
-              >
-                <span>■</span> Complete Task
-              </button>
-            )}
-
-            {canUseTimerControls && task.status === 'TODO' && (
-              <button
-                onClick={() => handleStatusTransition('READY')}
-                disabled={updating}
-                className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-xl transition border border-slate-200 dark:border-slate-700"
-              >
-                Mark Ready
-              </button>
-            )}
-
-            {canUseTimerControls && !isTaskTerminal && task.status !== 'BLOCKED' && (
-              <button
-                onClick={() => setShowBlockerInput(!showBlockerInput)}
-                className="bg-rose-50 hover:bg-rose-100 dark:bg-rose-600/20 dark:hover:bg-rose-600/30 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30 text-xs font-semibold px-3 py-1.5 rounded-xl transition"
-              >
-                🚨 Report Blocker
-              </button>
-            )}
-
-            {/* Reopen — only managers */}
-            {isManager && isTaskTerminal && (
-              <button
-                onClick={handleReopen}
-                disabled={updating}
-                className="bg-amber-50 hover:bg-amber-100 dark:bg-amber-600/20 dark:hover:bg-amber-600/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 text-xs font-semibold px-3 py-1.5 rounded-xl transition"
-              >
-                🔓 Reopen Task
-              </button>
-            )}
-
-            {/* Read-only notice for non-assigned devs */}
-            {isDev && !isAssignedDeveloper && (
-              <span className="text-xs text-slate-400 dark:text-slate-500 italic">
-                ℹ️ Controls available only to the assigned developer
-              </span>
-            )}
-          </div>
-
-          {/* Time Tracking & Variance Counter */}
-          <div className="flex items-center gap-4 text-xs font-mono bg-slate-50 dark:bg-slate-950 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800">
+            {/* Task Metadata */}
             <div>
-              <span className="text-slate-400 dark:text-slate-500 block text-[9px] uppercase font-sans">Est. Hours</span>
-              <span className="text-slate-700 dark:text-slate-300 font-bold">{task.estimated_hours}h</span>
-            </div>
-            <div className="border-l border-slate-200 dark:border-slate-800 pl-3">
-              <span className="text-slate-400 dark:text-slate-500 block text-[9px] uppercase font-sans">Actual Logged</span>
-              <span className="text-cyan-600 dark:text-cyan-400 font-bold">{task.actual_hours ?? 0}h</span>
-            </div>
-            <div className="border-l border-slate-200 dark:border-slate-800 pl-3">
-              <span className="text-slate-400 dark:text-slate-500 block text-[9px] uppercase font-sans">Variance</span>
-              <span className={(task.variance_hours ?? 0) > 0 ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-emerald-600 dark:text-emerald-400 font-bold'}>
-                {(task.variance_hours ?? 0) > 0 ? `+${task.variance_hours}h` : `${task.variance_hours ?? 0}h`}
-              </span>
+              <SectionCard title="Task Details" icon="📋">
+                <InfoRow label="Project" value={task.project_name || '—'} />
+                <InfoRow label="Team" value={task.team_name || '—'} />
+                <InfoRow label="Category" value={task.category || '—'} />
+                <InfoRow label="Estimated" value={`${task.estimated_hours} h`} mono />
+                {task.deadline && <InfoRow label="Deadline" value={fmtDateShort(task.deadline)} mono />}
+                <InfoRow label="Created by" value={task.creator_name || '—'} />
+                {task.assigned_developer_name && (
+                  <InfoRow label="Assigned to" value={task.assigned_developer_name} />
+                )}
+              </SectionCard>
             </div>
           </div>
+        )}
 
-          {showBlockerInput && (
-            <div className="w-full flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-              <input
-                type="text"
-                value={blockerReason}
-                onChange={(e) => setBlockerReason(e.target.value)}
-                placeholder="Describe blocker issue..."
-                className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-rose-500"
-              />
-              <button
-                onClick={() => handleStatusTransition('BLOCKED')}
-                disabled={updating || !blockerReason.trim()}
-                className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition"
-              >
-                Confirm Blocker
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* 2-Column Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column (2/3): Task Overview + Task Weight Breakdown */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Task Overview */}
-            <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
-              <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Task Overview</h2>
-              {task.description && (
-                <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">{task.description}</p>
-              )}
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs pt-2">
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                  <span className="text-slate-500 block text-[10px] uppercase font-bold">Priority</span>
-                  <span className="text-amber-600 dark:text-amber-400 font-bold font-mono">{task.priority}</span>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                  <span className="text-slate-500 block text-[10px] uppercase font-bold">Complexity</span>
-                  <span className="text-purple-600 dark:text-purple-400 font-bold font-mono">{task.complexity}</span>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                  <span className="text-slate-500 block text-[10px] uppercase font-bold">Estimated Effort</span>
-                  <span className="text-cyan-600 dark:text-cyan-400 font-bold font-mono">{task.estimated_hours} Hours</span>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                  <span className="text-slate-500 block text-[10px] uppercase font-bold">Created Date</span>
-                  <span className="text-slate-700 dark:text-slate-300 font-mono">
-                    {task.created_at ? new Date(task.created_at).toLocaleDateString() : 'N/A'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Completion info — only shown when completed */}
-              {task.status === 'COMPLETED' && task.completed_at && (
-                <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-wrap gap-4 text-xs">
+        {/* ── MANAGER/ADMIN VIEW ──────────────────────────────────────────── */}
+        {isManagerOrAdmin && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            {/* Task Metadata */}
+            <div className="lg:col-span-2 space-y-5">
+              {/* Task Overview */}
+              <SectionCard title="Task Overview" icon="📋">
+                {task.description && (
+                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                    {task.description}
+                  </p>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
                   <div>
-                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Completed At</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">
-                      {new Date(task.completed_at).toLocaleString()}
-                    </span>
+                    <InfoRow label="Project" value={task.project_name || '—'} />
+                    <InfoRow label="Team" value={task.team_name || '—'} />
+                    <InfoRow label="Category" value={task.category || '—'} />
+                    <InfoRow label="Priority" value={<span className={`font-bold ${PRIORITY_COLORS[task.priority]}`}>{task.priority}</span>} />
+                    <InfoRow label="Complexity" value={task.complexity} />
                   </div>
-                  {task.completed_by_name && (
-                    <div>
-                      <span className="text-slate-500 block text-[10px] uppercase font-bold">Completed By</span>
-                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">{task.completed_by_name}</span>
-                    </div>
-                  )}
+                  <div>
+                    <InfoRow label="Estimated Hours" value={`${task.estimated_hours} h`} mono />
+                    <InfoRow label="Deadline" value={fmtDateShort(task.deadline)} mono />
+                    <InfoRow label="Created by" value={task.creator_name || '—'} />
+                    <InfoRow label="Created at" value={fmtDate(task.created_at)} mono />
+                    <InfoRow label="Updated at" value={fmtDate(task.updated_at)} mono />
+                  </div>
                 </div>
+              </SectionCard>
+
+              {/* Execution State */}
+              <SectionCard title="Execution State & Timer" icon="⏱">
+                <LiveTimerDisplay task={task} />
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-8">
+                  <InfoRow label="Started at" value={fmtDate(task.started_at)} mono />
+                  <InfoRow label="Completed at" value={fmtDate(task.completed_at)} mono />
+                  <InfoRow label="Completed by" value={task.completed_by_name || '—'} />
+                  <InfoRow label="Timer running?" value={task.is_timer_running ? '🟢 Yes' : '⚫ No'} />
+                </div>
+              </SectionCard>
+
+              {/* Assignment Info */}
+              {task.current_assignment && (
+                <SectionCard title="Current Assignment" icon="🎯">
+                  <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+                    <div className="w-10 h-10 rounded-full bg-purple-600/15 border border-purple-500/30 flex items-center justify-center text-base">
+                      👤
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-bold text-slate-900 dark:text-white">
+                        {task.current_assignment.developer_name || task.assigned_developer_name || '—'}
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                        Assigned {fmtDate(task.current_assignment.assigned_at)}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      {task.current_assignment.compatibility_score != null && (
+                        <span className="text-xs font-mono font-bold text-purple-700 dark:text-purple-300">
+                          Fit: {Math.round(Number(task.current_assignment.compatibility_score))}%
+                        </span>
+                      )}
+                      {task.current_assignment.current_workload != null && (
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                          Workload: {Math.round(Number(task.current_assignment.current_workload))}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </SectionCard>
+              )}
+
+              {/* Assignment History */}
+              {(task.assignment_history || []).length > 0 && (
+                <SectionCard title="Assignment History" icon="🕐">
+                  <div className="space-y-2">
+                    {(task.assignment_history || []).map((a, idx) => (
+                      <div key={a.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-xs">
+                        <div>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">
+                            {a.developer_name || '—'}
+                          </span>
+                          <span className="ml-2 font-mono text-slate-400">
+                            {fmtDate(a.assigned_at)}
+                          </span>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded font-mono font-bold ${a.status === 'ACTIVE' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                          {a.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </SectionCard>
               )}
             </div>
 
-            {/* Task Weight Intelligence */}
-            <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-500/20 space-y-4 shadow-sm">
-              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-                <div>
-                  <h2 className="text-sm font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider flex items-center gap-2">
-                    <span>🎯</span> Task Weight Intelligence
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Calculated based on complexity, priority, effort & skill difficulty</p>
-                </div>
-                <div className="text-right">
-                  <span className={`text-xs font-mono font-extrabold px-3 py-1 rounded-xl border ${getWeightColor(weightCategory)}`}>
-                    {weightCategory}
-                  </span>
-                  <span className="text-2xl font-extrabold text-slate-900 dark:text-white font-mono block mt-1">
-                    {weightScore} <span className="text-xs text-slate-400">/ 100</span>
-                  </span>
-                </div>
-              </div>
-
-              {/* Breakdown progress bars */}
-              <div className="space-y-3 text-xs">
-                <div>
-                  <div className="flex justify-between text-slate-500 dark:text-slate-400 mb-1">
-                    <span>Complexity Score</span>
-                    <span className="font-mono text-purple-600 dark:text-purple-400 font-bold">{task.weight_breakdown?.complexity_score ?? Math.round(weightScore * 0.35)} / 100</span>
-                  </div>
-                  <div className="w-full bg-slate-100 dark:bg-slate-950 h-2 rounded-full overflow-hidden">
-                    <div
-                      className="bg-purple-500 h-full rounded-full transition-all"
-                      style={{ width: `${task.weight_breakdown?.complexity_score ?? Math.round(weightScore * 0.35)}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between text-slate-500 dark:text-slate-400 mb-1">
-                    <span>Priority Weight</span>
-                    <span className="font-mono text-amber-600 dark:text-amber-400 font-bold">{task.weight_breakdown?.priority_score ?? Math.round(weightScore * 0.25)} / 100</span>
-                  </div>
-                  <div className="w-full bg-slate-100 dark:bg-slate-950 h-2 rounded-full overflow-hidden">
-                    <div
-                      className="bg-amber-500 h-full rounded-full transition-all"
-                      style={{ width: `${task.weight_breakdown?.priority_score ?? Math.round(weightScore * 0.25)}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between text-slate-500 dark:text-slate-400 mb-1">
-                    <span>Effort & Hours Impact</span>
-                    <span className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">{task.weight_breakdown?.effort_score ?? Math.round(weightScore * 0.2)} / 100</span>
-                  </div>
-                  <div className="w-full bg-slate-100 dark:bg-slate-950 h-2 rounded-full overflow-hidden">
-                    <div
-                      className="bg-cyan-500 h-full rounded-full transition-all"
-                      style={{ width: `${task.weight_breakdown?.effort_score ?? Math.round(weightScore * 0.2)}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between text-slate-500 dark:text-slate-400 mb-1">
-                    <span>Skill Difficulty Level</span>
-                    <span className="font-mono text-blue-600 dark:text-blue-400 font-bold">{task.weight_breakdown?.skill_difficulty_score ?? Math.round(weightScore * 0.2)} / 100</span>
-                  </div>
-                  <div className="w-full bg-slate-100 dark:bg-slate-950 h-2 rounded-full overflow-hidden">
-                    <div
-                      className="bg-blue-500 h-full rounded-full transition-all"
-                      style={{ width: `${task.weight_breakdown?.skill_difficulty_score ?? Math.round(weightScore * 0.2)}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Required Skills */}
-            <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
-              <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Required Skills & Target Proficiency</h2>
-              {task.required_skills && task.required_skills.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {task.required_skills.map((s, idx) => (
-                    <div key={idx} className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                      <span className="text-slate-800 dark:text-slate-200 font-bold text-xs">{s.skill_name}</span>
-                      <span className="text-purple-600 dark:text-purple-400 font-mono font-bold text-xs">Required Level {s.required_level}</span>
+            {/* Right column */}
+            <div className="space-y-5">
+              {/* Weight Score */}
+              {weightScore !== null && (
+                <SectionCard title="Task Weight Score" icon="⚖️">
+                  <div className="text-center py-2">
+                    <div className={`text-5xl font-black mb-1 ${weightScore >= 75 ? 'text-rose-600 dark:text-rose-400' : weightScore >= 50 ? 'text-amber-600 dark:text-amber-400' : weightScore >= 20 ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                      {weightScore}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-slate-400 dark:text-slate-500 italic">No specific skill requirements specified for this task.</p>
+                    <div className="text-xs font-mono text-slate-500 dark:text-slate-400">/ 100</div>
+                    <div className="mt-2 w-full h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-700 ${weightScore >= 75 ? 'bg-rose-500' : weightScore >= 50 ? 'bg-amber-500' : weightScore >= 20 ? 'bg-blue-500' : 'bg-emerald-500'}`}
+                        style={{ width: `${Math.min(100, weightScore)}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-2">
+                      Composite of priority, complexity, effort & skill difficulty
+                    </p>
+                  </div>
+                </SectionCard>
+              )}
+
+              {/* Required Skills */}
+              {(task.required_skills || []).length > 0 && (
+                <SectionCard title="Required Skills" icon="🛠️">
+                  <div className="space-y-2">
+                    {(task.required_skills || []).map((sk, i) => (
+                      <div key={i} className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="font-semibold text-slate-700 dark:text-slate-300">{sk.skill_name}</span>
+                          <span className="font-mono text-slate-500 dark:text-slate-400">{sk.required_level}</span>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-purple-500"
+                            style={{ width: `${Math.min(100, sk.required_level)}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </SectionCard>
+              )}
+
+              {/* Quick nav to Recommendations */}
+              {task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && (
+                <SectionCard title="AI Recommendations" icon="🤖">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+                    Run the AI recommendation engine to find the best developer for this task.
+                  </p>
+                  <Link
+                    href={`/recommendations?task_id=${task.id}`}
+                    className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-purple-600/10 hover:bg-purple-600/20 text-purple-700 dark:text-purple-300 border border-purple-500/30 text-xs font-bold transition"
+                  >
+                    🤖 Open Recommendation Engine
+                  </Link>
+                </SectionCard>
               )}
             </div>
           </div>
+        )}
 
-          {/* Right Column (1/3): Assignment Card + Recommendation History */}
-          <div className="space-y-6">
-            {/* Assignment Section */}
-            <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
-              <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Assigned Developer</h2>
+        {/* ── DEVELOPER TASK DESCRIPTION (if set) ─────────────────────────── */}
+        {isDeveloper && task.description && (
+          <SectionCard title="Task Description" icon="📝">
+            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{task.description}</p>
+          </SectionCard>
+        )}
 
-              {task.assignment ? (
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center text-white font-bold text-sm">
-                      {task.assignment.developer_name?.[0] || 'D'}
-                    </div>
-                    <div>
-                      <h3 className="text-base font-extrabold text-slate-900 dark:text-white">{task.assignment.developer_name}</h3>
-                      <span className="text-xs text-slate-500 dark:text-slate-400 block font-mono">Assigned Developer</span>
-                    </div>
+        {/* ── DEVELOPER REQUIRED SKILLS ───────────────────────────────────── */}
+        {isDeveloper && (task.required_skills || []).length > 0 && (
+          <SectionCard title="Required Skills" icon="🛠️">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {(task.required_skills || []).map((sk, i) => (
+                <div key={i} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1.5">
+                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{sk.skill_name}</div>
+                  <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                    <div className="h-full bg-purple-500 rounded-full" style={{ width: `${Math.min(100, sk.required_level)}%` }} />
                   </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-200 dark:border-slate-800">
-                    <div>
-                      <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Compatibility</span>
-                      <span className="text-purple-600 dark:text-purple-400 font-extrabold font-mono">{task.assignment.compatibility_score ?? 85}%</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Workload</span>
-                      <span className="text-emerald-600 dark:text-emerald-400 font-extrabold font-mono">{task.assignment.current_workload ?? 35}%</span>
-                    </div>
-                  </div>
+                  <div className="text-[10px] font-mono text-slate-400">Level {sk.required_level}</div>
                 </div>
-              ) : (
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-dashed border-slate-300 dark:border-slate-800 text-center space-y-3">
-                  <span className="text-2xl block">🧑‍💻</span>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">No developer assigned to this task yet.</p>
-                  {isManager && !isTaskTerminal && (
-                    <Link
-                      href={`/recommendations?task_id=${task.id}`}
-                      className="inline-block bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs px-4 py-2 rounded-xl transition"
-                    >
-                      Find & Assign Developer →
-                    </Link>
-                  )}
-                </div>
-              )}
+              ))}
             </div>
-
-            {/* Recommendation History */}
-            <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
-              <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Recommendation History</h2>
-              {history.length > 0 ? (
-                <div className="space-y-3">
-                  {history.map((h, i) => (
-                    <div key={h.id || i} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1 text-xs">
-                      <div className="flex justify-between items-center text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-                        <span>Run #{history.length - i}</span>
-                        <span>{new Date(h.created_at).toLocaleDateString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center font-bold text-slate-800 dark:text-slate-200">
-                        <span>{h.developer_name}</span>
-                        <span className="text-purple-600 dark:text-purple-400 font-mono">{h.compatibility_score}%</span>
-                      </div>
-                      {h.selection_reason && (
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 italic">Reason: {h.selection_reason}</p>
-                      )}
-                      {h.override_reason && (
-                        <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">Override: {h.override_reason}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-slate-400 dark:text-slate-500 italic">No historical recommendation runs recorded.</p>
-              )}
-            </div>
-          </div>
-        </div>
+          </SectionCard>
+        )}
       </div>
     </AppShell>
   );

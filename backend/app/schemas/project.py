@@ -38,12 +38,15 @@ class TeamUpdate(BaseModel):
 class TeamResponse(BaseModel):
     id: uuid.UUID
     project_id: uuid.UUID
+    project_name: Optional[str] = None
     name: str
     description: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     members_count: Optional[int] = 0
     members: List[TeamMemberResponse] = []
+    active_tasks_count: int = 0
+    completed_tasks_count: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 

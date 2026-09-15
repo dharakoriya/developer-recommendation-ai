@@ -111,6 +111,7 @@ class TaskResponse(BaseModel):
     completed_by: Optional[uuid.UUID] = None
     completed_by_name: Optional[str] = None
     total_actual_minutes: int = 0
+    total_actual_seconds: int = 0
     is_timer_running: bool = False
     timer_started_at: Optional[datetime] = None
     actual_hours: float = 0.0

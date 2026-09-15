@@ -12,6 +12,7 @@ from app.schemas.analytics import (
     DeveloperComparisonResponse,
     TaskIntelligenceMetrics,
     RecommendationEffectivenessResponse,
+    DeveloperPersonalAnalytics,
 )
 from app.services.analytics_service import (
     get_project_health_analytics,
@@ -19,6 +20,7 @@ from app.services.analytics_service import (
     get_developer_comparison_matrix,
     get_task_intelligence_metrics,
     get_recommendation_effectiveness_funnel,
+    get_developer_personal_analytics,
 )
 
 router = APIRouter()
@@ -30,10 +32,15 @@ def get_project_health(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Returns real-time calculated Project Health Scores (0-100), Status (HEALTHY, AT RISK, CRITICAL),
-    overdue task count, unassigned task backlog, and workload risk factors.
-    Accessible to all authenticated users.
+    Returns real-time calculated Project Health Scores (0-100).
+    DEVELOPER role: receives 403 — use /analytics/developer/me for personal work analytics.
+    MANAGER/ADMIN: org-wide or project-scoped data.
     """
+    if current_user.role == UserRole.DEVELOPER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden. Use /api/analytics/developer/me for your personal work intelligence.",
+        )
     return get_project_health_analytics(db)
 
 
@@ -43,10 +50,15 @@ def get_team_capacity(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Returns team capacity metrics, used vs available capacity hours, developer workload distribution,
-    and team productivity metrics.
-    Accessible to all authenticated users.
+    Returns team capacity metrics, workload distribution, and team productivity metrics.
+    DEVELOPER role: receives 403 — use /analytics/developer/me for personal workload data.
+    MANAGER/ADMIN: org-wide capacity view.
     """
+    if current_user.role == UserRole.DEVELOPER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden. Use /api/analytics/developer/me for your personal workload analytics.",
+        )
     return get_team_capacity_analytics(db)
 
 
@@ -73,10 +85,15 @@ def get_task_intelligence(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Returns task breakdown by priority, complexity, status, project, task weight distribution,
-    and estimated vs actual completion time metrics.
-    Accessible to all authenticated users.
+    Returns task breakdown by priority, complexity, status, weight distribution.
+    DEVELOPER role: receives 403 — personal task data is in /analytics/developer/me.
+    MANAGER/ADMIN: org-wide task intelligence.
     """
+    if current_user.role == UserRole.DEVELOPER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden. Use /api/analytics/developer/me for your task analytics.",
+        )
     return get_task_intelligence_metrics(db)
 
 
@@ -86,8 +103,25 @@ def get_recommendation_effectiveness(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Returns production recommendation conversion funnel (RECOMMENDED -> ACCEPTED -> ASSIGNED -> COMPLETED)
-    and conversion rates.
-    Accessible to all authenticated users.
+    Returns production recommendation conversion funnel.
+    DEVELOPER role: receives 403 — recommendation system is manager/admin only.
     """
+    if current_user.role == UserRole.DEVELOPER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden. Recommendation effectiveness analytics are restricted to managers and admins.",
+        )
     return get_recommendation_effectiveness_funnel(db)
+
+
+@router.get("/developer/me", response_model=DeveloperPersonalAnalytics, summary="Get personal developer analytics")
+def get_my_analytics(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Returns personal work analytics for the authenticated developer.
+    Only returns data for the authenticated user — no cross-developer data exposure.
+    Accessible to any role (shows personal dev profile data).
+    """
+    return get_developer_personal_analytics(db, current_user)

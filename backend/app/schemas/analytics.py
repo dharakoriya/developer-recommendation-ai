@@ -102,3 +102,48 @@ class RecommendationEffectivenessResponse(BaseModel):
     completion_conversion_rate: float
     has_sufficient_data: bool
     message: str
+
+
+class PersonalTaskSummary(BaseModel):
+    id: uuid.UUID
+    title: str
+    project_name: Optional[str] = None
+    team_name: Optional[str] = None
+    status: str
+    priority: str
+    complexity: str
+    estimated_hours: float
+    total_actual_seconds: int = 0
+    is_timer_running: bool = False
+    deadline: Optional[str] = None
+
+
+class DeveloperPersonalAnalytics(BaseModel):
+    developer_id: uuid.UUID
+    user_name: str
+    # Task counts
+    total_assigned: int
+    in_progress_count: int
+    completed_count: int
+    blocked_count: int
+    # Performance
+    completion_rate: float
+    on_time_rate: float
+    performance_score: float
+    # Workload
+    current_workload_score: float
+    availability_status: str
+    # Time
+    total_actual_hours: float
+    total_estimated_hours: float
+    # Streaks
+    current_streak: int
+    longest_streak: int
+    # Incentive points
+    incentive_points: float
+    # My tasks
+    active_tasks: List[PersonalTaskSummary]
+    completed_tasks_recent: List[PersonalTaskSummary]
+    # Skills
+    top_skills: List[str]
+

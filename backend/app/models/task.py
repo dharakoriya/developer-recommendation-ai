@@ -73,6 +73,9 @@ class Task(Base):
     total_actual_minutes: Mapped[int] = mapped_column(
         nullable=False, default=0
     )
+    total_actual_seconds: Mapped[int] = mapped_column(
+        nullable=False, default=0,
+    )
     is_timer_running: Mapped[bool] = mapped_column(
         nullable=False, default=False
     )

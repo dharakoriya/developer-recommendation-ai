@@ -35,7 +35,9 @@ def list_all_teams(
     stmt = (
         select(Team)
         .options(
-            joinedload(Team.members).joinedload(TeamMember.developer_profile).joinedload(DeveloperProfile.user)
+            joinedload(Team.project),
+            joinedload(Team.members).joinedload(TeamMember.developer_profile).joinedload(DeveloperProfile.user),
+            joinedload(Team.tasks),
         )
         .order_by(Team.created_at.asc())
     )

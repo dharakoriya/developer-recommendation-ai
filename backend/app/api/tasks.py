@@ -85,7 +85,8 @@ def build_task_response(task: Task) -> TaskResponse:
     completed_by_name = completer.name if completer else None
 
     actual_mins = getattr(task, "total_actual_minutes", 0) or 0
-    actual_hrs = round(actual_mins / 60.0, 2)
+    actual_secs = getattr(task, "total_actual_seconds", 0) or 0
+    actual_hrs = round(actual_secs / 3600.0, 2)
     est_hrs = float(task.estimated_hours) if task.estimated_hours else 0.0
     variance_hrs = round(actual_hrs - est_hrs, 2)
 
@@ -110,6 +111,7 @@ def build_task_response(task: Task) -> TaskResponse:
         completed_by=getattr(task, "completed_by", None),
         completed_by_name=completed_by_name,
         total_actual_minutes=actual_mins,
+        total_actual_seconds=actual_secs,
         is_timer_running=getattr(task, "is_timer_running", False) or False,
         timer_started_at=getattr(task, "timer_started_at", None),
         actual_hours=actual_hrs,
@@ -612,9 +614,9 @@ def pause_task_timer(
     if task.is_timer_running and task.timer_started_at:
         now = datetime.now(timezone.utc)
         timer_start = task.timer_started_at.replace(tzinfo=timezone.utc) if task.timer_started_at.tzinfo is None else task.timer_started_at
-        elapsed_seconds = (now - timer_start).total_seconds()
-        elapsed_minutes = max(1, int(elapsed_seconds // 60))
-        task.total_actual_minutes = (task.total_actual_minutes or 0) + elapsed_minutes
+        elapsed_secs = int((now - timer_start).total_seconds())
+        task.total_actual_seconds = (task.total_actual_seconds or 0) + elapsed_secs
+        task.total_actual_minutes = task.total_actual_seconds // 60  # keep in sync
         task.is_timer_running = False
         task.timer_started_at = None
 
@@ -646,9 +648,9 @@ def stop_task_timer(
     now = datetime.now(timezone.utc)
     if task.is_timer_running and task.timer_started_at:
         timer_start = task.timer_started_at.replace(tzinfo=timezone.utc) if task.timer_started_at.tzinfo is None else task.timer_started_at
-        elapsed_seconds = (now - timer_start).total_seconds()
-        elapsed_minutes = max(1, int(elapsed_seconds // 60))
-        task.total_actual_minutes = (task.total_actual_minutes or 0) + elapsed_minutes
+        elapsed_secs = int((now - timer_start).total_seconds())
+        task.total_actual_seconds = (task.total_actual_seconds or 0) + elapsed_secs
+        task.total_actual_minutes = task.total_actual_seconds // 60  # keep in sync
         task.is_timer_running = False
         task.timer_started_at = None
 

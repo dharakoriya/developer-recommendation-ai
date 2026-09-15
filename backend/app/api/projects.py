@@ -38,17 +38,28 @@ def build_team_member_response(member: TeamMember) -> TeamMemberResponse:
 
 
 def build_team_response(team: Team, include_members: bool = True) -> TeamResponse:
+    from app.models.enums import TaskStatus
     active_members = [m for m in (team.members or []) if m.left_at is None]
     member_responses = [build_team_member_response(m) for m in active_members] if include_members else []
+
+    tasks = team.tasks or []
+    active_tasks = sum(1 for t in tasks if t.status not in (TaskStatus.COMPLETED, TaskStatus.CANCELLED))
+    completed_tasks = sum(1 for t in tasks if t.status == TaskStatus.COMPLETED)
+
+    proj = team.project if hasattr(team, 'project') and team.project else None
+
     return TeamResponse(
         id=team.id,
         project_id=team.project_id,
+        project_name=proj.name if proj else None,
         name=team.name,
         description=team.description,
         created_at=team.created_at,
         updated_at=team.updated_at,
         members_count=len(active_members),
         members=member_responses,
+        active_tasks_count=active_tasks,
+        completed_tasks_count=completed_tasks,
     )
 
 

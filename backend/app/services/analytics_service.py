@@ -7,6 +7,7 @@ from sqlalchemy import select, func, desc
 from app.models.project import Project, Team, TeamMember
 from app.models.task import Task, Assignment
 from app.models.developer import DeveloperProfile, WorkloadRecord, DeveloperSkill
+from app.models.skill import Skill
 from app.models.user import User
 from app.models.enums import TaskStatus, TaskPriority, TaskComplexity, AvailabilityStatus, AssignmentStatus
 from app.models.performance import DeveloperStreak, DeveloperIncentiveLedger
@@ -360,3 +361,144 @@ def get_recommendation_effectiveness_funnel(db: Session) -> RecommendationEffect
         has_sufficient_data=has_sufficient,
         message=message,
     )
+
+
+def get_developer_personal_analytics(db: Session, current_user) -> dict:
+    """
+    Returns personal analytics for the authenticated developer only.
+    Never exposes other developers' data.
+    """
+    from app.models.performance import DeveloperStreak, DeveloperAchievement, DeveloperIncentiveLedger
+    from app.schemas.analytics import DeveloperPersonalAnalytics, PersonalTaskSummary
+    from app.services.performance_service import calculate_developer_performance_metrics
+
+    dev_profile = db.execute(
+        select(DeveloperProfile).where(DeveloperProfile.user_id == current_user.id)
+    ).scalar_one_or_none()
+
+    if not dev_profile:
+        return DeveloperPersonalAnalytics(
+            developer_id=current_user.id,
+            user_name=current_user.name,
+            total_assigned=0, in_progress_count=0, completed_count=0, blocked_count=0,
+            completion_rate=0.0, on_time_rate=0.0, performance_score=0.0,
+            current_workload_score=0.0, availability_status="AVAILABLE",
+            total_actual_hours=0.0, total_estimated_hours=0.0,
+            current_streak=0, longest_streak=0, incentive_points=0.0,
+            active_tasks=[], completed_tasks_recent=[], top_skills=[],
+        )
+
+    # Active assignments → active tasks
+    active_assignments = db.execute(
+        select(Assignment).where(
+            Assignment.developer_id == dev_profile.id,
+            Assignment.status == AssignmentStatus.ACTIVE,
+        )
+    ).scalars().all()
+
+    active_task_ids = [a.task_id for a in active_assignments]
+    active_tasks_db = db.execute(
+        select(Task).options(
+            joinedload(Task.project), joinedload(Task.team)
+        ).where(Task.id.in_(active_task_ids))
+    ).scalars().unique().all() if active_task_ids else []
+
+    # Recent completed tasks (by completed assignments)
+    completed_assignments = db.execute(
+        select(Assignment).where(
+            Assignment.developer_id == dev_profile.id,
+            Assignment.status == AssignmentStatus.COMPLETED,
+        ).order_by(Assignment.completed_at.desc()).limit(10)
+    ).scalars().all()
+
+    comp_task_ids = [a.task_id for a in completed_assignments]
+    completed_tasks_db = db.execute(
+        select(Task).options(
+            joinedload(Task.project), joinedload(Task.team)
+        ).where(Task.id.in_(comp_task_ids))
+    ).scalars().unique().all() if comp_task_ids else []
+
+    # Build task summaries
+    def make_summary(t: Task) -> PersonalTaskSummary:
+        return PersonalTaskSummary(
+            id=t.id,
+            title=t.title,
+            project_name=t.project.name if t.project else None,
+            team_name=t.team.name if t.team else None,
+            status=t.status.value,
+            priority=t.priority.value,
+            complexity=t.complexity.value,
+            estimated_hours=float(t.estimated_hours),
+            total_actual_seconds=getattr(t, "total_actual_seconds", 0) or 0,
+            is_timer_running=getattr(t, "is_timer_running", False) or False,
+            deadline=t.deadline.isoformat() if t.deadline else None,
+        )
+
+    active_summaries = [make_summary(t) for t in active_tasks_db]
+    completed_summaries = [make_summary(t) for t in completed_tasks_db]
+
+    # Counts
+    in_progress = sum(1 for t in active_tasks_db if t.status == TaskStatus.IN_PROGRESS)
+    blocked = sum(1 for t in active_tasks_db if t.status.value == "BLOCKED")
+    total_assigned = len(active_task_ids)
+    completed_count = len(comp_task_ids)
+
+    # Performance
+    perf = calculate_developer_performance_metrics(db, dev_profile.id)
+
+    # Workload
+    latest_wl = db.execute(
+        select(WorkloadRecord)
+        .where(WorkloadRecord.developer_id == dev_profile.id)
+        .order_by(WorkloadRecord.calculated_at.desc())
+    ).scalar_one_or_none()
+    workload_score = float(latest_wl.workload_score) if latest_wl else 0.0
+
+    # Streak
+    streak = db.execute(
+        select(DeveloperStreak).where(DeveloperStreak.developer_id == dev_profile.id)
+    ).scalar_one_or_none()
+
+    # Incentive points
+    inc_pts = db.scalar(
+        select(func.coalesce(func.sum(DeveloperIncentiveLedger.total_points), 0))
+        .where(DeveloperIncentiveLedger.developer_id == dev_profile.id)
+    ) or 0.0
+
+    # Skills
+    skills_db = db.execute(
+        select(DeveloperSkill, Skill).join(Skill, DeveloperSkill.skill_id == Skill.id)
+        .where(DeveloperSkill.developer_id == dev_profile.id)
+        .order_by(DeveloperSkill.proficiency_level.desc())
+        .limit(5)
+    ).all()
+    top_skills = [sk.name for _, sk in skills_db]
+
+    # Total hours
+    total_actual_secs = sum(
+        (getattr(t, "total_actual_seconds", 0) or 0) for t in active_tasks_db + list(completed_tasks_db)
+    )
+    total_est_hrs = sum(float(t.estimated_hours) for t in active_tasks_db + list(completed_tasks_db))
+
+    return DeveloperPersonalAnalytics(
+        developer_id=dev_profile.id,
+        user_name=current_user.name,
+        total_assigned=total_assigned,
+        in_progress_count=in_progress,
+        completed_count=completed_count,
+        blocked_count=blocked,
+        completion_rate=perf.get("completion_rate", 0.0),
+        on_time_rate=perf.get("on_time_rate", 0.0),
+        performance_score=perf.get("performance_score", 0.0),
+        current_workload_score=workload_score,
+        availability_status=dev_profile.availability_status.value,
+        total_actual_hours=round(total_actual_secs / 3600.0, 2),
+        total_estimated_hours=round(total_est_hrs, 2),
+        current_streak=streak.current_streak if streak else 0,
+        longest_streak=streak.longest_streak if streak else 0,
+        incentive_points=float(inc_pts),
+        active_tasks=active_summaries,
+        completed_tasks_recent=completed_summaries,
+        top_skills=top_skills,
+    )
+
