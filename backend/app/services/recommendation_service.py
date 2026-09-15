@@ -17,12 +17,14 @@ from app.schemas.recommendation import (
     RecommendationResponse,
     RecommendationListResponse,
 )
+from app.config import settings
 from app.services.feature_engineering_service import (
     generate_task_candidate_features,
     extract_developer_task_feature_vector,
 )
 from app.services.task_weight_service import calculate_task_weight_score, get_task_weight_category
 from app.services.task_developer_compatibility_service import evaluate_task_developer_compatibility
+
 
 
 class RecommendationModel(ABC):
@@ -193,8 +195,9 @@ class MLRecommendationModelAdapter(RecommendationModel):
 
 
 
-def get_active_recommendation_model(model_version: str = "baseline-v2") -> RecommendationModel:
-    if model_version == "baseline-v1":
+def get_active_recommendation_model(model_version: Optional[str] = None) -> RecommendationModel:
+    ver = model_version or settings.RECOMMENDATION_MODEL
+    if ver == "baseline-v1":
         return BaselineRecommendationModel()
     return BaselineV2RecommendationModel()
 
@@ -222,7 +225,7 @@ def invalidate_all_recommendations(db: Session) -> None:
 def generate_and_persist_task_recommendations(
     db: Session,
     task_id: uuid.UUID,
-    model_version: str = "baseline-v2",
+    model_version: Optional[str] = None,
     min_performance_score: Optional[float] = None,
     min_completion_rate: Optional[float] = None,
     availability_status: Optional[str] = None,
@@ -231,6 +234,7 @@ def generate_and_persist_task_recommendations(
     min_skill_match_pct: Optional[float] = None,
     min_streak: Optional[int] = None,
 ) -> RecommendationListResponse:
+    target_model_version = model_version or settings.RECOMMENDATION_MODEL
     # 1. Query Task & compute Task Weight Score
     task_stmt = (
         select(Task)
@@ -271,7 +275,7 @@ def generate_and_persist_task_recommendations(
             continue
         filtered_candidates.append(vec)
 
-    model = get_active_recommendation_model(model_version=model_version)
+    model = get_active_recommendation_model(model_version=target_model_version)
     model_meta = model.get_model_metadata()
 
     # 3. Predict Scores & Eligibility for candidate vectors
@@ -418,7 +422,7 @@ def get_persisted_task_recommendations(
 
     # Check if recommendations missing or marked stale
     if not recs or any(r.is_stale for r in recs):
-        return generate_and_persist_task_recommendations(db, task_id, model_version="baseline-v2")
+        return generate_and_persist_task_recommendations(db, task_id, model_version=settings.RECOMMENDATION_MODEL)
 
     model = get_active_recommendation_model(model_version=recs[0].model_version)
     model_meta = model.get_model_metadata()

@@ -227,15 +227,18 @@ export default function RecommendationsPage() {
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Developer Recommendations 2.0</h1>
+            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Developer Recommendations</h1>
             <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">
-              Transparent, explainable recommendation engine combining skill match, capacity, performance & task weight compatibility.
+              Transparent, explainable deterministic recommendation algorithm combining skill match, workload capacity, performance, experience & task weight compatibility.
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 px-3 py-1.5 rounded-xl font-mono font-bold">
-              deterministic_baseline ({modelVersion})
-            </span>
+            <div className="text-right">
+              <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">ACTIVE PRODUCTION MODEL</span>
+              <span className="text-xs bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 px-3 py-1 rounded-lg font-mono font-bold inline-block">
+                {modelVersion === 'baseline-v1' ? 'Baseline-v1 (Legacy)' : 'Baseline-v2 (Production)'}
+              </span>
+            </div>
           </div>
         </div>
 

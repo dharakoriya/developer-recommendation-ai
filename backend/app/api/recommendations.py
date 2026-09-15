@@ -43,6 +43,7 @@ from app.schemas.realworld_monitoring import (
     DatasetSnapshotCreateRequest,
     DatasetSnapshotResponse,
 )
+from app.config import settings
 from app.services.recommendation_service import (
     get_active_recommendation_model,
     generate_and_persist_task_recommendations,
@@ -58,10 +59,10 @@ def get_model_metadata(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Returns active recommendation engine metadata (deterministic baseline v2.0).
+    Returns active recommendation engine metadata (configured deterministic baseline).
     Accessible to all authenticated users.
     """
-    model = get_active_recommendation_model(model_version="baseline-v2")
+    model = get_active_recommendation_model(model_version=settings.RECOMMENDATION_MODEL)
     return model.get_model_metadata()
 
 
@@ -509,7 +510,7 @@ def create_dataset_snapshot_api(
 def get_task_recommendations(
     task_id: uuid.UUID,
     regenerate: bool = False,
-    model_version: str = "baseline-v2",
+    model_version: Optional[str] = None,
     min_performance_score: Optional[float] = None,
     min_completion_rate: Optional[float] = None,
     availability_status: Optional[str] = None,
@@ -538,6 +539,7 @@ def get_task_recommendations(
         )
 
     try:
+        effective_model_version = model_version or settings.RECOMMENDATION_MODEL
         # If filters or custom model version are specified, or regenerate=True, generate filtered recommendations
         has_filters = any(
             v is not None
@@ -551,11 +553,11 @@ def get_task_recommendations(
                 min_streak,
             ]
         )
-        if regenerate or has_filters or model_version != "baseline-v2":
+        if regenerate or has_filters or (model_version is not None and model_version != settings.RECOMMENDATION_MODEL):
             return generate_and_persist_task_recommendations(
                 db=db,
                 task_id=task_id,
-                model_version=model_version,
+                model_version=effective_model_version,
                 min_performance_score=min_performance_score,
                 min_completion_rate=min_completion_rate,
                 availability_status=availability_status,

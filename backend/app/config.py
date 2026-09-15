@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     AI_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
 
+    # Active Deterministic Recommendation Model ("baseline-v1" or "baseline-v2")
+    RECOMMENDATION_MODEL: str = "baseline-v2"
+
     # Production Recommendation Engine Weights (Baseline-v2)
     REC_WEIGHT_SKILL_MATCH: float = 30.0
     REC_WEIGHT_SKILL_COVERAGE: float = 15.0

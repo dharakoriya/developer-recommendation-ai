@@ -284,9 +284,12 @@ def get_dashboard_recommendations(
     accepted = db.scalar(select(func.count(RecommendationFeedback.id)).where(RecommendationFeedback.decision == FeedbackDecision.ACCEPTED)) or 0
     rejected = db.scalar(select(func.count(RecommendationFeedback.id)).where(RecommendationFeedback.decision == FeedbackDecision.REJECTED)) or 0
 
+    from app.services.recommendation_service import get_active_recommendation_model
+    model_meta = get_active_recommendation_model().get_model_metadata()
+
     return {
-        "active_model_version": "baseline-v1",
-        "active_model_name": "deterministic_baseline",
+        "active_model_version": model_meta.model_version,
+        "active_model_name": model_meta.model_type,
         "total_recommendations_generated": total_generated,
         "accepted_count": accepted,
         "rejected_count": rejected,
