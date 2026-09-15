@@ -34,9 +34,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
   const refreshUser = async () => {
+    if (typeof window === 'undefined') return;
     const storedToken = localStorage.getItem('devalign_token');
     if (!storedToken) {
-      logout();
+      setUser(null);
+      setToken(null);
       setLoading(false);
       return;
     }
@@ -51,33 +53,81 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setToken(storedToken);
         localStorage.setItem('devalign_user', JSON.stringify(validUser));
       } else {
-        logout();
+        localStorage.removeItem('devalign_token');
+        localStorage.removeItem('devalign_user');
+        setUser(null);
+        setToken(null);
       }
     } catch (err) {
       console.error('Session validation error:', err);
-      logout();
+      const storedUser = localStorage.getItem('devalign_user');
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser));
+          setToken(storedToken);
+        } catch {
+          setUser(null);
+          setToken(null);
+        }
+      } else {
+        setUser(null);
+        setToken(null);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    refreshUser();
-  }, [apiUrl]);
-
   const login = (newToken: string, newUser: User) => {
     setToken(newToken);
     setUser(newUser);
-    localStorage.setItem('devalign_token', newToken);
-    localStorage.setItem('devalign_user', JSON.stringify(newUser));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('devalign_token', newToken);
+      localStorage.setItem('devalign_user', JSON.stringify(newUser));
+    }
   };
 
   const logout = () => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem('devalign_token');
-    localStorage.removeItem('devalign_user');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('devalign_token');
+      localStorage.removeItem('devalign_user');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
   };
+
+  useEffect(() => {
+    refreshUser();
+
+    const handleAuthLogout = () => {
+      setToken(null);
+      setUser(null);
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    };
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'devalign_token' && !e.newValue) {
+        handleAuthLogout();
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('auth:logout', handleAuthLogout);
+      window.addEventListener('storage', handleStorageChange);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('auth:logout', handleAuthLogout);
+        window.removeEventListener('storage', handleStorageChange);
+      }
+    };
+  }, [apiUrl]);
 
   return (
     <AuthContext.Provider value={{ user, token, loading, login, logout, apiUrl, refreshUser }}>

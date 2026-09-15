@@ -50,6 +50,14 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
       }
 
       if (res.status === 401) {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('devalign_token');
+          localStorage.removeItem('devalign_user');
+          window.dispatchEvent(new CustomEvent('auth:logout'));
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
+        }
         throw new ApiError('Session expired or unauthenticated. Please log in again.', 401, errorDetail);
       } else if (res.status === 403) {
         throw new ApiError('Access forbidden. You do not have permission to access this resource.', 403, errorDetail);

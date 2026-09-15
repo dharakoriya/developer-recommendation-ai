@@ -35,12 +35,6 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileNav }) => {
             ☰
           </button>
         )}
-        <div className="flex items-center gap-3">
-          <span className="text-[11px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-full font-mono font-bold flex items-center gap-1.5 shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            PROD: baseline-v2
-          </span>
-        </div>
       </div>
 
       <div className="flex items-center gap-4">
