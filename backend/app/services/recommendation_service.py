@@ -420,11 +420,12 @@ def get_persisted_task_recommendations(
     )
     recs = db.execute(recs_stmt).unique().scalars().all()
 
-    # Check if recommendations missing or marked stale
-    if not recs or any(r.is_stale for r in recs):
-        return generate_and_persist_task_recommendations(db, task_id, model_version=settings.RECOMMENDATION_MODEL)
+    # Check if recommendations missing, marked stale, OR generated under a different model_version than active settings.RECOMMENDATION_MODEL
+    active_model_version = settings.RECOMMENDATION_MODEL
+    if not recs or any(r.is_stale for r in recs) or any(r.model_version != active_model_version for r in recs):
+        return generate_and_persist_task_recommendations(db, task_id, model_version=active_model_version)
 
-    model = get_active_recommendation_model(model_version=recs[0].model_version)
+    model = get_active_recommendation_model(model_version=active_model_version)
     model_meta = model.get_model_metadata()
 
     task_weight_score = (

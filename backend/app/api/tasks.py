@@ -45,9 +45,23 @@ def build_assignment_response(assign: Assignment) -> AssignmentResponse:
     dev = assign.developer_profile
     dev_user = dev.user if dev else None
     assigner = assign.assigner
+    task = assign.task
+    proj = task.project if task else None
+
+    task_weight = float(task.task_weight_score) if task and task.task_weight_score is not None else None
+    task_weight_cat = None
+    if task_weight is not None:
+        from app.services.task_weight_service import get_task_weight_category
+        task_weight_cat = get_task_weight_category(task_weight)
+
     return AssignmentResponse(
         id=assign.id,
         task_id=assign.task_id,
+        task_title=task.title if task else None,
+        project_id=task.project_id if task else None,
+        project_name=proj.name if proj else None,
+        task_weight_score=task_weight,
+        task_weight_category=task_weight_cat,
         developer_id=assign.developer_id,
         developer_name=dev_user.name if dev_user else "Unknown",
         developer_email=dev_user.email if dev_user else "",
@@ -58,6 +72,8 @@ def build_assignment_response(assign: Assignment) -> AssignmentResponse:
         completed_at=assign.completed_at,
         reassigned_at=assign.reassigned_at,
         notes=assign.notes,
+        selection_reason=getattr(assign, "selection_reason", None),
+        override_reason=getattr(assign, "override_reason", None),
     )
 
 

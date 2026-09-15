@@ -510,7 +510,6 @@ def create_dataset_snapshot_api(
 def get_task_recommendations(
     task_id: uuid.UUID,
     regenerate: bool = False,
-    model_version: Optional[str] = None,
     min_performance_score: Optional[float] = None,
     min_completion_rate: Optional[float] = None,
     availability_status: Optional[str] = None,
@@ -523,6 +522,7 @@ def get_task_recommendations(
 ):
     """
     Generates and returns ranked developer candidates for a task with score explanations.
+    Uses active production recommendation engine (configured via settings.RECOMMENDATION_MODEL).
     Requires ADMIN or MANAGER role. DEVELOPER role is restricted.
     """
     if current_user.role == UserRole.DEVELOPER:
@@ -539,8 +539,8 @@ def get_task_recommendations(
         )
 
     try:
-        effective_model_version = model_version or settings.RECOMMENDATION_MODEL
-        # If filters or custom model version are specified, or regenerate=True, generate filtered recommendations
+        active_model_version = settings.RECOMMENDATION_MODEL
+        # If manager filters are specified or regenerate=True, generate fresh recommendations with filters
         has_filters = any(
             v is not None
             for v in [
@@ -553,11 +553,11 @@ def get_task_recommendations(
                 min_streak,
             ]
         )
-        if regenerate or has_filters or (model_version is not None and model_version != settings.RECOMMENDATION_MODEL):
+        if regenerate or has_filters:
             return generate_and_persist_task_recommendations(
                 db=db,
                 task_id=task_id,
-                model_version=effective_model_version,
+                model_version=active_model_version,
                 min_performance_score=min_performance_score,
                 min_completion_rate=min_completion_rate,
                 availability_status=availability_status,

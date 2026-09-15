@@ -37,7 +37,7 @@ def list_all_assignments(
         .options(
             joinedload(Assignment.developer_profile).joinedload(DeveloperProfile.user),
             joinedload(Assignment.assigner),
-            joinedload(Assignment.task),
+            joinedload(Assignment.task).joinedload(Task.project),
         )
         .order_by(Assignment.assigned_at.desc())
     )

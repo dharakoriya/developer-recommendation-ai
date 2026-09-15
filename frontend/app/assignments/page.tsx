@@ -212,10 +212,10 @@ export default function AssignmentsPage() {
             description="No task assignments match your search and filter parameters."
           />
         ) : (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm dark:shadow-2xl">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-950 text-slate-400 uppercase font-bold text-[10px] tracking-wider border-b border-slate-800">
+                <thead className="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800">
                   <tr>
                     <th className="p-4">Task & Project</th>
                     <th className="p-4">Assigned Developer</th>
@@ -227,27 +227,27 @@ export default function AssignmentsPage() {
                     <th className="p-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 text-slate-300 font-medium">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300 font-medium">
                   {filteredAssignments.map((a) => (
-                    <tr key={a.id} className="hover:bg-slate-800/50 transition">
+                    <tr key={a.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition">
                       <td className="p-4">
-                        <Link href={`/tasks/${a.task_id}`} className="font-bold text-white hover:text-purple-400 block text-xs truncate max-w-xs">
+                        <Link href={`/tasks/${a.task_id}`} className="font-bold text-slate-900 dark:text-white hover:text-purple-600 dark:hover:text-purple-400 block text-xs truncate max-w-xs">
                           {a.task_title || a.task_id}
                         </Link>
-                        <span className="text-[10px] text-slate-500 font-mono block">{a.project_name || 'Agile Core Project'}</span>
+                        <span className="text-[10px] text-slate-500 font-mono block">{a.project_name || 'Project'}</span>
                       </td>
 
                       <td className="p-4">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-purple-600/30 text-purple-300 font-bold flex items-center justify-center text-[10px]">
+                          <div className="w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-600/30 text-purple-700 dark:text-purple-300 font-bold flex items-center justify-center text-[10px]">
                             {(a.developer_name || 'D')[0]}
                           </div>
-                          <span className="text-slate-200 font-semibold">{a.developer_name || a.developer_id}</span>
+                          <span className="text-slate-900 dark:text-slate-200 font-semibold">{a.developer_name || a.developer_id}</span>
                         </div>
                       </td>
 
                       <td className="p-4">
-                        <span className="font-mono font-bold text-purple-400 text-xs">
+                        <span className="font-mono font-bold text-purple-600 dark:text-purple-400 text-xs">
                           {a.compatibility_score ?? 88}%
                         </span>
                       </td>
@@ -260,7 +260,7 @@ export default function AssignmentsPage() {
                         {getWorkloadRiskBadge(a.workload_score ?? 45)}
                       </td>
 
-                      <td className="p-4 text-slate-400 font-mono">
+                      <td className="p-4 text-slate-500 dark:text-slate-400 font-mono">
                         {new Date(a.assigned_at).toLocaleDateString()}
                       </td>
 
@@ -272,17 +272,17 @@ export default function AssignmentsPage() {
                         {a.status === 'ACTIVE' ? (
                           <button
                             onClick={() => handleComplete(a.id)}
-                            className="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-[11px] font-semibold px-3 py-1.5 rounded-xl transition"
+                            className="bg-emerald-50 dark:bg-emerald-600/20 hover:bg-emerald-100 dark:hover:bg-emerald-600/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40 text-[11px] font-semibold px-3 py-1.5 rounded-xl transition"
                           >
                             ✓ Complete Task
                           </button>
                         ) : (
-                          <span className="text-slate-500 font-mono text-[11px]">Archived</span>
+                          <span className="text-slate-400 dark:text-slate-500 font-mono text-[11px]">Archived</span>
                         )}
 
                         <Link
                           href={`/tasks/${a.task_id}`}
-                          className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold px-3 py-1.5 rounded-xl transition inline-block"
+                          className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-semibold px-3 py-1.5 rounded-xl transition inline-block"
                         >
                           View Task →
                         </Link>

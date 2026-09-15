@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.config import settings
 from app.database import Base, get_db
 from app.main import app
 from app.services.task_developer_compatibility_service import evaluate_task_developer_compatibility
@@ -208,7 +209,7 @@ def test_recommendation_api_rbac(client):
     res_mgr = client.get(f"/api/recommendations/tasks/{t_res['id']}", headers=mgr_headers)
     assert res_mgr.status_code == 200
     data = res_mgr.json()
-    assert data["model_version"] == "baseline-v2"
+    assert data["model_version"] == settings.RECOMMENDATION_MODEL
     assert "recommendations" in data
     assert "excluded_recommendations" in data
 

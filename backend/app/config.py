@@ -62,6 +62,16 @@ class Settings(BaseSettings):
     RISK_DEADLINE_WARNING_HOURS: int = 48
     RISK_LOW_PERFORMANCE_THRESHOLD: float = 60.0
 
+    @field_validator("RECOMMENDATION_MODEL")
+    @classmethod
+    def validate_recommendation_model(cls, v: str) -> str:
+        valid_models = {"baseline-v1", "baseline-v2"}
+        if v not in valid_models:
+            raise ValueError(
+                f"Invalid RECOMMENDATION_MODEL '{v}'. Allowed deterministic production models are: {', '.join(sorted(valid_models))}"
+            )
+        return v
+
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def parse_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:

@@ -29,21 +29,23 @@
 
 ## 3. How to Switch Production Recommendation Models
 
-DevAlign AI supports instant, zero-code-modification switching between Baseline-v1 and Baseline-v2 via environment configuration:
+DevAlign AI supports instant, zero-code-modification switching between Baseline-v1 and Baseline-v2 centrally via `backend/.env`:
 
-### Method A: Via `.env` (Recommended for Local Dev & Deployments)
-In `backend/.env`:
-```env
-# Change from baseline-v2 to baseline-v1
-RECOMMENDATION_MODEL=baseline-v1
-```
-Restart or reload FastAPI — the backend and frontend immediately reflect the selected model.
+1. Open `backend/.env`
+2. Set:
+   ```env
+   RECOMMENDATION_MODEL=baseline-v1
+   ```
+   *or*
+   ```env
+   RECOMMENDATION_MODEL=baseline-v2
+   ```
+3. Restart or reload FastAPI.
 
-### Method B: Via API Parameter (For Side-by-Side Comparison)
-Managers and Admins can query recommendations for a specific model on-the-fly:
-```http
-GET /api/recommendations/tasks/{task_id}?model_version=baseline-v1
-```
+### Stored Recommendations & Cache Handling:
+- When the active model is switched, any existing recommendations in PostgreSQL are automatically detected as a model version mismatch and **regenerated on-the-fly** under the active configured model.
+- No database wipe or manual cache purge is required.
+- Historical audit logs (`recommendation_audits`) are preserved intact.
 
 ---
 

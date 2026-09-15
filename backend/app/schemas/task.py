@@ -47,6 +47,11 @@ class AssignmentUpdateStatus(BaseModel):
 class AssignmentResponse(BaseModel):
     id: uuid.UUID
     task_id: uuid.UUID
+    task_title: Optional[str] = None
+    project_id: Optional[uuid.UUID] = None
+    project_name: Optional[str] = None
+    task_weight_score: Optional[float] = None
+    task_weight_category: Optional[str] = None
     developer_id: uuid.UUID
     developer_name: Optional[str] = None
     developer_email: Optional[str] = None
