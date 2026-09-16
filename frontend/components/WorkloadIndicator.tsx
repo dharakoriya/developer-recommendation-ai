@@ -34,13 +34,13 @@ export const WorkloadIndicator: React.FC<WorkloadIndicatorProps> = ({
     <div className="space-y-1.5 w-full">
       {showLabel && (
         <div className="flex justify-between items-center text-xs">
-          <span className="text-slate-400 font-medium">Workload Capacity</span>
-          <span className="font-mono font-bold text-white">
-            {rounded}% <span className={`ml-1 text-[11px] ${getColorClass().split(' ')[1]}`}>({getStatusLabel()})</span>
+          <span className="text-slate-500 dark:text-slate-400 font-medium">Workload Capacity</span>
+          <span className="font-mono font-bold text-slate-900 dark:text-white">
+            {rounded}% <span className={`ml-1 text-[11px] font-semibold ${getColorClass().split(' ')[1]}`}>({getStatusLabel()})</span>
           </span>
         </div>
       )}
-      <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+      <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
         <div
           className={`h-full transition-all duration-300 ${getColorClass().split(' ')[0]}`}
           style={{ width: `${pct}%` }}

@@ -45,18 +45,10 @@ def get_dashboard_summary(
         )
     ) or 0
 
-    # High workload developers (workload_score > 75)
-    dev_profiles = db.execute(select(DeveloperProfile)).scalars().all()
-    high_workload_count = 0
-    for dev in dev_profiles:
-        latest_wl = db.scalar(
-            select(WorkloadRecord)
-            .where(WorkloadRecord.developer_id == dev.id)
-            .order_by(desc(WorkloadRecord.calculated_at))
-        )
-        wl_score = float(latest_wl.workload_score) if latest_wl else 0.0
-        if wl_score >= 75.0:
-            high_workload_count += 1
+    # High workload developers (workload_score >= 75)
+    from app.services.workload_service import get_system_workload_summary
+    workload_summary = get_system_workload_summary(db)
+    high_workload_count = workload_summary.high_workload_count + workload_summary.overloaded_developers_count
 
     # Recent recommendations (top 5)
     recent_recs_db = db.execute(
@@ -138,14 +130,10 @@ def get_dashboard_summary(
                     "status": task_obj.status.value,
                 })
 
-        # Latest workload score
-        latest_wl = db.scalar(
-            select(WorkloadRecord)
-            .where(WorkloadRecord.developer_id == dev_profile_obj.id)
-            .order_by(desc(WorkloadRecord.calculated_at))
-        )
-        if latest_wl:
-            my_workload_score = float(latest_wl.workload_score)
+        # Latest dynamic workload score
+        from app.services.workload_service import calculate_developer_workload_details
+        dev_wl = calculate_developer_workload_details(db, dev_profile_obj.id)
+        my_workload_score = float(dev_wl.workload_score)
 
         # Developer skills
         from app.models.developer import DeveloperSkill
@@ -226,48 +214,41 @@ def get_dashboard_workload(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Returns workload distribution metrics across developers.
+    Returns live deterministic workload distribution metrics across developers.
     """
-    dev_profiles = db.execute(select(DeveloperProfile)).scalars().all()
-    
-    healthy = 0    # < 50
-    moderate = 0   # 50 - 75
-    high = 0       # 75 - 100
-    overloaded = 0 # > 100
+    from app.services.workload_service import get_system_workload_summary
+    summary = get_system_workload_summary(db)
 
-    developer_workloads = []
-    for dev in dev_profiles:
-        user_obj = db.scalar(select(User).where(User.id == dev.user_id))
-        latest_wl = db.scalar(
-            select(WorkloadRecord)
-            .where(WorkloadRecord.developer_id == dev.id)
-            .order_by(desc(WorkloadRecord.calculated_at))
-        )
-        score = float(latest_wl.workload_score) if latest_wl else 0.0
-        from app.services.workload_service import classify_workload_status
-        status_str = classify_workload_status(Decimal(str(score))) if latest_wl else "HEALTHY"
+    healthy = summary.available_developers_count
+    moderate = summary.balanced_developers_count
+    high = summary.high_workload_count
+    overloaded = summary.overloaded_developers_count
 
-        if score < 50.0:
-            healthy += 1
-        elif score < 75.0:
-            moderate += 1
-        elif score <= 100.0:
-            high += 1
-        else:
-            overloaded += 1
-
-        developer_workloads.append({
-            "developer_id": str(dev.id),
-            "name": user_obj.name if user_obj else "Developer",
-            "workload_score": score,
-            "status": status_str,
-        })
+    developer_workloads = [
+        {
+            "developer_id": str(d.developer_id),
+            "name": d.user_name or "Developer",
+            "user_name": d.user_name,
+            "user_email": d.user_email,
+            "experience_years": d.experience_years,
+            "availability_status": d.availability_status.value if hasattr(d.availability_status, 'value') else str(d.availability_status),
+            "active_task_count": d.active_task_count,
+            "total_estimated_hours": float(d.total_estimated_hours),
+            "weighted_hours": float(d.weighted_hours),
+            "capacity_hours": float(d.capacity_hours),
+            "workload_score": float(d.workload_score),
+            "status": d.workload_status,
+        }
+        for d in summary.developers
+    ]
 
     return {
         "healthy_count": healthy,
         "moderate_count": moderate,
         "high_count": high,
         "overloaded_count": overloaded,
+        "average_workload_score": float(summary.average_workload_score),
+        "total_developers": summary.total_developers,
         "developer_workloads": developer_workloads,
     }
 
