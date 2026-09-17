@@ -244,7 +244,7 @@ def create_developer(
         .where(DeveloperProfile.id == new_dev.id)
     ).unique().scalar_one()
 
-    return _format_developer_response(created_dev)
+    return _format_developer_response(created_dev, db=db)
 
 
 @router.get("/{developer_id}", response_model=DeveloperResponse, summary="Get developer profile")
@@ -272,7 +272,7 @@ def get_developer(
             detail=f"Developer profile with ID {developer_id} not found.",
         )
 
-    return _format_developer_response(dev)
+    return _format_developer_response(dev, db=db)
 
 
 @router.put("/{developer_id}", response_model=DeveloperResponse, summary="Update developer profile")
@@ -319,7 +319,7 @@ def update_developer(
     db.refresh(dev)
     invalidate_all_recommendations(db)
 
-    return _format_developer_response(dev)
+    return _format_developer_response(dev, db=db)
 
 
 @router.delete("/{developer_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete developer profile")

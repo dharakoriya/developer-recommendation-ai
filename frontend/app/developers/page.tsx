@@ -217,7 +217,11 @@ export default function DevelopersPage() {
                 {/* Header with Name & Badges */}
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="font-extrabold text-slate-900 dark:text-white text-base">{dev.user_name || 'Developer'}</h3>
+                    <Link href={`/developers/${dev.id}`} className="group">
+                      <h3 className="font-extrabold text-slate-900 dark:text-white text-base group-hover:text-purple-600 dark:group-hover:text-purple-400 transition">
+                        {dev.user_name || 'Developer'} <span className="text-xs text-purple-500 opacity-0 group-hover:opacity-100 transition">→</span>
+                      </h3>
+                    </Link>
                     <span className="text-xs text-slate-500 dark:text-slate-400 font-mono block">{dev.user_email}</span>
                   </div>
                   <div className="flex flex-col items-end gap-1.5">
@@ -277,6 +281,23 @@ export default function DevelopersPage() {
 
                 {/* Workload Indicator */}
                 <WorkloadIndicator score={dev.workload_score ?? 0} />
+
+                {/* Card Action Footer */}
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800/80">
+                  <Link
+                    href={`/developers/${dev.id}`}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-600 dark:text-purple-400 hover:text-purple-500 transition group"
+                  >
+                    <span>View Profile & Intelligence</span>
+                    <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                  </Link>
+                  <Link
+                    href={`/developers/${dev.id}/performance`}
+                    className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 transition"
+                  >
+                    🏆 Performance
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
