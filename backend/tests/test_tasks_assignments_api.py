@@ -43,11 +43,20 @@ def client():
     app.dependency_overrides.clear()
 
 
+from app.models.user import User
+from app.models.developer import DeveloperProfile
+from app.core.security import get_password_hash
+
+
 def get_token(client, email, password, role="DEVELOPER", name="Test User"):
-    client.post(
-        "/api/auth/register",
-        json={"name": name, "email": email, "password": password, "role": role},
-    )
+    db = TestingSessionLocal()
+    existing = db.query(User).filter(User.email == email).first()
+    if not existing:
+        user_role = UserRole[role] if isinstance(role, str) else role
+        u = User(name=name, email=email, password_hash=get_password_hash(password), role=user_role, is_active=True)
+        db.add(u)
+        db.commit()
+    db.close()
     res = client.post("/api/auth/login", json={"email": email, "password": password})
     return res.json()["access_token"]
 
@@ -276,13 +285,16 @@ def test_developer_assignment_and_history_preservation(client):
     mgr_headers = {"Authorization": f"Bearer {mgr_token}"}
 
     # Setup developers
-    client.post("/api/auth/register", json={"name": "Dev Alice", "email": "alice@d.ai", "password": "pass", "role": "DEVELOPER"})
-    u_alice = client.post("/api/auth/login", json={"email": "alice@d.ai", "password": "pass"}).json()["user"]
-    p_alice = create_dev_profile(client, mgr_token, u_alice["id"])
-
-    client.post("/api/auth/register", json={"name": "Dev Bob", "email": "bob@d.ai", "password": "pass", "role": "DEVELOPER"})
-    u_bob = client.post("/api/auth/login", json={"email": "bob@d.ai", "password": "pass"}).json()["user"]
-    p_bob = create_dev_profile(client, mgr_token, u_bob["id"])
+    db = TestingSessionLocal()
+    u1 = User(name="Dev Alice", email="alice@d.ai", password_hash=get_password_hash("pass"), role=UserRole.DEVELOPER, is_active=True)
+    u2 = User(name="Dev Bob", email="bob@d.ai", password_hash=get_password_hash("pass"), role=UserRole.DEVELOPER, is_active=True)
+    db.add_all([u1, u2])
+    db.commit()
+    db.refresh(u1)
+    db.refresh(u2)
+    db.close()
+    p_alice = create_dev_profile(client, mgr_token, str(u1.id))
+    p_bob = create_dev_profile(client, mgr_token, str(u2.id))
 
     # Setup task
     proj = create_project(client, mgr_token, "Assignment Project")
@@ -398,11 +410,13 @@ def test_direct_tasks_teams_assignments_api_routes(client):
     assert len(list_teams_res.json()) >= 1
 
     # 3. Test direct GET /api/assignments and POST /api/assignments
-    dev_u = client.post(
-        "/api/auth/register",
-        json={"name": "Dev Direct", "email": "dev_direct@d.ai", "password": "pass", "role": "DEVELOPER"},
-    ).json()
-    dev_prof = create_dev_profile(client, mgr_token, dev_u["id"])
+    db = TestingSessionLocal()
+    u_dir = User(name="Dev Direct", email="dev_direct@d.ai", password_hash=get_password_hash("pass"), role=UserRole.DEVELOPER, is_active=True)
+    db.add(u_dir)
+    db.commit()
+    db.refresh(u_dir)
+    db.close()
+    dev_prof = create_dev_profile(client, mgr_token, str(u_dir.id))
 
     assign_direct_res = client.post(
         "/api/assignments",
@@ -445,11 +459,13 @@ def test_recommendation_score_precision_and_assignment_outcome_regression(client
     t_id = t_res.json()["id"]
 
     # Register developer
-    dev_u = client.post(
-        "/api/auth/register",
-        json={"name": "Dev Reg", "email": "dev_reg156@d.ai", "password": "pass", "role": "DEVELOPER"},
-    ).json()
-    dev_prof = create_dev_profile(client, mgr_token, dev_u["id"])
+    db = TestingSessionLocal()
+    u_reg = User(name="Dev Reg", email="dev_reg156@d.ai", password_hash=get_password_hash("pass"), role=UserRole.DEVELOPER, is_active=True)
+    db.add(u_reg)
+    db.commit()
+    db.refresh(u_reg)
+    db.close()
+    dev_prof = create_dev_profile(client, mgr_token, str(u_reg.id))
 
     # 1. Generate task recommendations (tests persistence of score like 94.8 / 100.0)
     rec_res = client.get(f"/api/recommendations/tasks/{t_id}", headers=mgr_headers)

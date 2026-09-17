@@ -31,16 +31,24 @@ export const RESEARCH_NAVIGATION: NavItem[] = [
   { name: 'Audit & Governance Log', href: '/recommendations/audit', icon: '🛡️', allowedRoles: ['ADMIN'] },
 ];
 
+export const ADMIN_NAVIGATION: NavItem[] = [
+  { name: 'User Management', href: '/admin/users', icon: '👤', allowedRoles: ['ADMIN'] },
+];
+
 export function getFilteredNavigation(role: UserRole | undefined) {
   if (!role) {
-    return { main: [], research: [] };
+    return { main: [], research: [], admin: [] };
   }
   if (role === 'ADMIN') {
-    return { main: MAIN_NAVIGATION.filter((i) => i.allowedRoles.includes('ADMIN')), research: RESEARCH_NAVIGATION };
+    return {
+      main: MAIN_NAVIGATION.filter((i) => i.allowedRoles.includes('ADMIN')),
+      research: RESEARCH_NAVIGATION,
+      admin: ADMIN_NAVIGATION,
+    };
   }
 
   const main = MAIN_NAVIGATION.filter((item) => item.allowedRoles.includes(role));
   const research = RESEARCH_NAVIGATION.filter((item) => item.allowedRoles.includes(role));
 
-  return { main, research };
+  return { main, research, admin: [] };
 }

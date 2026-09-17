@@ -43,11 +43,20 @@ def client():
     app.dependency_overrides.clear()
 
 
+from app.models.user import User
+from app.models.developer import DeveloperProfile
+from app.core.security import get_password_hash
+
+
 def get_token(client, email, password, role="DEVELOPER", name="Test User"):
-    client.post(
-        "/api/auth/register",
-        json={"name": name, "email": email, "password": password, "role": role},
-    )
+    db = TestingSessionLocal()
+    existing = db.query(User).filter(User.email == email).first()
+    if not existing:
+        user_role = UserRole[role] if isinstance(role, str) else role
+        u = User(name=name, email=email, password_hash=get_password_hash(password), role=user_role, is_active=True)
+        db.add(u)
+        db.commit()
+    db.close()
     res = client.post("/api/auth/login", json={"email": email, "password": password})
     return res.json()["access_token"]
 
@@ -105,9 +114,13 @@ def test_zero_workload_developer(client):
     mgr_token = get_token(client, "mgr_wl1@d.ai", "pass123", role="MANAGER")
     mgr_headers = {"Authorization": f"Bearer {mgr_token}"}
 
-    client.post("/api/auth/register", json={"name": "Idle Dev", "email": "idle@d.ai", "password": "pass", "role": "DEVELOPER"})
-    u_dev = client.post("/api/auth/login", json={"email": "idle@d.ai", "password": "pass"}).json()["user"]
-    p_dev = create_dev_profile(client, mgr_token, u_dev["id"])
+    db = TestingSessionLocal()
+    u_dev = User(name="Idle Dev", email="idle@d.ai", password_hash=get_password_hash("pass"), role=UserRole.DEVELOPER, is_active=True)
+    db.add(u_dev)
+    db.commit()
+    db.refresh(u_dev)
+    db.close()
+    p_dev = create_dev_profile(client, mgr_token, str(u_dev.id))
 
     # Query workload details for idle developer
     res = client.get(f"/api/workload/developers/{p_dev['id']}", headers=mgr_headers)
@@ -123,9 +136,13 @@ def test_workload_with_active_assignments_and_complexity(client):
     mgr_token = get_token(client, "mgr_wl2@d.ai", "pass123", role="MANAGER")
     mgr_headers = {"Authorization": f"Bearer {mgr_token}"}
 
-    client.post("/api/auth/register", json={"name": "Active Dev", "email": "act@d.ai", "password": "pass", "role": "DEVELOPER"})
-    u_dev = client.post("/api/auth/login", json={"email": "act@d.ai", "password": "pass"}).json()["user"]
-    p_dev = create_dev_profile(client, mgr_token, u_dev["id"], availability="AVAILABLE")
+    db = TestingSessionLocal()
+    u_dev = User(name="Active Dev", email="act@d.ai", password_hash=get_password_hash("pass"), role=UserRole.DEVELOPER, is_active=True)
+    db.add(u_dev)
+    db.commit()
+    db.refresh(u_dev)
+    db.close()
+    p_dev = create_dev_profile(client, mgr_token, str(u_dev.id), availability="AVAILABLE")
 
     proj = create_project(client, mgr_token, "Workload Proj")
 
@@ -154,9 +171,13 @@ def test_overloaded_workload_and_availability_factor(client):
     mgr_token = get_token(client, "mgr_wl3@d.ai", "pass123", role="MANAGER")
     mgr_headers = {"Authorization": f"Bearer {mgr_token}"}
 
-    client.post("/api/auth/register", json={"name": "Part Dev", "email": "part@d.ai", "password": "pass", "role": "DEVELOPER"})
-    u_dev = client.post("/api/auth/login", json={"email": "part@d.ai", "password": "pass"}).json()["user"]
-    p_dev = create_dev_profile(client, mgr_token, u_dev["id"], availability="PARTIAL") # Capacity = 20.0h
+    db = TestingSessionLocal()
+    u_dev = User(name="Part Dev", email="part@d.ai", password_hash=get_password_hash("pass"), role=UserRole.DEVELOPER, is_active=True)
+    db.add(u_dev)
+    db.commit()
+    db.refresh(u_dev)
+    db.close()
+    p_dev = create_dev_profile(client, mgr_token, str(u_dev.id), availability="PARTIAL") # Capacity = 20.0h
 
     proj = create_project(client, mgr_token, "Overload Proj")
 
@@ -177,13 +198,16 @@ def test_historical_assignment_filtering(client):
     mgr_token = get_token(client, "mgr_wl4@d.ai", "pass123", role="MANAGER")
     mgr_headers = {"Authorization": f"Bearer {mgr_token}"}
 
-    client.post("/api/auth/register", json={"name": "Dev One", "email": "dev1@d.ai", "password": "pass", "role": "DEVELOPER"})
-    u_dev1 = client.post("/api/auth/login", json={"email": "dev1@d.ai", "password": "pass"}).json()["user"]
-    p_dev1 = create_dev_profile(client, mgr_token, u_dev1["id"])
-
-    client.post("/api/auth/register", json={"name": "Dev Two", "email": "dev2@d.ai", "password": "pass", "role": "DEVELOPER"})
-    u_dev2 = client.post("/api/auth/login", json={"email": "dev2@d.ai", "password": "pass"}).json()["user"]
-    p_dev2 = create_dev_profile(client, mgr_token, u_dev2["id"])
+    db = TestingSessionLocal()
+    u_dev1 = User(name="Dev One", email="dev1@d.ai", password_hash=get_password_hash("pass"), role=UserRole.DEVELOPER, is_active=True)
+    u_dev2 = User(name="Dev Two", email="dev2@d.ai", password_hash=get_password_hash("pass"), role=UserRole.DEVELOPER, is_active=True)
+    db.add_all([u_dev1, u_dev2])
+    db.commit()
+    db.refresh(u_dev1)
+    db.refresh(u_dev2)
+    db.close()
+    p_dev1 = create_dev_profile(client, mgr_token, str(u_dev1.id))
+    p_dev2 = create_dev_profile(client, mgr_token, str(u_dev2.id))
 
     proj = create_project(client, mgr_token, "Reassign Proj")
 
@@ -217,9 +241,13 @@ def test_workload_snapshots_and_history(client):
     mgr_token = get_token(client, "mgr_wl5@d.ai", "pass123", role="MANAGER")
     mgr_headers = {"Authorization": f"Bearer {mgr_token}"}
 
-    client.post("/api/auth/register", json={"name": "Snap Dev", "email": "snap@d.ai", "password": "pass", "role": "DEVELOPER"})
-    u_dev = client.post("/api/auth/login", json={"email": "snap@d.ai", "password": "pass"}).json()["user"]
-    p_dev = create_dev_profile(client, mgr_token, u_dev["id"])
+    db = TestingSessionLocal()
+    u_dev = User(name="Snap Dev", email="snap@d.ai", password_hash=get_password_hash("pass"), role=UserRole.DEVELOPER, is_active=True)
+    db.add(u_dev)
+    db.commit()
+    db.refresh(u_dev)
+    db.close()
+    p_dev = create_dev_profile(client, mgr_token, str(u_dev.id))
 
     proj = create_project(client, mgr_token, "Snap Proj")
     t = create_task(client, mgr_token, proj["id"], hours=20.0, complexity="MEDIUM")

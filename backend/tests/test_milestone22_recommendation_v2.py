@@ -48,12 +48,21 @@ def client():
     app.dependency_overrides.clear()
 
 
+from app.models.user import User
+from app.models.developer import DeveloperProfile
+from app.models.enums import UserRole, AvailabilityStatus
+from app.core.security import get_password_hash
+
+
 def get_token(client, email, password, role="MANAGER", name="Test Manager"):
-    res_reg = client.post(
-        "/api/auth/register",
-        json={"name": name, "email": email, "password": password, "role": role},
-    )
-    assert res_reg.status_code == 201, f"Register failed: {res_reg.text}"
+    db = TestingSessionLocal()
+    existing = db.query(User).filter(User.email == email).first()
+    if not existing:
+        user_role = UserRole[role] if isinstance(role, str) else role
+        u = User(name=name, email=email, password_hash=get_password_hash(password), role=user_role, is_active=True)
+        db.add(u)
+        db.commit()
+    db.close()
     res_login = client.post("/api/auth/login", json={"email": email, "password": password})
     assert res_login.status_code == 200, f"Login failed: {res_login.text}"
     return res_login.json()["access_token"]

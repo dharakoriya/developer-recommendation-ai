@@ -15,9 +15,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
   const pathname = usePathname();
   const { user } = useAuth();
 
-  const { main: mainNav, research: researchNav } = getFilteredNavigation(user?.role);
+  const { main: mainNav, research: researchNav, admin: adminNav = [] } = getFilteredNavigation(user?.role);
 
-  const allItems = [...mainNav, ...researchNav];
+  const allItems = [...mainNav, ...researchNav, ...adminNav];
 
   const getActiveHref = (): string | null => {
     let bestMatch: string | null = null;
@@ -111,6 +111,38 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
             );
           })}
         </div>
+
+        {/* Admin Governance Section (Admins Only) */}
+        {adminNav.length > 0 && (
+          <div className="space-y-1 border-t border-slate-200 dark:border-slate-800/80 pt-4">
+            <div className="flex items-center justify-between px-3 mb-2">
+              <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                Administration & Access
+              </p>
+              <span className="text-[9px] bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded font-mono font-bold">
+                ADMIN
+              </span>
+            </div>
+            {adminNav.map((item) => {
+              const active = isActive(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onCloseMobile}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition ${
+                    active
+                      ? 'bg-amber-600/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 shadow-sm font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-slate-100 dark:hover:bg-slate-900'
+                  }`}
+                >
+                  <span className="text-base">{item.icon}</span>
+                  <span className="truncate">{item.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
 
         {/* Research Navigation Section (Admins Only) */}
         {researchNav.length > 0 && (

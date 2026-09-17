@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.api.health import router as health_router
 from app.api.auth import router as auth_router
+from app.api.users import router as users_router
 from app.api.skills import router as skills_router
 from app.api.developers import router as developers_router
 from app.api.projects import router as projects_router
@@ -39,6 +40,7 @@ app.add_middleware(
 # Register API endpoints under /api prefix
 app.include_router(health_router, prefix=settings.API_PREFIX, tags=["Health"])
 app.include_router(auth_router, prefix=f"{settings.API_PREFIX}/auth", tags=["Authentication & Authorization"])
+app.include_router(users_router, prefix=f"{settings.API_PREFIX}/users", tags=["User Management"])
 app.include_router(skills_router, prefix=f"{settings.API_PREFIX}/skills", tags=["Skills Catalog"])
 app.include_router(developers_router, prefix=f"{settings.API_PREFIX}/developers", tags=["Developer Profiles"])
 app.include_router(performance_router, prefix=settings.API_PREFIX, tags=["Performance Intelligence"])

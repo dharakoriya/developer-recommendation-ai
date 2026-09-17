@@ -44,11 +44,20 @@ def client():
 
 
 
+from app.models.user import User
+from app.models.developer import DeveloperProfile
+from app.core.security import get_password_hash
+
+
 def get_token(client, email, password, role="DEVELOPER", name="Test User"):
-    client.post(
-        "/api/auth/register",
-        json={"name": name, "email": email, "password": password, "role": role},
-    )
+    db = TestingSessionLocal()
+    existing = db.query(User).filter(User.email == email).first()
+    if not existing:
+        user_role = UserRole[role] if isinstance(role, str) else role
+        u = User(name=name, email=email, password_hash=get_password_hash(password), role=user_role, is_active=True)
+        db.add(u)
+        db.commit()
+    db.close()
     res = client.post("/api/auth/login", json={"email": email, "password": password})
     return res.json()["access_token"]
 

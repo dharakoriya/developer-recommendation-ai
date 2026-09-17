@@ -43,11 +43,20 @@ def client():
     app.dependency_overrides.clear()
 
 
+from app.models.user import User
+from app.models.developer import DeveloperProfile
+from app.core.security import get_password_hash
+
+
 def get_token(client, email, password, role="MANAGER", name="Test Manager"):
-    client.post(
-        "/api/auth/register",
-        json={"name": name, "email": email, "password": password, "role": role},
-    )
+    db = TestingSessionLocal()
+    existing = db.query(User).filter(User.email == email).first()
+    if not existing:
+        user_role = UserRole[role] if isinstance(role, str) else role
+        u = User(name=name, email=email, password_hash=get_password_hash(password), role=user_role, is_active=True)
+        db.add(u)
+        db.commit()
+    db.close()
     res = client.post("/api/auth/login", json={"email": email, "password": password})
     return res.json()["access_token"]
 
@@ -60,16 +69,18 @@ def setup_rec_test_env(client, mgr_token):
     s2 = client.post("/api/skills", json={"name": "React", "category": "Frontend"}, headers=mgr_headers).json()
 
     # Developer 1: High skill match, low workload
-    client.post("/api/auth/register", json={"name": "Dev Expert", "email": "expert@d.ai", "password": "pass", "role": "DEVELOPER"})
-    u_exp = client.post("/api/auth/login", json={"email": "expert@d.ai", "password": "pass"}).json()["user"]
-    p_exp = client.post("/api/developers", json={"user_id": u_exp["id"], "experience_years": 6.0, "availability_status": "AVAILABLE", "performance_score": 95.0}, headers=mgr_headers).json()
+    db = TestingSessionLocal()
+    u_exp = User(name="Dev Expert", email="expert@d.ai", password_hash=get_password_hash("pass"), role=UserRole.DEVELOPER, is_active=True)
+    u_nov = User(name="Dev Novice", email="novice@d.ai", password_hash=get_password_hash("pass"), role=UserRole.DEVELOPER, is_active=True)
+    db.add_all([u_exp, u_nov])
+    db.commit()
+    db.refresh(u_exp)
+    db.refresh(u_nov)
+    p_exp = client.post("/api/developers", json={"user_id": str(u_exp.id), "experience_years": 6.0, "availability_status": "AVAILABLE", "performance_score": 95.0}, headers=mgr_headers).json()
     client.post(f"/api/developers/{p_exp['id']}/skills", json={"skill_id": s1["id"], "proficiency_level": 90.0}, headers=mgr_headers)
     client.post(f"/api/developers/{p_exp['id']}/skills", json={"skill_id": s2["id"], "proficiency_level": 85.0}, headers=mgr_headers)
 
-    # Developer 2: Low skill match
-    client.post("/api/auth/register", json={"name": "Dev Novice", "email": "novice@d.ai", "password": "pass", "role": "DEVELOPER"})
-    u_nov = client.post("/api/auth/login", json={"email": "novice@d.ai", "password": "pass"}).json()["user"]
-    p_nov = client.post("/api/developers", json={"user_id": u_nov["id"], "experience_years": 1.0, "availability_status": "AVAILABLE", "performance_score": 70.0}, headers=mgr_headers).json()
+    p_nov = client.post("/api/developers", json={"user_id": str(u_nov.id), "experience_years": 1.0, "availability_status": "AVAILABLE", "performance_score": 70.0}, headers=mgr_headers).json()
     client.post(f"/api/developers/{p_nov['id']}/skills", json={"skill_id": s1["id"], "proficiency_level": 40.0}, headers=mgr_headers)
 
     # Project & Task requiring Python 80, React 70

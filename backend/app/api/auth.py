@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from app.database import get_db
 from app.models.user import User
@@ -12,36 +12,16 @@ from app.api.deps import get_current_user, require_roles
 router = APIRouter()
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED, summary="Register a new user")
+@router.post("/register", status_code=status.HTTP_403_FORBIDDEN, summary="Register a new user (Disabled)")
 def register_user(user_in: UserRegister, db: Session = Depends(get_db)):
     """
-    Registers a new system user with hashed password.
-    Returns the created user object without exposing password hashes.
+    Public registration is permanently disabled.
+    Accounts must be provisioned by a DEVAlign Administrator via the Admin User Management panel (/api/users).
     """
-    existing_user = db.execute(
-        select(User).where(User.email == user_in.email)
-    ).scalar_one_or_none()
-
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered",
-        )
-
-    hashed_password = get_password_hash(user_in.password)
-    new_user = User(
-        name=user_in.name,
-        email=user_in.email,
-        password_hash=hashed_password,
-        role=user_in.role,
-        is_active=True,
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Public self-registration is disabled in DEVAlign AI. User accounts must be provisioned by a system Administrator.",
     )
-
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-
-    return new_user
 
 
 @router.post("/login", response_model=TokenResponse, summary="Authenticate user and obtain JWT access token")
@@ -50,8 +30,9 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
     Authenticates user with email and password.
     Returns Bearer JWT access token and basic user details.
     """
+    clean_email = credentials.email.strip().lower()
     user = db.execute(
-        select(User).where(User.email == credentials.email)
+        select(User).where(func.lower(User.email) == clean_email)
     ).scalar_one_or_none()
 
     if not user or not verify_password(credentials.password, user.password_hash):
@@ -64,7 +45,7 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User account is inactive",
+            detail="User account is deactivated. Please contact your DEVAlign administrator.",
         )
 
     access_token = create_access_token(data={"sub": str(user.id), "role": user.role.value})

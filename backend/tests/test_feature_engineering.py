@@ -43,11 +43,20 @@ def client():
     app.dependency_overrides.clear()
 
 
+from app.models.user import User
+from app.models.developer import DeveloperProfile
+from app.core.security import get_password_hash
+
+
 def get_token(client, email, password, role="MANAGER", name="Test Manager"):
-    client.post(
-        "/api/auth/register",
-        json={"name": name, "email": email, "password": password, "role": role},
-    )
+    db = TestingSessionLocal()
+    existing = db.query(User).filter(User.email == email).first()
+    if not existing:
+        user_role = UserRole[role] if isinstance(role, str) else role
+        u = User(name=name, email=email, password_hash=get_password_hash(password), role=user_role, is_active=True)
+        db.add(u)
+        db.commit()
+    db.close()
     res = client.post("/api/auth/login", json={"email": email, "password": password})
     return res.json()["access_token"]
 
@@ -60,13 +69,17 @@ def setup_feature_test_environment(client, mgr_token):
     s2 = client.post("/api/skills", json={"name": "FastAPI", "category": "Backend"}, headers=mgr_headers).json()
 
     # Create Dev Profile
-    client.post("/api/auth/register", json={"name": "Dev Alice", "email": "alice@d.ai", "password": "pass", "role": "DEVELOPER"})
-    u_alice = client.post("/api/auth/login", json={"email": "alice@d.ai", "password": "pass"}).json()["user"]
+    db = TestingSessionLocal()
+    u_alice = User(name="Dev Alice", email="alice@d.ai", password_hash=get_password_hash("pass"), role=UserRole.DEVELOPER, is_active=True)
+    db.add(u_alice)
+    db.commit()
+    db.refresh(u_alice)
+    db.close()
 
     p_alice = client.post(
         "/api/developers",
         json={
-            "user_id": u_alice["id"],
+            "user_id": str(u_alice.id),
             "experience_years": 5.0,
             "availability_status": "AVAILABLE",
             "performance_score": 90.0,

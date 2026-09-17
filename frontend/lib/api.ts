@@ -98,6 +98,9 @@ export const apiClient = {
   put: <T>(endpoint: string, body?: any, headers?: Record<string, string>) =>
     request<T>(endpoint, { method: 'PUT', body: JSON.stringify(body), headers }),
 
+  patch: <T>(endpoint: string, body?: any, headers?: Record<string, string>) =>
+    request<T>(endpoint, { method: 'PATCH', body: JSON.stringify(body), headers }),
+
   delete: <T>(endpoint: string, headers?: Record<string, string>) =>
     request<T>(endpoint, { method: 'DELETE', headers }),
 };

@@ -42,50 +42,36 @@ def client():
     app.dependency_overrides.clear()
 
 
-def test_user_registration(client):
-    """Test user registration for different roles."""
-    payload = {
-        "name": "Jane Manager",
-        "email": "jane@devalign.ai",
-        "password": "Password123!",
-        "role": "MANAGER",
-    }
-    response = client.post("/api/auth/register", json=payload)
-    assert response.status_code == 201
-    data = response.json()
-    assert data["name"] == "Jane Manager"
-    assert data["email"] == "jane@devalign.ai"
-    assert data["role"] == "MANAGER"
-    assert data["is_active"] is True
-    assert "password" not in data
-    assert "password_hash" not in data
+from app.core.security import get_password_hash
+from app.models.user import User
 
 
-def test_duplicate_user_registration_fails(client):
-    """Test that duplicate email registration returns HTTP 400."""
+def test_public_registration_is_disabled(client):
+    """Test that public /api/auth/register is disabled and returns HTTP 403."""
     payload = {
-        "name": "User 1",
-        "email": "dup@devalign.ai",
+        "name": "Public User",
+        "email": "public@devalign.ai",
         "password": "Password123!",
         "role": "DEVELOPER",
     }
-    res1 = client.post("/api/auth/register", json=payload)
-    assert res1.status_code == 201
-
-    res2 = client.post("/api/auth/register", json=payload)
-    assert res2.status_code == 400
-    assert res2.json()["detail"] == "Email already registered"
+    response = client.post("/api/auth/register", json=payload)
+    assert response.status_code == 403
+    assert "Public self-registration is disabled" in response.json()["detail"]
 
 
 def test_login_success_and_jwt_issuance(client):
     """Test successful user login and access token response structure."""
-    reg_payload = {
-        "name": "Dev User",
-        "email": "dev@devalign.ai",
-        "password": "SecretPassword123",
-        "role": "DEVELOPER",
-    }
-    client.post("/api/auth/register", json=reg_payload)
+    db = TestingSessionLocal()
+    user = User(
+        name="Dev User",
+        email="dev@devalign.ai",
+        password_hash=get_password_hash("SecretPassword123"),
+        role=UserRole.DEVELOPER,
+        is_active=True,
+    )
+    db.add(user)
+    db.commit()
+    db.close()
 
     login_payload = {
         "email": "dev@devalign.ai",
@@ -102,15 +88,42 @@ def test_login_success_and_jwt_issuance(client):
     assert "password_hash" not in data["user"]
 
 
+def test_login_inactive_user_rejected(client):
+    """Test that deactivated users cannot log in (HTTP 401)."""
+    db = TestingSessionLocal()
+    user = User(
+        name="Deactivated User",
+        email="inactive@devalign.ai",
+        password_hash=get_password_hash("SecretPassword123"),
+        role=UserRole.DEVELOPER,
+        is_active=False,
+    )
+    db.add(user)
+    db.commit()
+    db.close()
+
+    login_payload = {
+        "email": "inactive@devalign.ai",
+        "password": "SecretPassword123",
+    }
+    response = client.post("/api/auth/login", json=login_payload)
+    assert response.status_code == 401
+    assert "deactivated" in response.json()["detail"].lower()
+
+
 def test_login_invalid_password(client):
     """Test login with incorrect password returns HTTP 401."""
-    reg_payload = {
-        "name": "Dev User",
-        "email": "dev@devalign.ai",
-        "password": "CorrectPassword123",
-        "role": "DEVELOPER",
-    }
-    client.post("/api/auth/register", json=reg_payload)
+    db = TestingSessionLocal()
+    user = User(
+        name="Dev User",
+        email="dev@devalign.ai",
+        password_hash=get_password_hash("CorrectPassword123"),
+        role=UserRole.DEVELOPER,
+        is_active=True,
+    )
+    db.add(user)
+    db.commit()
+    db.close()
 
     login_payload = {
         "email": "dev@devalign.ai",
@@ -141,13 +154,17 @@ def test_get_me_unauthenticated(client):
 
 def test_get_me_authenticated(client):
     """Test accessing /api/auth/me with valid Bearer token."""
-    reg_payload = {
-        "name": "Admin User",
-        "email": "admin@devalign.ai",
-        "password": "AdminPassword123",
-        "role": "ADMIN",
-    }
-    client.post("/api/auth/register", json=reg_payload)
+    db = TestingSessionLocal()
+    user = User(
+        name="Admin User",
+        email="admin@devalign.ai",
+        password_hash=get_password_hash("AdminPassword123"),
+        role=UserRole.ADMIN,
+        is_active=True,
+    )
+    db.add(user)
+    db.commit()
+    db.close()
 
     login_res = client.post(
         "/api/auth/login",
@@ -166,17 +183,17 @@ def test_get_me_authenticated(client):
 
 def test_role_authorization_permissions(client):
     """Test role-based authorization rules (ADMIN, MANAGER, DEVELOPER)."""
-    # Create ADMIN
-    client.post("/api/auth/register", json={"name": "A", "email": "a@d.ai", "password": "p", "role": "ADMIN"})
-    admin_token = client.post("/api/auth/login", json={"email": "a@d.ai", "password": "p"}).json()["access_token"]
+    db = TestingSessionLocal()
+    u_admin = User(name="A", email="a@devalign.ai", password_hash=get_password_hash("p"), role=UserRole.ADMIN, is_active=True)
+    u_mgr = User(name="M", email="m@devalign.ai", password_hash=get_password_hash("p"), role=UserRole.MANAGER, is_active=True)
+    u_dev = User(name="D", email="d@devalign.ai", password_hash=get_password_hash("p"), role=UserRole.DEVELOPER, is_active=True)
+    db.add_all([u_admin, u_mgr, u_dev])
+    db.commit()
+    db.close()
 
-    # Create MANAGER
-    client.post("/api/auth/register", json={"name": "M", "email": "m@d.ai", "password": "p", "role": "MANAGER"})
-    manager_token = client.post("/api/auth/login", json={"email": "m@d.ai", "password": "p"}).json()["access_token"]
-
-    # Create DEVELOPER
-    client.post("/api/auth/register", json={"name": "D", "email": "d@d.ai", "password": "p", "role": "DEVELOPER"})
-    dev_token = client.post("/api/auth/login", json={"email": "d@d.ai", "password": "p"}).json()["access_token"]
+    admin_token = client.post("/api/auth/login", json={"email": "a@devalign.ai", "password": "p"}).json()["access_token"]
+    manager_token = client.post("/api/auth/login", json={"email": "m@devalign.ai", "password": "p"}).json()["access_token"]
+    dev_token = client.post("/api/auth/login", json={"email": "d@devalign.ai", "password": "p"}).json()["access_token"]
 
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
     manager_headers = {"Authorization": f"Bearer {manager_token}"}

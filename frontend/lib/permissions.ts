@@ -19,6 +19,7 @@ export const ROUTE_PERMISSIONS: RoutePermission[] = [
   { path: '/research', allowedRoles: ['ADMIN'] },
   { path: '/recommendations/audit', allowedRoles: ['ADMIN'] },
   { path: '/ai-planning', allowedRoles: ['ADMIN', 'MANAGER'] },
+  { path: '/admin', allowedRoles: ['ADMIN'] },
 ];
 
 export function hasPermission(role: UserRole | undefined, path: string): boolean {

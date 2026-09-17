@@ -1,61 +1,111 @@
-# DEVAlign AI — Demonstration Data & Scenario Matrix
+# DEVAlign AI — Complete Demonstration Data & Scenarios Guide
 
-This document defines the complete matrix of 10 demonstration tasks and 12 core scenarios in the official DevAlign AI demonstration dataset (populated via `python backend/scripts/seed_demo_data.py`).
+## 1. Controlled Demonstration Environment Overview
+The DEVAlign AI demonstration dataset provides a complete, deterministic, and reproducible system state designed to showcase all core intelligence capabilities across Workload Analytics, Explainable AI (XAI) Recommendations, Performance & Incentives, Real-Time Timer Execution, and Admin RBAC Governance.
 
----
+### Default Demonstration Credentials (Local Development)
+> **Note**: For local development and demonstration only. Accounts are initialized with secure bcrypt password hashing.
 
-## 1. Demonstration Users & Profiles
-
-| Name | Role | Email | Password | Experience | Performance | Availability | Streaks & Points | Specialization |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **System Admin** | `ADMIN` | `admin@devalign.ai` | `admin123` | N/A | N/A | Available | Full Platform Access | System Administration & Config |
-| **Project Manager** | `MANAGER` | `manager@devalign.ai` | `manager123` | N/A | N/A | Available | Project Management | Project, Team, Task & Planning |
-| **Alice Sharma** | `DEVELOPER` | `alice@devalign.ai` | `dev123` | 6.0 yrs | 94.0 / 100 | AVAILABLE | 5 Days (850 pts) | Python (90%), FastAPI (88%), PostgreSQL (85%), Docker (65%) |
-| **Rahul Patel** | `DEVELOPER` | `rahul@devalign.ai` | `dev123` | 4.5 yrs | 88.0 / 100 | AVAILABLE | 3 Days (480 pts) | React (95%), TypeScript (92%), UI/UX (85%), Python (40%) |
-| **Priya Mehta** | `DEVELOPER` | `priya@devalign.ai` | `dev123` | 5.5 yrs | 92.0 / 100 | AVAILABLE (Heavy) | 4 Days (620 pts) | Fullstack (Python, FastAPI, React, TS, PG ~80%) |
-| **David Wilson** | `DEVELOPER` | `david@devalign.ai` | `dev123` | 7.0 yrs | 86.0 / 100 | **UNAVAILABLE** | 1 Day (0 pts) | Docker (95%), PostgreSQL (85%), Python (60%) |
-
----
-
-## 2. Demonstration Projects & Teams
-
-| Project Name | Status | Lead/Creator | Description | Teams |
+| Role | Name | Email | Password | Primary Capabilities |
 | :--- | :--- | :--- | :--- | :--- |
-| **FinTech Payment Platform** | `ACTIVE` | Project Manager | High-throughput payment gateway & real-time transaction engine | `Core Payments Backend Team` (Alice, Priya) |
-| **University Learning Portal** | `ACTIVE` | Project Manager | Online student course registration and grading management portal | `Portal UI/UX Team` (Rahul) |
-| **Internal Analytics Dashboard** | `ACTIVE` | Project Manager | Enterprise telemetry, executive metrics & ML observability | `Platform & DevOps Team` (David, Alice) |
+| **ADMIN** | System Admin | `admin@devalign.ai` | `admin123` | User Provisioning, Access Governance, ML Evaluation Lab, Audit Logs |
+| **MANAGER** | Project Manager | `manager@devalign.ai` | `manager123` | AI Planning, Projects & Teams, Task Assignment, Recommendation Engine |
+| **DEVELOPER** | Alice Sharma | `alice@devalign.ai` | `dev123` | Backend Specialist (Python, FastAPI, Postgres), Live Task Timer, Streaks |
+| **DEVELOPER** | Rahul Patel | `rahul@devalign.ai` | `dev123` | Frontend Specialist (React, TypeScript, UI/UX), Work Intelligence |
+| **DEVELOPER** | Priya Mehta | `priya@devalign.ai` | `dev123` | Fullstack Engineer (Demonstrates High Workload & Capacity Pressure) |
+| **DEVELOPER** | David Wilson | `david@devalign.ai` | `dev123` | DevOps Specialist (Docker, Postgres) — Unavailable Status Demonstration |
 
 ---
 
-## 3. Comprehensive Task & Scenario Matrix
+## 2. Master Demonstration Scenarios
 
-| Case ID | Scenario Name | Task Title | Project | Team | Status | Assigned Dev | Weight Score (Category) | Timer State | Risk Level | Expected UI Behavior / Viva Purpose |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **CASE 1** | **Unassigned TODO (Recommendation Demo)** | *Build Payment Webhook Ingestion API* | FinTech Payment Platform | Core Payments Backend | `TODO` | None | **70.20** (HEAVY) | Not Started (0s) | MEDIUM | Demonstrates **"Find Best Developer"**. Manager clicks recommendations: **Alice** ranks #1 (100% skill match, low workload), **Priya** ranks lower due to workload pressure, **David** is excluded (Unavailable), **Rahul** is penalized (missing skills). |
-| **CASE 2** | **Recommended But Not Yet Assigned** | *Design Student Course Recommendation Schema* | University Learning Portal | None | `TODO` | None | **52.30** (HEAVY) | Not Started (0s) | LOW | Pre-generated baseline recommendation stored in PostgreSQL. Manager opens recommendations, reviews contribution breakdown, and can 1-click assign. |
-| **CASE 3** | **Active In-Progress with Running Timer** | *Build Authentication & RBAC Engine* | FinTech Payment Platform | Core Payments Backend | `IN_PROGRESS` | Alice Sharma | **73.86** (HEAVY) | **Running** (Timer active, 30m logged) | MEDIUM | Login as **Alice**. Open "My Tasks" -> Task Detail. Timer is actively ticking live with minutes and seconds. Alice can pause or record work. |
-| **CASE 4** | **In-Progress Paused Task** | *Implement Realtime Payment Dashboard* | FinTech Payment Platform | Portal UI/UX | `IN_PROGRESS` | Rahul Patel | **53.95** (HEAVY) | **Paused** (90m [5400s] accumulated) | LOW | Login as **Rahul**. Timer is paused displaying `01:30:00` accumulated actual time. Rahul can click "Resume Timer" to restart execution. |
-| **CASE 5** | **Completed Task Lifecycle** | *Containerize Microservices with Docker* | FinTech Payment Platform | Core Payments Backend | `COMPLETED` | Alice Sharma | **67.99** (HEAVY) | Completed (14h [50400s]) | LOW (0.0) | Displays complete lifecycle: `completed_by` = Alice, `completed_at` timestamp recorded, assignment marked `COMPLETED`. |
-| **CASE 6** | **High Weight / CRITICAL Task** | *Core Transaction Idempotency & Settlement Engine* | FinTech Payment Platform | Core Payments Backend | `TODO` | None | **81.08** (CRITICAL) | Not Started (0s) | HIGH | Demonstrates Task Weight Formula with Critical Priority (100), High Complexity (75), 32h Effort (80), and Expert Skills (90%). Categorized as **CRITICAL**. |
-| **CASE 7** | **Low Weight / LIGHT Task** | *Update Portal Privacy Policy & FAQ Copy* | University Learning Portal | Portal UI/UX | `TODO` | None | **24.90** (LIGHT) | Not Started (0s) | LOW | Demonstrates contrasting light weight: Low Priority (25), Low Complexity (25), 4h Effort (20), Light Skills (25). Categorized as **LIGHT**. |
-| **CASE 8** | **Overloaded Developer Workload Pressure** | *Refactor Database Connection Pool & Caching* | Internal Analytics Dashboard | Platform & DevOps | `IN_PROGRESS` | Priya Mehta | **73.49** (HEAVY) | Paused (60m) | HIGH | Priya is assigned T8 (24h) + T10 (18h) = 42h active effort (105% workload). Demonstrates Workload Anti-Monopoly penalty and workload warning badge. |
-| **CASE 9** | **Skill Gap & 3-Tier Categorization** | *Multi-Cluster Docker Ingress Controller* | Internal Analytics Dashboard | Platform & DevOps | `TODO` | None | **73.11** (HEAVY) | Not Started (0s) | MEDIUM | Demonstrates Recommendation Categorization: **David** is *INELIGIBLE* ("❌ Developer Currently Unavailable"), **Alice** is *CONDITIONALLY_ELIGIBLE* ("⚠ Partial Skill Coverage"), **Rahul** is *INELIGIBLE* ("❌ Missing Required Skills"). |
-| **CASE 10** | **High Priority Deadline Risk** | *Emergency Security Patch for JWT Signatures* | FinTech Payment Platform | Core Payments Backend | `IN_PROGRESS` | Priya Mehta | **79.92** (CRITICAL) | Paused (30m) | **CRITICAL** | Deadline is within 12 hours + developer is overloaded. Triggers CRITICAL Schedule Risk + High Workload Risk in the Risk Assessment Engine. |
-| **CASE 11** | **Multi-Factor Incentive Ledger** | *Containerize Microservices with Docker* | FinTech Payment Platform | Core Payments Backend | `COMPLETED` | Alice Sharma | **67.99** (HEAVY) | Completed | LOW | Demonstrates incentive breakdown: Base (600 pts) + Difficulty Bonus (120 pts) + On-Time Bonus (90 pts) + Streak Bonus (40 pts) = **850 Total Points**. |
-| **CASE 12** | **Project -> Team -> Task -> Dev Member Flow** | *Build Payment Webhook Ingestion API* | FinTech Payment Platform | Core Payments Backend | `TODO` | None | **70.20** (HEAVY) | Not Started (0s) | MEDIUM | Demonstrates hierarchical structure: Project (`FinTech Platform`) -> Team (`Core Payments`) -> Task (`Webhook Ingestion`) -> Team Members (`Alice`, `Priya`). |
+### Scenario 1: Admin User Provisioning & Deactivation Workflow
+- **Goal**: Demonstrate enterprise security governance where open public registration is completely disabled.
+- **Actions**:
+  1. Log in as `admin@devalign.ai`.
+  2. Navigate to `/admin/users` (Admin User Management).
+  3. Click **"Provision New User"**, select role `DEVELOPER`, and set experience to `3 years`.
+  4. Submit form and verify user is provisioned with a linked `DeveloperProfile`.
+  5. Toggle active status to `Deactivated` on a test user.
+  6. Attempt login with the deactivated account to demonstrate immediate `401 Unauthorized` block.
 
 ---
 
-## 4. Verification & Validation Summary
+### Scenario 2: Unassigned Task & 3-Tier Match Recommendation Engine
+- **Goal**: Demonstrate explainable recommendations with skill match, experience, workload impact, and XAI breakdown.
+- **Task**: *"Build Course Enrollment React Dashboard Component"* (TODO)
+- **Engine Output**:
+  - **Top Match**: `Rahul Patel` (95% Skill Match, React 95, TS 92, Available Capacity).
+  - **Explainability**: SHAP/heuristic factor breakdown (Skill Match +42%, Workload +28%, Performance +18%, Experience +12%).
+  - **Eligibility Tiers**:
+    - **Eligible**: Developers meeting all required skill thresholds and availability.
+    - **Conditionally Eligible**: Developers with partial skill coverage or moderate capacity.
+    - **Ineligible**: Developers marked `UNAVAILABLE` (David Wilson) or severe skill gaps.
 
-Running `python backend/scripts/seed_demo_data.py` consistently yields:
-- **Total Users**: 6
-- **Total Projects**: 3
-- **Total Teams**: 3
-- **Total Developers**: 4
-- **Total Skills**: 7
-- **Total Tasks**: 10
-- **Total Assignments**: 5
-- **Pre-generated Recommendations**: 20 (across 5 unassigned tasks)
-- **Incentive Ledgers**: 3
-- **Developer Streaks**: 4
+---
+
+### Scenario 3: Real-Time Timer & Active Task Execution
+- **Goal**: Demonstrate precise developer time tracking with persistence across navigation and page reloads.
+- **Actions**:
+  1. Log in as `alice@devalign.ai`.
+  2. Navigate to `/tasks` or `/analytics/me`.
+  3. Locate assigned in-progress task: *"Implement RESTful Auth & JWT Middleware"*.
+  4. Click **"Start Timer"** — observe active pulsing indicator and ticking `HH:MM:SS` timer.
+  5. Pause timer — observe accumulated tracked duration persisted to backend.
+  6. Complete task — timer automatically finalizes, updating `actual_hours`, status to `COMPLETED`, and triggering incentive points calculation.
+
+---
+
+### Scenario 4: Workload Engine & Capacity Pressure
+- **Goal**: Demonstrate workload distribution, weighted hours, and burnout prevention alerts.
+- **Developers**:
+  - `Alice Sharma`: 1 Active Task, 8.0h (~20% Capacity) -> **AVAILABLE / LOW PRESSURE**.
+  - `Priya Mehta`: 3 Active High-Complexity Tasks (~95% Capacity) -> **HIGH / CAPACITY WARNING**.
+- **Visuals**: Color-coded utilization gauges, capacity bar charts, and team workload distributions.
+
+---
+
+### Scenario 5: Multi-Factor Incentive & Achievement Engine
+- **Goal**: Demonstrate automated gamified performance incentives based on delivery excellence.
+- **Incentive Breakdown**:
+  - **Base Reward**: Points proportional to task weight score.
+  - **On-Time Bonus**: +20% bonus for completing before estimated hours.
+  - **Difficulty Multiplier**: Tiered bonus for HIGH and CRITICAL tasks.
+  - **Streak Bonus**: Extra multiplier for maintaining active completion streaks.
+- **Achievements**: Unlockable badges (*"Speed Demon"*, *"Reliable Closer"*, *"Critical Fixer"*).
+
+---
+
+### Scenario 6: AI Project Planner with Ollama Local LLM Integration
+- **Goal**: Demonstrate AI-powered project decomposition into structured tasks, required skills, priorities, and effort estimates.
+- **Actions**:
+  1. Log in as `manager@devalign.ai`.
+  2. Navigate to `/ai-planning`.
+  3. Enter a project prompt (e.g., *"Build an AI-powered code review and vulnerability scanning SaaS"*).
+  4. Click **"Generate Project Plan"**.
+  5. The planner decomposes the prompt into 6-10 structured tasks with auto-calculated weight scores and recommended assignments.
+  6. Click **"Export to Project"** to commit the generated plan directly into the live database.
+
+---
+
+### Scenario 7: Research & ML Evaluation Lab (Admin Governance)
+- **Goal**: Demonstrate machine learning model observability, dataset curation, and model switching.
+- **Capabilities**:
+  - Model evaluation comparing `baseline-v1` (heuristic) vs. `baseline-v2` (weighted ranking) vs. `ml-ranking-v1` (LightGBM/XGBoost).
+  - Feature importance inspection via SHAP global bar charts.
+  - Dataset snapshotting and human-in-the-loop validation labels.
+  - Model hot-switching with instant recommendation cache invalidation.
+
+---
+
+## 3. Database Seeding & Reset Commands
+
+To reset and seed the complete demonstration dataset:
+```powershell
+# From backend directory
+venv\Scripts\python.exe scripts/seed_demo_data.py
+```
+Or use the standalone reset tool:
+```powershell
+venv\Scripts\python.exe reset_db.py
+```
