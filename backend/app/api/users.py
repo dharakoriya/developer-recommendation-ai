@@ -324,3 +324,53 @@ def reset_user_password(
     db.commit()
 
     return {"message": f"Password for user '{user.email}' has been successfully reset."}
+
+
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete user (Admin only)")
+def delete_user(
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
+):
+    """
+    Permanently deletes a user account from the platform.
+    If the user has an associated DeveloperProfile, it and all child records are removed.
+    Safety guards prevent self-deletion and deleting the only active Administrator.
+    Strictly restricted to users with ADMIN role.
+    """
+    user = db.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with ID {user_id} not found.",
+        )
+
+    # Safety guard: Prevent deleting currently logged in admin user
+    if user.id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot delete your own administrative account.",
+        )
+
+    # Safety guard: Prevent deleting the last active admin
+    if user.role == UserRole.ADMIN:
+        active_admins = db.execute(
+            select(func.count(User.id)).where(User.role == UserRole.ADMIN, User.is_active == True)
+        ).scalar() or 0
+        if active_admins <= 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot delete the system's only active Administrator.",
+            )
+
+    had_dev_profile = user.developer_profile is not None
+
+    db.delete(user)
+    db.commit()
+
+    if had_dev_profile:
+        from app.services.recommendation_service import invalidate_all_recommendations
+        invalidate_all_recommendations(db)
+
+    return None
+

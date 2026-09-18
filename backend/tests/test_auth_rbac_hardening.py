@@ -229,3 +229,39 @@ def test_admin_reset_user_password(client, seed_roles):
         json={"email": "dev@devalign.ai", "password": "BrandNewDevPassword999!"},
     )
     assert new_login.status_code == 200
+
+
+def test_delete_user_permissions_and_safety_locks(client, seed_roles):
+    """Ensure ADMIN can delete users, while self-deletion, sole-admin deletion, and non-admin calls are prevented."""
+    admin_headers = {"Authorization": f"Bearer {seed_roles['admin_token']}"}
+    mgr_headers = {"Authorization": f"Bearer {seed_roles['manager_token']}"}
+    dev_headers = {"Authorization": f"Bearer {seed_roles['dev_token']}"}
+
+    # Fetch users
+    users_res = client.get("/api/users", headers=admin_headers)
+    users_list = users_res.json().get("users", users_res.json())
+    admin_user = next(u for u in users_list if u["email"] == "admin@devalign.ai")
+    mgr_user = next(u for u in users_list if u["email"] == "manager@devalign.ai")
+    dev_user = next(u for u in users_list if u["email"] == "dev@devalign.ai")
+
+    # 1. Non-admin (Manager/Dev) cannot delete users
+    assert client.delete(f"/api/users/{dev_user['id']}", headers=mgr_headers).status_code == 403
+    assert client.delete(f"/api/users/{dev_user['id']}", headers=dev_headers).status_code == 403
+
+    # 2. Admin cannot delete self
+    self_del = client.delete(f"/api/users/{admin_user['id']}", headers=admin_headers)
+    assert self_del.status_code == 400
+    assert "cannot delete your own" in self_del.json()["detail"].lower()
+
+    # 3. Admin can delete developer
+    del_dev = client.delete(f"/api/users/{dev_user['id']}", headers=admin_headers)
+    assert del_dev.status_code == 204
+
+    # Dev user is gone from list
+    users_after = client.get("/api/users", headers=admin_headers).json()["users"]
+    assert all(u["id"] != dev_user["id"] for u in users_after)
+
+    # Dev cannot log in anymore
+    login_attempt = client.post("/api/auth/login", json={"email": "dev@devalign.ai", "password": "DevPass123!"})
+    assert login_attempt.status_code == 401
+

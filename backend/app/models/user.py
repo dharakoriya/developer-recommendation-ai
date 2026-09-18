@@ -35,6 +35,7 @@ class User(Base):
     developer_profile = relationship(
         "DeveloperProfile", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
-    created_projects = relationship("Project", back_populates="creator")
-    created_tasks = relationship("Task", foreign_keys="Task.created_by", back_populates="creator")
-    assigned_assignments = relationship("Assignment", back_populates="assigner")
+    created_projects = relationship("Project", back_populates="creator", cascade="all, delete-orphan", passive_deletes=True)
+    created_tasks = relationship("Task", foreign_keys="Task.created_by", back_populates="creator", cascade="all, delete-orphan", passive_deletes=True)
+    assigned_assignments = relationship("Assignment", back_populates="assigner", cascade="all, delete-orphan", passive_deletes=True)
+

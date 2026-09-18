@@ -79,6 +79,10 @@ export default function UserManagementPage() {
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
 
+  // Delete User Modal State
+  const [deletingUser, setDeletingUser] = useState<UserData | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   // Fetch Users
   const fetchUsers = async (isManualRefresh = false) => {
     try {
@@ -227,6 +231,27 @@ export default function UserManagementPage() {
       showToast(err.message || 'Failed to reset password', 'error');
     } finally {
       setResetLoading(false);
+    }
+  };
+
+  // Delete User
+  const handleDeleteUser = async () => {
+    if (!deletingUser) return;
+    if (currentUser && String(currentUser.id) === String(deletingUser.id)) {
+      showToast('Safety lock: You cannot delete your own active session account.', 'warning');
+      return;
+    }
+
+    try {
+      setDeleteLoading(true);
+      await apiClient.delete(`/users/${deletingUser.id}`);
+      setUsers((prev) => prev.filter((u) => u.id !== deletingUser.id));
+      showToast(`User ${deletingUser.name} (${deletingUser.email}) permanently deleted.`, 'success');
+      setDeletingUser(null);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to delete user account', 'error');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -719,6 +744,19 @@ export default function UserManagementPage() {
                               </svg>
                               <span>Reset Key</span>
                             </button>
+                            <button
+                              onClick={() => setDeletingUser(u)}
+                              disabled={isSelf}
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer flex items-center gap-1 ${
+                                isSelf ? 'opacity-40 cursor-not-allowed' : ''
+                              }`}
+                              title={isSelf ? 'You cannot delete your own active account session' : 'Delete user account'}
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              <span>Delete</span>
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -1119,7 +1157,84 @@ export default function UserManagementPage() {
             </div>
           </div>
         )}
+
+        {/* DELETE USER CONFIRMATION MODAL */}
+        {deletingUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center text-lg flex-shrink-0">
+                  🗑️
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    Delete User Account
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Are you sure you want to permanently delete{' '}
+                    <strong className="text-slate-900 dark:text-white">{deletingUser.name}</strong>?
+                  </p>
+                </div>
+                <button
+                  onClick={() => setDeletingUser(null)}
+                  disabled={deleteLoading}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition text-sm cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Email:</span>
+                  <span className="font-mono font-medium text-slate-900 dark:text-white">{deletingUser.email}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Role:</span>
+                  <span className="font-semibold text-slate-900 dark:text-white">{deletingUser.role}</span>
+                </div>
+                {deletingUser.developer_profile && (
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Developer Profile:</span>
+                    <span className="font-semibold text-amber-600 dark:text-amber-400">Will also be removed</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 text-xs text-rose-700 dark:text-rose-300">
+                <span className="font-semibold">⚠️ Warning:</span> This action is permanent and cannot be undone. All access keys, session tokens, and developer profile data will be permanently wiped.
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setDeletingUser(null)}
+                  disabled={deleteLoading}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteUser}
+                  disabled={deleteLoading}
+                  className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl shadow-sm disabled:opacity-50 transition cursor-pointer flex items-center gap-1.5"
+                >
+                  {deleteLoading ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    <span>Confirm Delete</span>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AppShell>
   );
 }
+
