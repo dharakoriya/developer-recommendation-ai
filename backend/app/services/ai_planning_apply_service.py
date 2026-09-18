@@ -74,33 +74,51 @@ def apply_ai_project_plan_atomically(
                 raise ValueError(f"Target production project ID {apply_req.project_id} not found.")
 
         # 3. Skill Resolution Mapping
-        resolution_map = {res.skill_name.lower(): res for res in (apply_req.skill_resolutions or [])}
+        resolution_map = {
+            res.skill_name.strip().lower(): res
+            for res in (apply_req.skill_resolutions or [])
+            if res.skill_name and res.skill_name.strip()
+        }
+
+        # Cache resolved skill IDs by normalized name to prevent duplicate DB lookups or inserts
+        resolved_skills_cache: Dict[str, uuid.UUID | None] = {}
 
         def resolve_skill_id(skill_name: str) -> uuid.UUID | None:
-            sk_name_lower = skill_name.lower()
+            if not skill_name or not str(skill_name).strip():
+                return None
+            sk_name_clean = str(skill_name).strip()
+            sk_name_lower = sk_name_clean.lower()
+
+            if sk_name_lower in resolved_skills_cache:
+                return resolved_skills_cache[sk_name_lower]
+
             res_item = resolution_map.get(sk_name_lower)
 
             if res_item:
                 if res_item.action == "REMOVE":
+                    resolved_skills_cache[sk_name_lower] = None
                     return None
                 if res_item.action == "MAP_EXISTING" and res_item.mapped_existing_skill_id:
+                    resolved_skills_cache[sk_name_lower] = res_item.mapped_existing_skill_id
                     return res_item.mapped_existing_skill_id
 
             # Check DB for existing skill by exact name case-insensitive
             existing_skill = db.execute(
-                select(Skill).where(Skill.name.ilike(skill_name))
+                select(Skill).where(Skill.name.ilike(sk_name_clean))
             ).scalars().first()
 
             if existing_skill:
+                resolved_skills_cache[sk_name_lower] = existing_skill.id
                 return existing_skill.id
 
             # If action is CREATE_NEW or default auto-creation for unmapped skills
             new_skill = Skill(
-                name=skill_name,
+                name=sk_name_clean,
                 category="AI Generated",
             )
             db.add(new_skill)
             db.flush()
+            resolved_skills_cache[sk_name_lower] = new_skill.id
             return new_skill.id
 
         # 4. Create Production Tasks & TaskSkills
@@ -122,7 +140,8 @@ def apply_ai_project_plan_atomically(
             db.flush()
             created_task_ids.append(real_task.id)
 
-            # Link required skills
+            # Link required skills (deduplicated by skill_id per task to obey uq_task_skill)
+            task_skills_map: Dict[uuid.UUID, Decimal] = {}
             for req in (p_task.required_skills or []):
                 if isinstance(req, str):
                     sk_name = req
@@ -134,15 +153,24 @@ def apply_ai_project_plan_atomically(
                     sk_name = str(req)
                     sk_level = 50.0
 
-                if sk_name:
-                    sk_id = resolve_skill_id(sk_name)
+                if sk_name and str(sk_name).strip():
+                    sk_id = resolve_skill_id(str(sk_name).strip())
                     if sk_id:
-                        task_skill = TaskSkill(
-                            task_id=real_task.id,
-                            skill_id=sk_id,
-                            required_level=Decimal(str(sk_level)),
-                        )
-                        db.add(task_skill)
+                        req_level_dec = Decimal(str(sk_level))
+                        if sk_id in task_skills_map:
+                            if req_level_dec > task_skills_map[sk_id]:
+                                task_skills_map[sk_id] = req_level_dec
+                        else:
+                            task_skills_map[sk_id] = req_level_dec
+
+            for sk_id, req_level in task_skills_map.items():
+                task_skill = TaskSkill(
+                    task_id=real_task.id,
+                    skill_id=sk_id,
+                    required_level=req_level,
+                )
+                db.add(task_skill)
+                real_task.task_skills.append(task_skill)
 
             # Calculate and persist automatic Task Weight
             weight_score = calculate_task_weight_score(real_task)

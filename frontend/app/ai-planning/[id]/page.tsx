@@ -261,11 +261,19 @@ export default function AIPlanReviewPage() {
   };
 
   const handleApplyPlan = async () => {
+    // Validate that all MAP_EXISTING resolutions have a selected skill
+    for (const [skillName, obj] of Object.entries(skillResolutions)) {
+      if (obj.action === 'MAP_EXISTING' && !obj.mapped_id) {
+        showToast(`Please select an existing skill to map for "${skillName}", or choose "Create Skill".`, 'error');
+        return;
+      }
+    }
+
     setIsApplying(true);
     const resolutions = Object.entries(skillResolutions).map(([skillName, obj]) => ({
       skill_name: skillName,
       action: obj.action,
-      mapped_existing_skill_id: obj.mapped_id,
+      mapped_existing_skill_id: obj.action === 'MAP_EXISTING' && obj.mapped_id ? obj.mapped_id : undefined,
     }));
 
     try {

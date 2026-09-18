@@ -209,3 +209,69 @@ def test_ai_planning_developer_rbac_forbidden(client, db_session: Session, dev_u
         headers=headers,
     )
     assert res.status_code == 403
+
+
+def test_apply_ai_project_plan_with_duplicate_and_mapped_skills(client, db_session: Session, admin_user: User):
+    token = create_access_token(data={"sub": str(admin_user.id), "role": admin_user.role.value})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 1. Seed existing skill in DB
+    existing_skill = Skill(name="Python", category="Backend")
+    db_session.add(existing_skill)
+    db_session.commit()
+    db_session.refresh(existing_skill)
+
+    # 2. Create AI Plan Draft
+    input_payload = {
+        "project_name": "Multi Skill Deduplication Test",
+        "project_description": "Testing that duplicate and mapped skills do not violate uq_task_skill.",
+        "project_type": "WEB_APP",
+        "granularity": "BALANCED",
+    }
+    res = client.post("/api/ai-planning/plans", json=input_payload, headers=headers)
+    assert res.status_code == 201, res.text
+    plan_id = res.json()["id"]
+
+    # 3. Add a manual task that has duplicate skills and aliases
+    res = client.post(
+        f"/api/ai-planning/plans/{plan_id}/tasks",
+        json={
+            "title": "Backend Core Microservice",
+            "estimated_hours": 16.0,
+            "module": "Backend",
+            "required_skills": ["Python", "python", "PyBackend", "py-framework"],
+        },
+        headers=headers,
+    )
+    assert res.status_code == 201, res.text
+    added_task_id = res.json()["id"]
+
+    # 4. Apply Plan with resolutions mapping PyBackend and py-framework to existing Python skill
+    apply_payload = {
+        "create_new_project": True,
+        "skill_resolutions": [
+            {
+                "skill_name": "PyBackend",
+                "action": "MAP_EXISTING",
+                "mapped_existing_skill_id": str(existing_skill.id),
+            },
+            {
+                "skill_name": "py-framework",
+                "action": "MAP_EXISTING",
+                "mapped_existing_skill_id": str(existing_skill.id),
+            },
+        ],
+    }
+    res = client.post(f"/api/ai-planning/plans/{plan_id}/apply", json=apply_payload, headers=headers)
+    assert res.status_code == 200, res.text
+    apply_data = res.json()
+    assert apply_data["created_tasks_count"] > 0
+
+    # 5. Verify the created tasks and that no duplicate (task_id, skill_id) exists
+    from app.models.task import TaskSkill
+    created_task_ids = [uuid.UUID(tid) for tid in apply_data["created_task_ids"]]
+    task_skills = db_session.query(TaskSkill).filter(TaskSkill.task_id.in_(created_task_ids)).all()
+    # Check that each (task_id, skill_id) pair is strictly unique
+    pairs = [(ts.task_id, ts.skill_id) for ts in task_skills]
+    assert len(pairs) == len(set(pairs)), "Found duplicate (task_id, skill_id) pairs in created TaskSkills!"
+
