@@ -142,6 +142,14 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {isDev && (
+              <Link
+                href="/teams"
+                className="bg-purple-50 dark:bg-purple-600/20 hover:bg-purple-100 dark:hover:bg-purple-600/30 text-purple-700 dark:text-purple-300 text-xs font-semibold px-3.5 py-2 rounded-xl transition border border-purple-200 dark:border-purple-500/30 flex items-center gap-1.5"
+              >
+                <span>🏢</span> My Teams
+              </Link>
+            )}
             <Link
               href="/analytics"
               className="bg-indigo-50 dark:bg-indigo-600/20 hover:bg-indigo-100 dark:hover:bg-indigo-600/30 text-indigo-700 dark:text-indigo-300 text-xs font-semibold px-3.5 py-2 rounded-xl transition border border-indigo-200 dark:border-indigo-500/30 flex items-center gap-1.5"

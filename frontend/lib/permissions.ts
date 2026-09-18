@@ -12,7 +12,7 @@ export const ROUTE_PERMISSIONS: RoutePermission[] = [
   { path: '/recommendations/audit', allowedRoles: ['ADMIN'] },
   { path: '/recommendations', allowedRoles: ['ADMIN', 'MANAGER'] },
   { path: '/projects', allowedRoles: ['ADMIN', 'MANAGER'] },
-  { path: '/teams', allowedRoles: ['ADMIN', 'MANAGER'] },
+  { path: '/teams', allowedRoles: ['ADMIN', 'MANAGER', 'DEVELOPER'] },
   { path: '/developers', allowedRoles: ['ADMIN', 'MANAGER'] },
   { path: '/tasks', allowedRoles: ['ADMIN', 'MANAGER', 'DEVELOPER'] },
   { path: '/assignments', allowedRoles: ['ADMIN', 'MANAGER'] },
@@ -34,3 +34,11 @@ export function hasPermission(role: UserRole | undefined, path: string): boolean
   return matched.allowedRoles.includes(role);
 }
 
+export function canEditTeam(userRole: UserRole | undefined, userId: string | undefined, teamManagerId: string | undefined | null): boolean {
+  if (!userRole) return false;
+  if (userRole === 'ADMIN') return true;
+  if (userRole === 'MANAGER') {
+    return !!userId && !!teamManagerId && userId === teamManagerId;
+  }
+  return false;
+}

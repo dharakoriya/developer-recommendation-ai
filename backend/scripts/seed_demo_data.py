@@ -181,17 +181,18 @@ def seed_demo_data():
 
         u_admin = User(name="System Admin", email="admin@devalign.ai", password_hash=admin_pass, role=UserRole.ADMIN, is_active=True)
         u_mgr = User(name="Project Manager", email="manager@devalign.ai", password_hash=mgr_pass, role=UserRole.MANAGER, is_active=True)
+        u_mgr2 = User(name="Operations Manager", email="ops@devalign.ai", password_hash=mgr_pass, role=UserRole.MANAGER, is_active=True)
         u_alice = User(name="Alice Sharma", email="alice@devalign.ai", password_hash=dev_pass, role=UserRole.DEVELOPER, is_active=True)
         u_rahul = User(name="Rahul Patel", email="rahul@devalign.ai", password_hash=dev_pass, role=UserRole.DEVELOPER, is_active=True)
         u_priya = User(name="Priya Mehta", email="priya@devalign.ai", password_hash=dev_pass, role=UserRole.DEVELOPER, is_active=True)
         u_david = User(name="David Wilson", email="david@devalign.ai", password_hash=dev_pass, role=UserRole.DEVELOPER, is_active=True)
 
-        users_list = [u_admin, u_mgr, u_alice, u_rahul, u_priya, u_david]
+        users_list = [u_admin, u_mgr, u_mgr2, u_alice, u_rahul, u_priya, u_david]
         db.add_all(users_list)
         db.commit()
         for u in users_list:
             db.refresh(u)
-        print(" [OK] Seeded 6 Users (1 Admin, 1 Manager, 4 Developers).")
+        print(" [OK] Seeded 7 Users (1 Admin, 2 Managers, 4 Developers).")
 
         # =====================================================================
         # 4. SEED DEVELOPER PROFILES & SKILLS
@@ -282,9 +283,9 @@ def seed_demo_data():
         for p in [p_fintech, p_portal, p_analytics]:
             db.refresh(p)
 
-        team_backend = Team(project_id=p_fintech.id, name="Core Payments Backend Team", description="Backend APIs, database integrity, and high-volume transaction routing")
-        team_frontend = Team(project_id=p_portal.id, name="Portal UI/UX Team", description="Next.js frontend applications, student workflows, and UI component design")
-        team_platform = Team(project_id=p_analytics.id, name="Platform & DevOps Team", description="Container orchestration, database tuning, and analytics pipeline infrastructure")
+        team_backend = Team(project_id=p_fintech.id, name="Core Payments Backend Team", description="Backend APIs, database integrity, and high-volume transaction routing", manager_id=u_mgr.id)
+        team_frontend = Team(project_id=p_portal.id, name="Portal UI/UX Team", description="Next.js frontend applications, student workflows, and UI component design", manager_id=u_mgr2.id)
+        team_platform = Team(project_id=p_analytics.id, name="Platform & DevOps Team", description="Container orchestration, database tuning, and analytics pipeline infrastructure", manager_id=u_mgr.id)
 
         db.add_all([team_backend, team_frontend, team_platform])
         db.commit()
@@ -688,6 +689,7 @@ def seed_demo_data():
         print("  Default Access Credentials:")
         print("    • Admin:     admin@devalign.ai   / admin123")
         print("    • Manager:   manager@devalign.ai / manager123")
+        print("    • Manager 2: ops@devalign.ai     / manager123")
         print("    • Developer: alice@devalign.ai   / dev123")
         print("    • Developer: rahul@devalign.ai   / dev123")
         print("    • Developer: priya@devalign.ai   / dev123")

@@ -62,9 +62,16 @@ class Team(Base):
         onupdate=func.now(),
         nullable=False,
     )
+    manager_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     # Relationships
     project = relationship("Project", back_populates="teams")
+    manager = relationship("User")
     members = relationship("TeamMember", back_populates="team", cascade="all, delete-orphan")
     tasks = relationship("Task", back_populates="team")
 

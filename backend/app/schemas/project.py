@@ -28,11 +28,13 @@ class TeamCreate(BaseModel):
     project_id: Optional[uuid.UUID] = None
     name: str = Field(..., min_length=1, max_length=150)
     description: Optional[str] = None
+    manager_id: Optional[uuid.UUID] = None
 
 
 class TeamUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=150)
     description: Optional[str] = None
+    manager_id: Optional[uuid.UUID] = None
 
 
 class TeamResponse(BaseModel):
@@ -41,6 +43,8 @@ class TeamResponse(BaseModel):
     project_name: Optional[str] = None
     name: str
     description: Optional[str] = None
+    manager_id: Optional[uuid.UUID] = None
+    manager_name: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     members_count: Optional[int] = 0

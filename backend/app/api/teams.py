@@ -18,8 +18,62 @@ from app.schemas.project import (
 )
 from app.api.deps import get_current_user, require_roles
 from app.api.projects import build_team_response, build_team_member_response
+from app.schemas.user import UserSummaryResponse, UserAdminResponse
+
+
+def check_team_manager_access(team: Team, current_user: User):
+    if current_user.role == UserRole.MANAGER:
+        if not team.manager_id or team.manager_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to manage this team.",
+            )
+
+
+def check_team_read_access(team: Team, current_user: User, db: Session):
+    if current_user.role == UserRole.ADMIN:
+        return
+    elif current_user.role == UserRole.MANAGER:
+        if not team.manager_id or team.manager_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to view this team.",
+            )
+    elif current_user.role == UserRole.DEVELOPER:
+        dev_profile = db.execute(
+            select(DeveloperProfile).where(DeveloperProfile.user_id == current_user.id)
+        ).scalar_one_or_none()
+        if not dev_profile:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to view this team.",
+            )
+        is_member = db.execute(
+            select(TeamMember).where(
+                TeamMember.team_id == team.id,
+                TeamMember.developer_id == dev_profile.id,
+                TeamMember.left_at.is_(None),
+            )
+        ).scalar_one_or_none()
+        if not is_member:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to view this team.",
+            )
 
 router = APIRouter()
+
+@router.get("/managers", summary="List all managers")
+def list_managers(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Lists all users with the MANAGER role.
+    Accessible to all authenticated users for team creation/editing.
+    """
+    managers = db.execute(select(User).where(User.role == UserRole.MANAGER, User.is_active == True)).scalars().all()
+    return [{"id": str(m.id), "name": m.name, "email": m.email} for m in managers]
 
 
 # Direct Team routes
@@ -29,18 +83,35 @@ def list_all_teams(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Lists all teams across projects.
-    Accessible to all authenticated users.
+    Lists teams across projects.
+    - ADMIN: Lists all teams.
+    - MANAGER: Lists only teams assigned to the current manager.
+    - DEVELOPER: Lists only teams where the developer is an active member.
     """
     stmt = (
         select(Team)
         .options(
             joinedload(Team.project),
+            joinedload(Team.manager),
             joinedload(Team.members).joinedload(TeamMember.developer_profile).joinedload(DeveloperProfile.user),
             joinedload(Team.tasks),
         )
-        .order_by(Team.created_at.asc())
     )
+    if current_user.role == UserRole.MANAGER:
+        stmt = stmt.where(Team.manager_id == current_user.id)
+    elif current_user.role == UserRole.DEVELOPER:
+        dev_profile = db.execute(
+            select(DeveloperProfile).where(DeveloperProfile.user_id == current_user.id)
+        ).scalar_one_or_none()
+        if not dev_profile:
+            return []
+        team_ids_subquery = select(TeamMember.team_id).where(
+            TeamMember.developer_id == dev_profile.id,
+            TeamMember.left_at.is_(None),
+        )
+        stmt = stmt.where(Team.id.in_(team_ids_subquery))
+
+    stmt = stmt.order_by(Team.created_at.asc())
     teams = db.execute(stmt).unique().scalars().all()
     return [build_team_response(t, include_members=True) for t in teams]
 
@@ -71,8 +142,10 @@ def list_teams_for_project(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Lists all teams belonging to a specific project.
-    Accessible to all authenticated users.
+    Lists teams belonging to a specific project.
+    - ADMIN: Lists all teams in the project.
+    - MANAGER: Lists only teams in the project assigned to the current manager.
+    - DEVELOPER: Lists only teams in the project where the developer is an active member.
     """
     project = db.execute(
         select(Project).where(Project.id == project_id)
@@ -87,11 +160,26 @@ def list_teams_for_project(
     stmt = (
         select(Team)
         .options(
+            joinedload(Team.manager),
             joinedload(Team.members).joinedload(TeamMember.developer_profile).joinedload(DeveloperProfile.user)
         )
         .where(Team.project_id == project_id)
-        .order_by(Team.created_at.asc())
     )
+    if current_user.role == UserRole.MANAGER:
+        stmt = stmt.where(Team.manager_id == current_user.id)
+    elif current_user.role == UserRole.DEVELOPER:
+        dev_profile = db.execute(
+            select(DeveloperProfile).where(DeveloperProfile.user_id == current_user.id)
+        ).scalar_one_or_none()
+        if not dev_profile:
+            return []
+        team_ids_subquery = select(TeamMember.team_id).where(
+            TeamMember.developer_id == dev_profile.id,
+            TeamMember.left_at.is_(None),
+        )
+        stmt = stmt.where(Team.id.in_(team_ids_subquery))
+
+    stmt = stmt.order_by(Team.created_at.asc())
     teams = db.execute(stmt).unique().scalars().all()
     return [build_team_response(t, include_members=True) for t in teams]
 
@@ -105,7 +193,8 @@ def create_team(
 ):
     """
     Creates a new team under a project.
-    Requires ADMIN or MANAGER role.
+    - ADMIN: Can assign any manager or leave unassigned.
+    - MANAGER: Automatically assigns current manager to the team.
     """
     project = db.execute(
         select(Project).where(Project.id == project_id)
@@ -117,17 +206,31 @@ def create_team(
             detail=f"Project with ID {project_id} not found.",
         )
 
+    assigned_manager_id = team_in.manager_id
+    if current_user.role == UserRole.MANAGER:
+        # Managers always own the teams they create
+        assigned_manager_id = current_user.id
+    elif assigned_manager_id:
+        manager = db.execute(select(User).where(User.id == assigned_manager_id, User.role == UserRole.MANAGER)).scalar_one_or_none()
+        if not manager:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Manager with ID {assigned_manager_id} not found or is not a manager.",
+            )
+
     new_team = Team(
         project_id=project_id,
         name=team_in.name,
         description=team_in.description,
+        manager_id=assigned_manager_id,
     )
     db.add(new_team)
     db.commit()
 
     stmt = (
         select(Team)
-        .options(joinedload(Team.members))
+        .options(joinedload(Team.manager),
+            joinedload(Team.members))
         .where(Team.id == new_team.id)
     )
     team = db.execute(stmt).unique().scalar_one()
@@ -148,6 +251,7 @@ def get_team(
     stmt = (
         select(Team)
         .options(
+            joinedload(Team.manager),
             joinedload(Team.members).joinedload(TeamMember.developer_profile).joinedload(DeveloperProfile.user)
         )
         .where(Team.id == team_id)
@@ -159,6 +263,8 @@ def get_team(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Team with ID {team_id} not found.",
         )
+
+    check_team_read_access(team, current_user, db)
 
     return build_team_response(team, include_members=True)
 
@@ -172,11 +278,13 @@ def update_team(
 ):
     """
     Updates team information.
-    Requires ADMIN or MANAGER role.
+    - ADMIN: Can update name, description, and assign/reassign manager.
+    - MANAGER: Can only update name and description of their owned team. Reassigning manager is forbidden.
     """
     stmt = (
         select(Team)
         .options(
+            joinedload(Team.manager),
             joinedload(Team.members).joinedload(TeamMember.developer_profile).joinedload(DeveloperProfile.user)
         )
         .where(Team.id == team_id)
@@ -189,10 +297,27 @@ def update_team(
             detail=f"Team with ID {team_id} not found.",
         )
 
+    check_team_manager_access(team, current_user)
+
     if team_in.name is not None:
         team.name = team_in.name
     if team_in.description is not None:
         team.description = team_in.description
+    if team_in.manager_id is not None:
+        if current_user.role != UserRole.ADMIN:
+            if team_in.manager_id != team.manager_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only administrators can assign or reassign team managers.",
+                )
+        else:
+            manager = db.execute(select(User).where(User.id == team_in.manager_id, User.role == UserRole.MANAGER)).scalar_one_or_none()
+            if not manager:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Manager with ID {team_in.manager_id} not found or is not a manager.",
+                )
+            team.manager_id = team_in.manager_id
 
     db.commit()
     db.refresh(team)
@@ -219,6 +344,8 @@ def delete_team(
             detail=f"Team with ID {team_id} not found.",
         )
 
+    check_team_manager_access(team, current_user)
+
     db.delete(team)
     db.commit()
     return None
@@ -244,6 +371,8 @@ def list_team_members(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Team with ID {team_id} not found.",
         )
+
+    check_team_read_access(team, current_user, db)
 
     stmt = (
         select(TeamMember)
@@ -278,6 +407,8 @@ def add_team_member(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Team with ID {team_id} not found.",
         )
+
+    check_team_manager_access(team, current_user)
 
     dev_profile = db.execute(
         select(DeveloperProfile)
@@ -342,6 +473,8 @@ def remove_team_member(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Team with ID {team_id} not found.",
         )
+
+    check_team_manager_access(team, current_user)
 
     member = db.execute(
         select(TeamMember).where(

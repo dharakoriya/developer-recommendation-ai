@@ -47,6 +47,7 @@ def build_team_response(team: Team, include_members: bool = True) -> TeamRespons
     completed_tasks = sum(1 for t in tasks if t.status == TaskStatus.COMPLETED)
 
     proj = team.project if hasattr(team, 'project') and team.project else None
+    mgr = team.manager if hasattr(team, 'manager') and team.manager else None
 
     return TeamResponse(
         id=team.id,
@@ -54,6 +55,8 @@ def build_team_response(team: Team, include_members: bool = True) -> TeamRespons
         project_name=proj.name if proj else None,
         name=team.name,
         description=team.description,
+        manager_id=mgr.id if mgr else None,
+        manager_name=mgr.name if mgr else None,
         created_at=team.created_at,
         updated_at=team.updated_at,
         members_count=len(active_members),

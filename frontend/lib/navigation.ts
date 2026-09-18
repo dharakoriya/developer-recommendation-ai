@@ -16,7 +16,7 @@ export const MAIN_NAVIGATION: NavItem[] = [
   { name: 'Tasks', href: '/tasks', icon: '📋', allowedRoles: ['ADMIN', 'MANAGER', 'DEVELOPER'] },
   { name: 'Developers', href: '/developers', icon: '👥', allowedRoles: ['ADMIN', 'MANAGER'] },
   { name: 'Performance Analytics', href: '/analytics/performance', icon: '🏆', allowedRoles: ['ADMIN', 'MANAGER'] },
-  { name: 'Teams', href: '/teams', icon: '🏢', allowedRoles: ['ADMIN', 'MANAGER'] },
+  { name: 'Teams', href: '/teams', icon: '🏢', allowedRoles: ['ADMIN', 'MANAGER', 'DEVELOPER'] },
   { name: 'Assignments', href: '/assignments', icon: '🎯', allowedRoles: ['ADMIN', 'MANAGER'] },
   { name: 'Recommendations', href: '/recommendations', icon: '⚡', allowedRoles: ['ADMIN', 'MANAGER'] },
   { name: 'Workload Engine', href: '/workload', icon: '📈', allowedRoles: ['ADMIN', 'MANAGER', 'DEVELOPER'] },
